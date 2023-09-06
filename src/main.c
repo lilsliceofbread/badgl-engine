@@ -1,29 +1,21 @@
 #include <stdio.h>
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
+#include "window.h"
 
 int main(int argc, char* argv[])
 {
-    GLFWwindow* window;
-
-    if(!glfwInit())
+    GLFWwindow* window = NULL;
+    WinContext ctx; 
+    ctx.width = 1280;
+    ctx.height = 720;
+    
+    window = window_init(&ctx);
+    if(window == NULL)
     {
-        fprintf(stderr, "ERR: failed to init GLFW");
-        return -1;
-    }    
-
-    window = glfwCreateWindow(1280, 720, "learnopengl", NULL, NULL);
-    if(!window)
-    {
-        fprintf(stderr, "ERR: failed to open window");
+        glfwTerminate();
         return -1;
     }
 
-    while(!glfwWindowShouldClose(window))
-    {
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
+    window_loop(window, &ctx);
 
     glfwTerminate();
     return 0;

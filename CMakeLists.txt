@@ -1,8 +1,15 @@
 cmake_minimum_required(VERSION 3.13.4)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 project(learnopengl)
 
-add_executable(${PROJECT_NAME} src/main.c external/glad/src/gl.c)
+file(
+    GLOB SOURCES 
+    src/*.c
+    external/glad/src/gl.c)
+
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 # get glfw
 find_package(Git QUIET)

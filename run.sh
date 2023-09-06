@@ -1,4 +1,4 @@
 #! /bin/bash
 
-cd bin/build
+cd build
 ./learnopengl
