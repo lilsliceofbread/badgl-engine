@@ -1,4 +1,6 @@
 #include "window.h"
+#include "shader.h"
+#include <stdlib.h>
 #include <stdio.h>
 
 void window_framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -45,6 +47,12 @@ GLFWwindow* window_init(WinContext* ctx)
     glViewport(0, 0, ctx->width, ctx->height);
     glfwSetWindowUserPointer(window, ctx);
     glfwSetFramebufferSizeCallback(window, window_framebuffer_size_callback);
+    
+    char* frag_src;
+    frag_src = get_shader_source("shaders/frag_shader.frag");
+    if(frag_src == NULL) return NULL;
+    printf("%s", frag_src);
+    free(frag_src);
 
     return window;
 }
