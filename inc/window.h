@@ -6,6 +6,10 @@ typedef struct WinContext
 {
     int width;
     int height;
+    GLuint shader_program;
+    GLuint vbo;
+    GLuint vao;
+    GLuint ebo;
 } WinContext;
 
 GLFWwindow* window_init(WinContext* ctx);
