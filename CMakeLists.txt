@@ -5,8 +5,8 @@ set(CMAKE_BUILD_TYPE Debug)
 project(learnopengl)
 
 file(
-    GLOB SOURCES 
-    src/*.c
+    GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS
+    "src/*.c"
     external/glad/src/gl.c)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -31,7 +31,7 @@ endif()
 
 add_subdirectory(external/glfw)
 
-target_include_directories(${PROJECT_NAME} PUBLIC inc PUBLIC external/glfw/include PUBLIC external/glad/include)
+target_include_directories(${PROJECT_NAME} PUBLIC inc PUBLIC external/glfw/include PUBLIC external/glad/include PUBLIC external/stb)
 
 target_link_directories(${PROJECT_NAME} PRIVATE external/glfw/src)
 

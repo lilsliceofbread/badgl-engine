@@ -60,7 +60,7 @@ void APIENTRY gl_debug_callback(GLenum source, GLenum type, unsigned int id, GLe
     // ignore non-significant error/warning codes
     if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return; 
 
-    printf("GLDEBUG: ID%d MSG: %s\n", id, message);
+    printf("GLDEBUG: ID - %d\nMessage: %s\n", id, message);
 
     switch (source)
     {
