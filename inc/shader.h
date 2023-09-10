@@ -2,6 +2,6 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
-char* get_shader_source(const char* shader_filepath);
+int create_shader(GLuint* shader, const char* shader_filepath, GLenum shader_type, char* info_log, int log_size);
 
-GLuint create_shader(const char* shader_filepath, GLenum shader_type, char* info_log, int log_size, int* success);
+int create_shader_program(GLuint* shader_program_ptr, const char* vert_shader_src, const char* frag_shader_src);
