@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.13.4)
 
 set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_C_STANDARD 99)
 
 project(learnopengl)
 
-file(
-    GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS
-    "src/*.c"
-    external/glad/src/gl.c)
+file(GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS
+     "src/*.c"
+     external/glad/src/gl.c)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
@@ -31,8 +31,15 @@ endif()
 
 add_subdirectory(external/glfw)
 
-target_include_directories(${PROJECT_NAME} PUBLIC inc PUBLIC external/glfw/include PUBLIC external/glad/include PUBLIC external/stb)
+add_subdirectory(external/cglm)
+
+target_include_directories(${PROJECT_NAME} 
+                            PUBLIC include
+                            PUBLIC external/glfw/include 
+                            PUBLIC external/glad/include 
+                            PUBLIC external/stb
+                            PUBLIC external/cglm/include)
 
 target_link_directories(${PROJECT_NAME} PRIVATE external/glfw/src)
 
-target_link_libraries(${PROJECT_NAME} glfw)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw PRIVATE cglm)

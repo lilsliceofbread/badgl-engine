@@ -1,9 +1,7 @@
 #include "window.h"
 #include "shader.h"
+#include "texture.h"
 #include "util.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -68,11 +66,15 @@ GLFWwindow* window_init(WinContext* ctx)
     glViewport(0, 0, ctx->width, ctx->height);
     glfwSetWindowUserPointer(window, ctx);
     glfwSetFramebufferSizeCallback(window, window_framebuffer_size_callback);
+
+    // FOR TRANSPARENT TEXTURES
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     // triangle stuff //
     
     GLuint shader_program;
-    if(!create_shader_program(&shader_program, "shaders/shader.vert", "shaders/shader.frag"))
+    if(!shader_program_create(&shader_program, "shaders/shader.vert", "shaders/shader.frag"))
     {
         return NULL;
     }
@@ -114,41 +116,23 @@ GLFWwindow* window_init(WinContext* ctx)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    GLuint textures[2];
-    glGenTextures(2, textures);
+    glBindVertexArray(0);
+
+    Texture2D textures[2];
+    if(!texture_create(&textures[0], "res/idiot.jpg", false, false))
+    {
+        return NULL;
+    }
     ctx->textures[0] = textures[0];
+    if(!texture_create(&textures[1], "res/idiot2.jpg", false, false))
+    {
+        return NULL;
+    }
     ctx->textures[1] = textures[1];
-    glBindTexture(GL_TEXTURE_2D, textures[0]);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    int width, height, num_channels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* image_data = stbi_load("res/idiot.jpg", &width, &height, &num_channels, 3);
-    if(!image_data)
-    {
-        fprintf(stderr, "ERR: could not load image");
-        return NULL;
-    }
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(image_data);
-
-    glBindTexture(GL_TEXTURE_2D, textures[1]);
-
-    stbi_set_flip_vertically_on_load(true);
-    image_data = stbi_load("res/idiot2.jpg", &width, &height, &num_channels, 3);
-    if(!image_data)
-    {
-        fprintf(stderr, "ERR: could not load image");
-        return NULL;
-    }
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(image_data);
+    glUseProgram(shader_program);
+    glUniform1i(glGetUniformLocation(shader_program, "texture1"), 0);
+    glUniform1i(glGetUniformLocation(shader_program, "texture2"), 1);
 
     return window;
 }
@@ -159,8 +143,8 @@ void window_loop(GLFWwindow* window, WinContext* ctx)
     GLuint vao = ctx->vao;
     GLuint vbo = ctx->vbo;
     GLuint ebo = ctx->ebo;
-    GLuint texture1 = ctx->textures[0];
-    GLuint texture2 = ctx->textures[1];
+    GLuint texture1 = ctx->textures[0].id;
+    GLuint texture2 = ctx->textures[1].id;
 
     GLint offset_uniform = glGetUniformLocation(shader_program, "offset");
     if(offset_uniform == -1)
@@ -173,16 +157,14 @@ void window_loop(GLFWwindow* window, WinContext* ctx)
         return;
     }
 
-    glUseProgram(shader_program);
-    glUniform1i(glGetUniformLocation(shader_program, "texture1"), 0);
-    glUniform1i(glGetUniformLocation(shader_program, "texture2"), 1);
-
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     while(!glfwWindowShouldClose(window))
     {
         window_process_inputs(window);
 
-        float offset = sin(5 * glfwGetTime()) / 2.0f;
+        float time = glfwGetTime();
+        float x_offset = 0.2f * sin(6 * time);
+        float y_offset = 0.2f * cos(6 * time);
 
         glClear(GL_COLOR_BUFFER_BIT);
         
@@ -193,10 +175,11 @@ void window_loop(GLFWwindow* window, WinContext* ctx)
         glBindTexture(GL_TEXTURE_2D, texture2);
 
         glUseProgram(shader_program);
-        glUniform1f(offset_uniform, offset);
+        glUniform2f(offset_uniform, x_offset, y_offset);
+
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        // glBindVertexArray(0);
+        glBindVertexArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

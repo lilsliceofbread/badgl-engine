@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-int create_shader(GLuint* shader_ptr, const char* shader_filepath, GLenum shader_type, char* info_log, int log_size)
+int shader_create(GLuint* shader_ptr, const char* shader_filepath, GLenum shader_type, char* info_log, int log_size)
 {
     char* shader_src;
     GLuint shader;
@@ -33,21 +33,21 @@ int create_shader(GLuint* shader_ptr, const char* shader_filepath, GLenum shader
     return true;
 }
 
-int create_shader_program(GLuint* shader_program_ptr, const char* vert_shader_src, const char* frag_shader_src)
+int shader_program_create(GLuint* shader_program_ptr, const char* vert_shader_src, const char* frag_shader_src)
 {
     GLuint vert_shader, frag_shader, shader_program;
     int success;
     char info_log[512];
     info_log[0] = '\0'; // if shader creation failed but no info log
 
-    success = create_shader(&vert_shader, vert_shader_src, GL_VERTEX_SHADER, info_log, sizeof(info_log));
+    success = shader_create(&vert_shader, vert_shader_src, GL_VERTEX_SHADER, info_log, sizeof(info_log));
     if(!success)
     {
         fprintf(stderr, "ERR: failed to create vertex shader\n%s", info_log);
         return false;
     }
 
-    success = create_shader(&frag_shader, frag_shader_src, GL_FRAGMENT_SHADER, info_log, sizeof(info_log));
+    success = shader_create(&frag_shader, frag_shader_src, GL_FRAGMENT_SHADER, info_log, sizeof(info_log));
     if(!success)
     {
         fprintf(stderr, "ERR: failed to create fragment shader\n%s", info_log);
