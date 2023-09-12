@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-int texture_create(Texture2D* texture_ptr, const char* img_filename, bool use_mipmap, bool use_alpha)
+int texture2d_create(Texture2D* texture_ptr, const char* img_filename, bool use_mipmap, bool use_alpha)
 {
     GLuint texture;
     glGenTextures(1, &texture);

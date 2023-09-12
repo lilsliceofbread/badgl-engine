@@ -4,11 +4,12 @@ layout (location = 1) in vec2 v_tex_coord;
 
 out vec2 tex_coord;
 
-uniform vec2 offset;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
 
 void main()
 {
-    vec3 offset_vert_pos = vec3(v_pos.x + offset.x, v_pos.y + offset.y, v_pos.z);
-    gl_Position = vec4(offset_vert_pos, 1.0f);
+    gl_Position = proj * view * model * vec4(v_pos, 1.0f);
     tex_coord = v_tex_coord;
 }

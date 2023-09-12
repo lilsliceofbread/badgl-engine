@@ -5,6 +5,12 @@ set(CMAKE_C_STANDARD 99)
 
 project(learnopengl)
 
+option(CGLM_SHARED "Shared build" OFF)
+option(CGLM_STATIC "Static build" ON)
+option(CGLM_USE_C99 "" ON) # C11
+option(CGLM_USE_TEST "Enable Tests" OFF) # for make check - make test
+
+
 file(GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS
      "src/*.c"
      external/glad/src/gl.c)

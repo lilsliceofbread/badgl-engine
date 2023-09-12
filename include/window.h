@@ -11,7 +11,7 @@ typedef struct WinContext
     GLuint vbo;
     GLuint vao;
     GLuint ebo;
-    Texture2D textures[2];
+    Texture2D textures;
 } WinContext;
 
 GLFWwindow* window_init(WinContext* ctx);
