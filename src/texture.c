@@ -3,10 +3,10 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
 #include <stdio.h>
+#include <stdbool.h>
 
-int texture2d_create(Texture2D* texture_ptr, const char* img_filename, bool use_mipmap, bool use_alpha)
+int texture2d_create(GLuint* texture_ptr, const char* img_filename, bool use_mipmap, bool use_alpha)
 {
     GLuint texture;
     glGenTextures(1, &texture);
@@ -52,9 +52,7 @@ int texture2d_create(Texture2D* texture_ptr, const char* img_filename, bool use_
 
     stbi_image_free(image_data);
 
-    texture_ptr->id = texture;
-    texture_ptr->width = width;
-    texture_ptr->height = height;
+    *texture_ptr = texture;
 
     return true;
 }

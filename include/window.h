@@ -1,18 +1,21 @@
-#pragma once
+#ifndef WINDOW_H
+#define WINDOW_H
+
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include <texture.h>
+
+// forward declarations
+//typedef struct Renderer Renderer;
+#include "renderer.h" // FIX LATER
 
 typedef struct WinContext
 {
     int width;
     int height;
-    GLuint shader_program;
-    GLuint vbo;
-    GLuint vao;
-    GLuint ebo;
-    Texture2D textures;
+
+    Renderer renderer;
 } WinContext;
 
 GLFWwindow* window_init(WinContext* ctx);
-void window_loop(GLFWwindow* window, WinContext* ctx);
+
+#endif
