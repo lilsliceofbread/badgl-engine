@@ -104,28 +104,6 @@ void camera_process_inputs(Camera* cam, GLFWwindow* window, float delta_time)
         glm_vec3_scale(flat_right, cam_step, step_vec);
         glm_vec3_sub(cam->pos, step_vec, cam->pos);
     }
-    /*
-    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    {
-        glm_vec3_scale(cam->dir, cam_step, step_vec);
-        glm_vec3_add(cam->pos, step_vec, cam->pos);
-    }
-    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        glm_vec3_scale(cam->dir, cam_step, step_vec);
-        glm_vec3_sub(cam->pos, step_vec, cam->pos);
-    }
-    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    {
-        glm_vec3_scale(cam->right, cam_step, step_vec);
-        glm_vec3_add(cam->pos, step_vec, cam->pos);
-    }
-    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    {
-        glm_vec3_scale(cam->right, cam_step, step_vec);
-        glm_vec3_sub(cam->pos, step_vec, cam->pos);
-    }
-    */
     if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     {
         glm_vec3_scale((vec3){0.0f, 1.0f, 0.0f}, cam_step, step_vec);

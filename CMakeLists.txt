@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.13.4)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_C_STANDARD 99)
 
-project(learnopengl)
+project(badgl)
 
 option(CGLM_SHARED "Shared build" OFF)
 option(CGLM_STATIC "Static build" ON)
@@ -39,12 +39,15 @@ add_subdirectory(external/glfw)
 
 add_subdirectory(external/cglm)
 
+add_subdirectory(external/assimp)
+
 target_include_directories(${PROJECT_NAME} 
                             PUBLIC include
+                            PUBLIC external/stb
                             PUBLIC external/glfw/include 
                             PUBLIC external/glad/include 
-                            PUBLIC external/stb
-                            PUBLIC external/cglm/include)
+                            PUBLIC external/cglm/include
+                            PUBLIC external/assimp/include)
 
 target_link_directories(${PROJECT_NAME} PRIVATE external/glfw/src)
 

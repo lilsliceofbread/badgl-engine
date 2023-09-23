@@ -27,6 +27,8 @@ void renderer_init(GLFWwindow* window, Renderer* renderer);
 
 void renderer_add_texture(Renderer* renderer, int texture, int texture_unit, const char* sampler_name);
 
+void renderer_use_program(Renderer* renderer);
+
 int renderer_find_uniform(Renderer* renderer, const char* name);
 
 void renderer_uniform_mat4(Renderer* renderer, const char* name, mat4 mat);

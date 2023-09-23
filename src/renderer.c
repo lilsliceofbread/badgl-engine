@@ -102,11 +102,16 @@ void renderer_add_texture(Renderer* renderer, int texture, int texture_unit, con
     renderer->tex_count++;
 
     // associate texture unit with sampler in shader
-    glUseProgram(renderer->shader_program);
+    renderer_use_program(renderer);
     glUniform1i(glGetUniformLocation(renderer->shader_program, sampler_name), texture_unit);
         
     glActiveTexture(GL_TEXTURE0 + texture_unit);
     glBindTexture(GL_TEXTURE_2D, texture);
+}
+
+void renderer_use_program(Renderer* renderer)
+{
+    glUseProgram(renderer->shader_program);
 }
 
 int renderer_find_uniform(Renderer* renderer, const char* name)

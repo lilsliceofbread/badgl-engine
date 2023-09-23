@@ -1,3 +1,2 @@
-# learnopengl
-
-project to learn openGL
+# badgl-engine
+making a terrible graphics engine to learn c and opengl 

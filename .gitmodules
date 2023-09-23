@@ -4,3 +4,6 @@
 [submodule "external/cglm"]
 	path = external/cglm
 	url = https://github.com/recp/cglm
+[submodule "/home/yeshu/programming/badgl-engine/external/assimp"]
+	path = /home/yeshu/programming/badgl-engine/external/assimp
+	url = https://github.com/assimp/assimp
