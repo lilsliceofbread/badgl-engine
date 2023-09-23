@@ -8,6 +8,6 @@
 #undef bool
 #define bool _Bool
 
-int texture2d_create(GLuint* texture_ptr, const char* img_filename, bool use_mipmap, bool use_alpha);
+void texture2d_create(int* texture_ptr, const char* img_filename, bool use_mipmap, bool use_alpha);
 
 #endif

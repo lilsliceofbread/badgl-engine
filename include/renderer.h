@@ -3,6 +3,7 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+#include <cglm/cglm.h>
 
 // forward declarations
 //typedef struct Camera Camera;
@@ -12,19 +13,24 @@
 
 typedef struct Renderer 
 {
-    GLuint shader_program;
-    GLuint vao;
-    GLuint vbo;
-    GLuint ebo;
-    GLuint textures[10];
+    int width, height;
+    int shader_program;
+    int vao;
+    int vbo;
+    int ebo;
+    int textures[MAX_TEXTURES];
     int tex_count;
     Camera cam;
 } Renderer;
 
-int renderer_add_texture(Renderer* renderer);
+void renderer_init(GLFWwindow* window, Renderer* renderer);
+
+void renderer_add_texture(Renderer* renderer, int texture, int texture_unit, const char* sampler_name);
+
+int renderer_find_uniform(Renderer* renderer, const char* name);
+
+void renderer_uniform_mat4(Renderer* renderer, const char* name, mat4 mat);
 
 void renderer_free(Renderer* renderer);
-
-int renderer_init(Renderer* renderer);
 
 #endif

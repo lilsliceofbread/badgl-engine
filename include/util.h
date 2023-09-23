@@ -3,6 +3,25 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+#include <stdio.h>
+
+#ifdef __linux__
+#define DEBUG_BREAK() __builtin_trap()
+#elif _WIN32
+#define DEBUG_BREAK() __debug_break()
+#elif __APPLE__
+#define DEBUG_BREAK() __builtin_trap()
+#endif
+
+// msg assert by cakez77
+#define ASSERT(x, msg, ...)                 \
+{                                           \
+    if(!(x))                                \
+    {                                       \
+        fprintf(stderr, msg, ##__VA_ARGS__);\
+        abort();                            \
+    }                                       \
+}
 
 #define gl_check_error() gl_check_error_(__FILE__, __LINE__)
 

@@ -3,19 +3,8 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+#include "renderer.h"
 
-// forward declarations
-//typedef struct Renderer Renderer;
-#include "renderer.h" // FIX LATER
-
-typedef struct WinContext
-{
-    int width;
-    int height;
-
-    Renderer renderer;
-} WinContext;
-
-GLFWwindow* window_init(WinContext* ctx);
+GLFWwindow* window_init(Renderer* renderer);
 
 #endif
