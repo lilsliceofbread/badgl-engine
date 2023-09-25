@@ -8,6 +8,19 @@
 #undef bool
 #define bool _Bool
 
-void texture2d_create(int* texture_ptr, const char* img_filename, bool use_mipmap, bool use_alpha);
+typedef enum TextureType
+{
+    TEXTURE_DIFFUSE, // colour texture
+    TEXTURE_SPECULAR
+} TextureType;
+
+typedef struct Texture
+{
+    GLuint id;
+    TextureType type;
+    int width, height;
+} Texture;
+
+void texture_create(Texture* self, const char* img_filename, bool use_mipmap, bool use_alpha);
 
 #endif

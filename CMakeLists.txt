@@ -10,6 +10,11 @@ option(CGLM_STATIC "Static build" ON)
 option(CGLM_USE_C99 "" ON) # C11
 option(CGLM_USE_TEST "Enable Tests" OFF) # for make check - make test
 
+set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE) # build as static lib
+set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
+set(ASSIMP_NO_EXPORT ON CACHE INTERNAL "" FORCE)
+set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE INTERNAL "" FORCE)
 
 file(GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS
      "src/*.c"
@@ -36,9 +41,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 endif()
 
 add_subdirectory(external/glfw)
-
 add_subdirectory(external/cglm)
-
 add_subdirectory(external/assimp)
 
 target_include_directories(${PROJECT_NAME} 
@@ -49,6 +52,6 @@ target_include_directories(${PROJECT_NAME}
                             PUBLIC external/cglm/include
                             PUBLIC external/assimp/include)
 
-target_link_directories(${PROJECT_NAME} PRIVATE external/glfw/src)
+target_link_directories(${PROJECT_NAME} PRIVATE external/glfw/src PRIVATE external/assimp/lib)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw PRIVATE cglm)
+target_link_libraries(${PROJECT_NAME} PUBLIC glfw PUBLIC cglm PUBLIC assimp)

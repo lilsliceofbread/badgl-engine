@@ -5,34 +5,23 @@
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
 
-// forward declarations
-//typedef struct Camera Camera;
-#include "camera.h" // FIX LATER
-
-#define MAX_TEXTURES 10
+#include "shader.h"
+#include "camera.h"
 
 typedef struct Renderer 
 {
     int width, height;
-    int shader_program;
-    int vao;
-    int vbo;
-    int ebo;
-    int textures[MAX_TEXTURES];
-    int tex_count;
+    Window win;
+    Shader shader; // shader program
     Camera cam;
 } Renderer;
 
-void renderer_init(GLFWwindow* window, Renderer* renderer);
+void rd_init(Renderer* rd, int width, int height);
 
-void renderer_add_texture(Renderer* renderer, int texture, int texture_unit, const char* sampler_name);
+void rd_send_vp_matrix(Renderer* self);
 
-void renderer_use_program(Renderer* renderer);
+void rd_clear_frame();
 
-int renderer_find_uniform(Renderer* renderer, const char* name);
-
-void renderer_uniform_mat4(Renderer* renderer, const char* name, mat4 mat);
-
-void renderer_free(Renderer* renderer);
+void rd_free(Renderer* self);
 
 #endif

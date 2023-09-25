@@ -1,118 +1,119 @@
 #include "camera.h"
 #include <math.h>
+#include <stdbool.h>
 
 #define SENSITIVITY 0.1f
 #define CAM_SPEED 2.0f
 
 Camera camera_init()
 {
-    Camera cam;
-    cam.yaw = -90.0f;
-    cam.pitch = 0.0f;
-    cam.last_cursor_x = 0.0f; // default value for starting
-    cam.last_cursor_y = 0.0f;
-    cam.wait_update = true; // should skip update for 1 frame
+    Camera self;
+    self.yaw = -90.0f;
+    self.pitch = 0.0f;
+    self.last_cursor_x = 0.0f; // default value for starting
+    self.last_cursor_y = 0.0f;
+    self.wait_update = true; // should skip update for 1 frame
 
-    return cam;
+    return self;
 }
 
-void camera_calc_view_vecs(Camera* cam)
+void camera_calc_view_vecs(Camera* self)
 {
     vec3 dir = {
-        cos(glm_rad(cam->yaw)) * cos(glm_rad(cam->pitch)), 
-        sin(glm_rad(cam->pitch)),
-        sin(glm_rad(cam->yaw)) * cos(glm_rad(cam->pitch)), 
+        cos(glm_rad(self->yaw)) * cos(glm_rad(self->pitch)), 
+        sin(glm_rad(self->pitch)),
+        sin(glm_rad(self->yaw)) * cos(glm_rad(self->pitch)), 
     };
 
-    glm_vec3_normalize_to(dir, cam->dir);
+    glm_vec3_normalize_to(dir, self->dir);
 
-    glm_cross((vec3){0.0f, 1.0f, 0.0f}, cam->dir, cam->right);
-    glm_vec3_normalize(cam->right);
-    glm_cross(cam->dir, cam->right, cam->up); // may need to normalise
-    glm_vec3_normalize(cam->up);
+    glm_cross((vec3){0.0f, 1.0f, 0.0f}, self->dir, self->right);
+    glm_vec3_normalize(self->right);
+    glm_cross(self->dir, self->right, self->up); // may need to normalise
+    glm_vec3_normalize(self->up);
 
-    glm_mat4_identity(cam->view);
+    glm_mat4_identity(self->view);
     vec3 target;
-    glm_vec3_add(cam->pos, cam->dir, target);
-    glm_lookat(cam->pos, target, cam->up, cam->view);
+    glm_vec3_add(self->pos, self->dir, target);
+    glm_lookat(self->pos, target, self->up, self->view);
 }
 
-void camera_calc_proj(Camera* cam, float fov, float aspect_ratio, float znear, float zfar)
+void camera_calc_proj(Camera* self, float fov, float aspect_ratio, float znear, float zfar)
 {
-    glm_mat4_identity(cam->proj);
-    glm_perspective(glm_rad(fov), aspect_ratio, znear, zfar, cam->proj);
+    glm_mat4_identity(self->proj);
+    glm_perspective(glm_rad(fov), aspect_ratio, znear, zfar, self->proj);
 }
 
-void camera_mouse_update(Camera* cam, double cursor_x, double cursor_y)
+void camera_mouse_update(Camera* self, double cursor_x, double cursor_y)
 {
-    if(cam->wait_update) // if application just started
+    if(self->wait_update) // if application just started
     {
-        cam->last_cursor_x = cursor_x;
-        cam->last_cursor_y = cursor_y;
-        cam->wait_update = false;
+        self->last_cursor_x = cursor_x;
+        self->last_cursor_y = cursor_y;
+        self->wait_update = false;
         return;
     }
 
-    cam->yaw += SENSITIVITY * (cursor_x - cam->last_cursor_x); // x offset * sens = yaw
-    cam->pitch += SENSITIVITY * (cam->last_cursor_y - cursor_y); // y offset needs to be from bottom to top not top to bottom so -()
-    cam->last_cursor_x = cursor_x;
-    cam->last_cursor_y = cursor_y;
+    self->yaw += SENSITIVITY * (cursor_x - self->last_cursor_x); // x offset * sens = yaw
+    self->pitch += SENSITIVITY * (self->last_cursor_y - cursor_y); // y offset needs to be from bottom to top not top to bottom so -()
+    self->last_cursor_x = cursor_x;
+    self->last_cursor_y = cursor_y;
 
     // constrain pitch so you can't flip your "head"
-    if(cam->pitch > 89.0f)
+    if(self->pitch > 89.0f)
     {
-        cam->pitch = 89.0f;
+        self->pitch = 89.0f;
     } 
-    else if(cam->pitch < -89.0f)
+    else if(self->pitch < -89.0f)
     {
-        cam->pitch = -89.0f;
+        self->pitch = -89.0f;
     }
 
-    camera_calc_view_vecs(cam); 
+    camera_calc_view_vecs(self); 
 }
 
 // MOVE TO PLAYER LATER, w/ vel, accel, player_pos
-void camera_process_inputs(Camera* cam, GLFWwindow* window, float delta_time)
+void camera_process_inputs(Camera* self, Window* win, float delta_time)
 {
-    float cam_step = CAM_SPEED * delta_time;
+    float self_step = CAM_SPEED * delta_time;
     vec3 step_vec;
-    
+
     // remove y component from "velocity" vecs to keep moving on flat plane
     vec3 flat_dir, flat_right;
-    glm_vec3_copy((vec3){cam->dir[0], 0.0f, cam->dir[2]}, flat_dir);
+    glm_vec3_copy((vec3){self->dir[0], 0.0f, self->dir[2]}, flat_dir);
     glm_vec3_normalize(flat_dir);
-    glm_vec3_copy((vec3){cam->right[0], 0.0f, cam->right[2]}, flat_right);
+    glm_vec3_copy((vec3){self->right[0], 0.0f, self->right[2]}, flat_right);
     glm_vec3_normalize(flat_right);
 
-    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if(window_get_key(win, GLFW_KEY_W))
     {
-        glm_vec3_scale(flat_dir, cam_step, step_vec);
-        glm_vec3_add(cam->pos, step_vec, cam->pos);
+        glm_vec3_scale(flat_dir, self_step, step_vec);
+        glm_vec3_add(self->pos, step_vec, self->pos);
     }
-    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    if(window_get_key(win, GLFW_KEY_S))
     {
-        glm_vec3_scale(flat_dir, cam_step, step_vec);
-        glm_vec3_sub(cam->pos, step_vec, cam->pos);
+        glm_vec3_scale(flat_dir, self_step, step_vec);
+        glm_vec3_sub(self->pos, step_vec, self->pos);
     }
-    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if(window_get_key(win, GLFW_KEY_A))
     {
-        glm_vec3_scale(flat_right, cam_step, step_vec);
-        glm_vec3_add(cam->pos, step_vec, cam->pos);
+        glm_vec3_scale(flat_right, self_step, step_vec);
+        glm_vec3_add(self->pos, step_vec, self->pos);
     }
-    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if(window_get_key(win, GLFW_KEY_D))
     {
-        glm_vec3_scale(flat_right, cam_step, step_vec);
-        glm_vec3_sub(cam->pos, step_vec, cam->pos);
+        glm_vec3_scale(flat_right, self_step, step_vec);
+        glm_vec3_sub(self->pos, step_vec, self->pos);
     }
-    if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    if(window_get_key(win, GLFW_KEY_SPACE))
     {
-        glm_vec3_scale((vec3){0.0f, 1.0f, 0.0f}, cam_step, step_vec);
-        glm_vec3_add(cam->pos, step_vec, cam->pos);
+        glm_vec3_scale((vec3){0.0f, 1.0f, 0.0f}, self_step, step_vec);
+        glm_vec3_add(self->pos, step_vec, self->pos);
     }
-    if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    if(window_get_key(win, GLFW_KEY_LEFT_CONTROL))
     {
-        glm_vec3_scale((vec3){0.0f, 1.0f, 0.0f}, cam_step, step_vec);
-        glm_vec3_sub(cam->pos, step_vec, cam->pos);
+        glm_vec3_scale((vec3){0.0f, 1.0f, 0.0f}, self_step, step_vec);
+        glm_vec3_sub(self->pos, step_vec, self->pos);
     }
-    camera_calc_view_vecs(cam);
+    camera_calc_view_vecs(self);
 }

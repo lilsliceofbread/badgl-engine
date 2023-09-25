@@ -1,69 +1,104 @@
 #include "window.h"
 #include <cglm/cglm.h>
 #include <stdio.h>
+#include <stdbool.h>
+#include "vao.h"
 #include "renderer.h"
 #include "camera.h"
 #include "util.h"
 
-void test_loop(GLFWwindow* window, Renderer* renderer);
+#define GAME_WIDTH 1280
+#define GAME_HEIGHT 720
+
+void test_loop(Window* win, Renderer* rd);
+void _mouse_callback(GLFWwindow* window, double cursor_x, double cursor_y);
+void _key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+static bool cursor_disabled = true;
 
 int main(int argc, char* argv[])
 {
-    GLFWwindow* window;
-    Renderer renderer;
-    renderer.width = 1280;
-    renderer.height = 720;
+    Renderer rd;
+    Window* win = &(rd.win);
     
-    window = window_init(&renderer);
-    if(window == NULL)
-    {
-        glfwTerminate();
-        return -1;
-    }
+    rd_init(&rd, GAME_WIDTH, GAME_HEIGHT);
+    window_set_callback_ptr(win, &rd);
+    window_key_callback(win, _key_callback);
+    window_mouse_callback(win, _mouse_callback);
+    printf("%s", glfwGetVersionString());
 
-    test_loop(window, &renderer);
+    test_loop(win, &rd);
 
-    glfwTerminate();
+    window_terminate();
     return 0;
 }
 
-void test_loop(GLFWwindow* window, Renderer* renderer) {
+void test_loop(Window* win, Renderer* rd) {
     // cam starting position and angle
-    Camera* cam = &(renderer->cam);
+    Camera* cam = &(rd->cam);
     glm_vec3_copy((vec3){0.0f, 0.0f, 3.0f}, cam->pos);
     glm_vec3_copy((vec3){0.0f, 0.0f, -1.0f}, cam->dir); // looking down negative z
 
     float last_time = 0.0f, delta_time = 0.0f;
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    while(!glfwWindowShouldClose(window))
+    while(!window_should_close(win))
     {
         float curr_time = (float)glfwGetTime();
         delta_time = curr_time - last_time;
         last_time = curr_time; 
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        rd_clear_frame();
 
         // will be player
-        camera_process_inputs(cam, window, delta_time);
+        camera_process_inputs(cam, win, delta_time);
 
-        renderer_use_program(renderer);
-        mat4 vp;
-        glm_mat4_mulN((mat4* []){&(cam->proj), &(cam->view)}, 2, vp);
-        renderer_uniform_mat4(renderer, "vp", vp);
+        // multiply view and proj matrices, and send to uniform on shader
+        rd_send_vp_matrix(rd);
 
         mat4 model;
-        glBindVertexArray(renderer->vao);
         glm_mat4_identity(model);
         glm_rotate(model, curr_time, (vec3){0.0f, 1.0f, 0.0f});
 
-        renderer_uniform_mat4(renderer, "model", model);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        shader_uniform_mat4(&(rd->shader), "model", model);
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        glBindVertexArray(0);
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        window_end_frame(win);
     }
 
-    renderer_free(renderer);
+    rd_free(rd);
+}
+
+void _mouse_callback(GLFWwindow* window, double cursor_x, double cursor_y)
+{
+    Renderer* rd = (Renderer*)glfwGetWindowUserPointer(window);
+    Camera* cam = &(rd->cam);
+    camera_mouse_update(cam, cursor_x, cursor_y);
+}
+
+void _key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    Renderer* rd = (Renderer*)glfwGetWindowUserPointer(window);
+
+    if(key == GLFW_KEY_Q && action == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, 1); // true
+    }
+    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    {
+        if(cursor_disabled) // toggle between cursor locked vs usable
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+            rd->cam.wait_update = true; // to stop sharp turn when cursor jumps
+            cursor_disabled = false;
+        }
+        else
+        {
+            glfwFocusWindow(window);
+            glfwSetCursorPos(window, rd->width/2, rd->height/2); // move cursor to middle of screen
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+            rd->cam.wait_update = true; // to stop sharp turn when cursor jumps
+            cursor_disabled = true;
+        }
+    }
 }

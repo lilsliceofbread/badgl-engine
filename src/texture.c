@@ -1,17 +1,17 @@
 #include "texture.h"
-#include "util.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include "util.h"
 
-void texture2d_create(int* texture_ptr, const char* img_filename, bool use_mipmap, bool use_alpha)
+void texture_create(Texture* self, const char* img_filename, bool use_mipmap, bool use_alpha)
 {
-    int texture;
-    glGenTextures(1, &texture);
+    GLuint texture_id;
+    glGenTextures(1, &texture_id);
 
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
 
     // could add param to change wrap method
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -48,5 +48,7 @@ void texture2d_create(int* texture_ptr, const char* img_filename, bool use_mipma
 
     stbi_image_free(image_data);
 
-    *texture_ptr = texture;
+    self->id = texture_id;
+    self->width = width;
+    self->height = height;
 }
