@@ -52,3 +52,14 @@ void texture_create(Texture* self, const char* img_filename, bool use_mipmap, bo
     self->width = width;
     self->height = height;
 }
+
+void texture_bind(Texture* self)
+{
+    glBindTexture(GL_TEXTURE_2D, self->id);
+}
+
+void texture_unit_active(uint8_t num)
+{
+    ASSERT(num < 31, "ERR: GL texture unit out of range");
+    glActiveTexture(GL_TEXTURE0 + num);
+}

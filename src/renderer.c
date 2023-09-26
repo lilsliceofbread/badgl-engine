@@ -7,11 +7,11 @@
 #include "texture.h"
 #include "util.h"
 
-void rd_init(Renderer* self, int width, int height)
+void rd_init(Renderer* self, int width, int height, const char* win_title)
 {
-    self->width = width;
-    self->height = height;
-    self->win = window_init(width, height);
+    self->win.width = width;
+    self->win.height = height;
+    self->win = window_init(width, height, win_title);
 
 #ifndef NO_DEBUG
     int flags;
@@ -25,7 +25,7 @@ void rd_init(Renderer* self, int width, int height)
     }
 #endif
 
-    glViewport(0, 0, self->width, self->height);
+    glViewport(0, 0, width, height);
 
     self->cam = camera_init(); // should be user defined
 
@@ -40,7 +40,7 @@ void rd_init(Renderer* self, int width, int height)
     
     shader_init(&(self->shader), "shaders/default.vert", "shaders/default.frag");
 
-    float aspect_ratio = (float)(self->width) / (float)(self->height);
+    float aspect_ratio = (float)(width) / (float)(height);
     camera_calc_proj(&(self->cam), 90.0f, aspect_ratio, 0.1f, 100.0f); // remove to user
 }
 
@@ -66,6 +66,13 @@ void rd_send_vp_matrix(Renderer* self)
     shader_uniform_mat4(&(self->shader), "vp", vp);
 }
 
+
+void rd_set_wireframe(bool useWireframe)
+{
+    GLenum mode = useWireframe ? GL_LINE : GL_FILL;
+    glPolygonMode(GL_FRONT_AND_BACK, mode);
+}
+
 void rd_clear_frame()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -80,8 +87,8 @@ void rd_resize_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
     Renderer* rd = (Renderer*)glfwGetWindowUserPointer(window); 
-    rd->width = width;
-    rd->height = height;
+    rd->win.width = width;
+    rd->win.height = height;
     
     //printf("window resized - w: %d h: %d\n", width, height);
 }

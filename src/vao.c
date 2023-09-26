@@ -21,6 +21,7 @@ void vao_attribute(GLuint index, GLint size, GLenum type, GLsizei stride, size_t
 {
     // fix when integer attribute is integer (glVertexAttribIPointer)
     glVertexAttribPointer(index, size, type, GL_FALSE, stride, (void*)offset);
+    glEnableVertexAttribArray(index);
 }
 
 void vao_free(VAO self)

@@ -37,29 +37,29 @@ void mesh_init(Mesh* self, Vertex* vertices, uint32_t vertices_count, uint32_t* 
 void mesh_draw(Mesh* self, Shader* shader)
 {
     // current num of each texture type
-    uint32_t diffuse_num = 1, specular_num = 1;
+    /*uint32_t diffuse_num = 1, specular_num = 1;
     for(uint32_t i = 0; i < self->tex_count; i++)
     {
-        // activate tex unit
-        glActiveTexture(GL_TEXTURE0 + i);
-        const char* sampler_name;
+        // activate next tex unit
+        texture_unit_active(i);
+        char sampler_name[50]; // random value, probably fine
         switch(self->textures[i].type)
         {
             case TEXTURE_DIFFUSE:
-                sprintf(sampler_name, "material.texture_diffuse%d", diffuse_num);
+                sprintf(sampler_name, "texture_diffuse%d", diffuse_num);
                 diffuse_num++;
                 break;
             case TEXTURE_SPECULAR:
-                sprintf(sampler_name, "material.texture_specular%d", specular_num);
+                sprintf(sampler_name, "texture_specular%d", specular_num);
                 specular_num++;
                 break;
         }
-
         // tell sampler which texture unit to use
         shader_uniform_1i(shader, sampler_name, i);
     }
-    glActiveTexture(GL_TEXTURE0);
+    texture_unit_active(0);*/
 
+    shader_use(shader);
     vao_bind(self->vao);
     glDrawElements(GL_TRIANGLES, self->ind_count, GL_UNSIGNED_INT, 0);
     vao_unbind();

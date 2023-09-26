@@ -1,3 +1,5 @@
+# make badgl static library to be linked to
+
 cmake_minimum_required(VERSION 3.13.4)
 
 set(CMAKE_BUILD_TYPE Debug)
@@ -5,24 +7,29 @@ set(CMAKE_C_STANDARD 99)
 
 project(badgl)
 
+# build the example game thing
+set(BADGL_BUILD_EXAMPLE ON)
+
+# cglm build options
 option(CGLM_SHARED "Shared build" OFF)
 option(CGLM_STATIC "Static build" ON)
 option(CGLM_USE_C99 "" ON) # C11
 option(CGLM_USE_TEST "Enable Tests" OFF) # for make check - make test
 
+# assimp build options
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE) # build as static lib
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_NO_EXPORT ON CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE INTERNAL "" FORCE)
 
-file(GLOB_RECURSE SOURCES CMAKE_CONFIGURE_DEPENDS
+file(GLOB_RECURSE BADGL_SRCS CMAKE_CONFIGURE_DEPENDS
      "src/*.c"
      external/glad/src/gl.c)
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_library(${PROJECT_NAME} ${BADGL_SRCS})
 
-# get glfw
+# get git package if exists
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     # update submodules if necessary
@@ -43,9 +50,12 @@ endif()
 add_subdirectory(external/glfw)
 add_subdirectory(external/cglm)
 add_subdirectory(external/assimp)
+if(BADGL_BUILD_EXAMPLE)
+    add_subdirectory(example)
+endif(BADGL_BUILD_EXAMPLE)
 
 target_include_directories(${PROJECT_NAME} 
-                            PUBLIC include
+                            PUBLIC src/include
                             PUBLIC external/stb
                             PUBLIC external/glfw/include 
                             PUBLIC external/glad/include 

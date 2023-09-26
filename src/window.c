@@ -12,7 +12,7 @@
 
 void default_resize_callback(GLFWwindow* window, int width, int height);
 
-Window window_init(int width, int height) 
+Window window_init(int width, int height, const char* win_title) 
 {
     Window self;
 
@@ -30,7 +30,7 @@ Window window_init(int width, int height)
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     #endif
     
-    GLFWwindow* ptr = glfwCreateWindow(width, height, "learnopengl", NULL, NULL);
+    GLFWwindow* ptr = glfwCreateWindow(width, height, win_title, NULL, NULL);
 
     self.ptr = ptr;
 
