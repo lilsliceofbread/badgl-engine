@@ -5,7 +5,7 @@
 #include <memory.h>
 #include <stdbool.h>
 
-int shader_compile(GLuint* shader_id, const char* shader_filepath, GLenum shader_type, char* info_log, int log_size)
+int shader_compile(GLuint* shader_id, const char* shader_filepath, GLenum shader_type, char* info_log_out, int log_size)
 {
     char* shader_src;
     GLuint shader;
@@ -24,7 +24,7 @@ int shader_compile(GLuint* shader_id, const char* shader_filepath, GLenum shader
     glGetShaderiv(shader, GL_COMPILE_STATUS, &comp_success);
     if(!comp_success)
     {
-        glGetShaderInfoLog(shader, log_size, NULL, info_log);
+        glGetShaderInfoLog(shader, log_size, NULL, info_log_out);
         return false;
     }
 

@@ -12,7 +12,7 @@ Camera camera_init()
     self.pitch = 0.0f;
     self.last_cursor_x = 0.0f; // default value for starting
     self.last_cursor_y = 0.0f;
-    self.wait_update = true; // should skip update for 1 frame
+    self.wait_update = true;
 
     return self;
 }
@@ -44,36 +44,8 @@ void camera_calc_proj(Camera* self, float fov, float aspect_ratio, float znear, 
     glm_perspective(glm_rad(fov), aspect_ratio, znear, zfar, self->proj);
 }
 
-void camera_mouse_update(Camera* self, double cursor_x, double cursor_y)
-{
-    if(self->wait_update) // if application just started
-    {
-        self->last_cursor_x = cursor_x;
-        self->last_cursor_y = cursor_y;
-        self->wait_update = false;
-        return;
-    }
-
-    self->yaw += SENSITIVITY * (cursor_x - self->last_cursor_x); // x offset * sens = yaw
-    self->pitch += SENSITIVITY * (self->last_cursor_y - cursor_y); // y offset needs to be from bottom to top not top to bottom so -()
-    self->last_cursor_x = cursor_x;
-    self->last_cursor_y = cursor_y;
-
-    // constrain pitch so you can't flip your "head"
-    if(self->pitch > 89.0f)
-    {
-        self->pitch = 89.0f;
-    } 
-    else if(self->pitch < -89.0f)
-    {
-        self->pitch = -89.0f;
-    }
-
-    camera_calc_view_vecs(self); 
-}
-
 // MOVE TO PLAYER LATER, w/ vel, accel, player_pos
-void camera_process_inputs(Camera* self, Window* win, float delta_time)
+void camera_update(Camera* self, Renderer* rd, float delta_time)
 {
     float self_step = CAM_SPEED * delta_time;
     vec3 step_vec;
@@ -85,35 +57,60 @@ void camera_process_inputs(Camera* self, Window* win, float delta_time)
     glm_vec3_copy((vec3){self->right[0], 0.0f, self->right[2]}, flat_right);
     glm_vec3_normalize(flat_right);
 
-    if(window_get_key(win, GLFW_KEY_W))
+    if(rd_get_key(rd, GLFW_KEY_W))
     {
         glm_vec3_scale(flat_dir, self_step, step_vec);
         glm_vec3_add(self->pos, step_vec, self->pos);
     }
-    if(window_get_key(win, GLFW_KEY_S))
+    if(rd_get_key(rd, GLFW_KEY_S))
     {
         glm_vec3_scale(flat_dir, self_step, step_vec);
         glm_vec3_sub(self->pos, step_vec, self->pos);
     }
-    if(window_get_key(win, GLFW_KEY_A))
+    if(rd_get_key(rd, GLFW_KEY_A))
     {
         glm_vec3_scale(flat_right, self_step, step_vec);
         glm_vec3_add(self->pos, step_vec, self->pos);
     }
-    if(window_get_key(win, GLFW_KEY_D))
+    if(rd_get_key(rd, GLFW_KEY_D))
     {
         glm_vec3_scale(flat_right, self_step, step_vec);
         glm_vec3_sub(self->pos, step_vec, self->pos);
     }
-    if(window_get_key(win, GLFW_KEY_SPACE))
+    if(rd_get_key(rd, GLFW_KEY_SPACE))
     {
         glm_vec3_scale((vec3){0.0f, 1.0f, 0.0f}, self_step, step_vec);
         glm_vec3_add(self->pos, step_vec, self->pos);
     }
-    if(window_get_key(win, GLFW_KEY_LEFT_CONTROL))
+    if(rd_get_key(rd, GLFW_KEY_LEFT_CONTROL))
     {
         glm_vec3_scale((vec3){0.0f, 1.0f, 0.0f}, self_step, step_vec);
         glm_vec3_sub(self->pos, step_vec, self->pos);
     }
+
+    if(rd->mouse_wait_update || self->wait_update) // if application just started don't update rotation
+    {
+        self->last_cursor_x = rd->cursor_x;
+        self->last_cursor_y = rd->cursor_y;
+        self->wait_update = false;
+        camera_calc_view_vecs(self);
+        return;
+    }
+
+    self->yaw += SENSITIVITY * (rd->cursor_x - self->last_cursor_x); // x offset * sens = yaw
+    self->pitch += SENSITIVITY * (self->last_cursor_y - rd->cursor_y); // y offset needs to be from bottom to top not top to bottom so -()
+    self->last_cursor_x = rd->cursor_x;
+    self->last_cursor_y = rd->cursor_y;
+
+    // constrain pitch so you can't flip your "head"
+    if(self->pitch > 89.0f)
+    {
+        self->pitch = 89.0f;
+    } 
+    else if(self->pitch < -89.0f)
+    {
+        self->pitch = -89.0f;
+    }
+
     camera_calc_view_vecs(self);
 }

@@ -5,4 +5,12 @@ WIP
 
 # requirements
 
-GPU supporting OpenGL 4.6
+- GPU supporting OpenGL 4.6
+
+- CMake
+
+# compilation
+
+run config.sh, then build.sh, then run with run.sh
+
+if on Windows, you may want to either use a program to run the .sh files, or look at the files and use the corresponding Windows commands manually

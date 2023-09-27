@@ -3,12 +3,14 @@
 
 #include "renderer.h"
 #include "model.h"
+#include "camera.h"
 
 #define MAX_MODELS 5
 
 typedef struct GameState
 {
     Renderer rd;
+    Camera cam;
     Model models[MAX_MODELS];
     uint32_t model_count;
 } GameState;

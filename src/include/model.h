@@ -1,5 +1,5 @@
-#ifndef MODEL_H
-#define MODEL_H
+#ifndef BADGL_MODEL_H
+#define BADGL_MODEL_H
 
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
@@ -14,7 +14,8 @@ typedef struct Model
     Mesh* meshes;
     uint32_t mesh_count;
     const char* directory;
-    Texture* loaded_textures;
+    Texture* textures;
+    uint32_t tex_count;
 } Model;
 
 void model_load(Model* self, const char* path);
@@ -27,7 +28,7 @@ void model_process_node(Model* self, struct aiNode* node, const struct aiScene* 
 
 Mesh model_process_mesh(Model* self, struct aiMesh* mesh, const struct aiScene* scene);
 
-Texture* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextureType ai_type, TextureType type);
+uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextureType ai_type, TextureType type, uint32_t* tex_count_out);
 
 void model_free(Model* self);
 

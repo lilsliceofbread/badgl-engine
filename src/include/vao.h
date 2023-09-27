@@ -1,5 +1,5 @@
-#ifndef VAO_H
-#define VAO_H
+#ifndef BADGL_VAO_H
+#define BADGL_VAO_H
 
 #include <glad/gl.h>
 #include <stddef.h>

@@ -1,4 +1,6 @@
 #! /bin/bash
 
-cd build
-./example/game
+# run example game
+
+cd build/example
+./game

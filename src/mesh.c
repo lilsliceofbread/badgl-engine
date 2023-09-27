@@ -5,12 +5,12 @@
 #include "bo.h"
 
 void mesh_init(Mesh* self, Vertex* vertices, uint32_t vertices_count, uint32_t* indices, uint32_t indices_count,
-               Texture* textures, uint32_t textures_count)
+               uint32_t* tex_indexes, uint32_t textures_count)
 {
     // preallocated
     self->vertices = vertices;
     self->indices = indices;
-    self->textures = textures;
+    self->tex_indexes = tex_indexes;
     self->vert_count = vertices_count;
     self->ind_count = indices_count;
     self->tex_count = textures_count;
@@ -25,7 +25,7 @@ void mesh_init(Mesh* self, Vertex* vertices, uint32_t vertices_count, uint32_t* 
     bo_set_buffer(self->vbo, &vertices[0], vertices_count * sizeof(Vertex), false);
 
     bo_bind(self->ebo);
-    bo_set_buffer(self->ebo, &indices[0], indices_count * sizeof(unsigned int), false);
+    bo_set_buffer(self->ebo, &indices[0], indices_count * sizeof(uint32_t), false);
 
     vao_attribute(0, 3, GL_FLOAT, sizeof(Vertex), 0);
     vao_attribute(1, 3, GL_FLOAT, sizeof(Vertex), offsetof(Vertex, normal));
@@ -34,16 +34,18 @@ void mesh_init(Mesh* self, Vertex* vertices, uint32_t vertices_count, uint32_t* 
     vao_unbind();
 }
 
-void mesh_draw(Mesh* self, Shader* shader)
+void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
 {
     // current num of each texture type
-    /*uint32_t diffuse_num = 1, specular_num = 1;
+    uint32_t diffuse_num = 1, specular_num = 1;
     for(uint32_t i = 0; i < self->tex_count; i++)
     {
+        uint32_t curr_tex = self->tex_indexes[i];
+
         // activate next tex unit
         texture_unit_active(i);
-        char sampler_name[50]; // random value, probably fine
-        switch(self->textures[i].type)
+        char sampler_name[MAX_STR_LENGTH];
+        switch(textures[curr_tex].type)
         {
             case TEXTURE_DIFFUSE:
                 sprintf(sampler_name, "texture_diffuse%d", diffuse_num);
@@ -56,20 +58,25 @@ void mesh_draw(Mesh* self, Shader* shader)
         }
         // tell sampler which texture unit to use
         shader_uniform_1i(shader, sampler_name, i);
+        texture_bind(textures[curr_tex]);
     }
-    texture_unit_active(0);*/
 
-    shader_use(shader);
     vao_bind(self->vao);
     glDrawElements(GL_TRIANGLES, self->ind_count, GL_UNSIGNED_INT, 0);
     vao_unbind();
+
+    // good practice to reset
+    texture_unit_active(0);
 }
 
 void mesh_free(Mesh* self)
 {
     free(self->vertices);
     free(self->indices);
-    free(self->textures);
+    if(self->tex_count > 0)
+    {
+        free(self->tex_indexes);
+    }
 
     vao_free(self->vao);
     bo_free(self->vbo);

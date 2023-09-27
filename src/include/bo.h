@@ -1,5 +1,5 @@
-#ifndef BO_H
-#define BO_H
+#ifndef BADGL_BO_H
+#define BADGL_BO_H
 
 #include <glad/gl.h>
 #include <stddef.h>

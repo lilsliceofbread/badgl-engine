@@ -32,6 +32,34 @@ char* get_file_data(const char* filepath)
     return file_data;
 }
 
+/*int str_find_last_of(const char* str, char c)
+{
+    int end = strlen(str) - 1;
+    for(int i = end; i >= 0; i--)
+    {
+        if(str[i] == c) return i;
+    }
+
+   return -1; // if no match
+}*/
+
+int str_find_last_of(const char* str, char c)
+{
+    int i = 0;
+    int latest_occurrence = -1;
+    const char* curr = str;
+    while(curr != NULL && *curr != '\0')
+    {
+        if(*curr == c) {
+            latest_occurrence = i;
+        }
+        ++curr;
+        ++i;
+    }
+
+    return latest_occurrence;
+}
+
 // from learnopengl
 GLenum gl_check_error_(const char* file, int line)
 {

@@ -1,5 +1,5 @@
-#ifndef TEXTURE_H
-#define TEXTURE_H
+#ifndef BADGL_TEXTURE_H
+#define BADGL_TEXTURE_H
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -7,6 +7,8 @@
 // 'forward declare' bool
 #undef bool
 #define bool _Bool
+
+#define MAX_STR_LENGTH 100
 
 typedef enum TextureType
 {
@@ -19,11 +21,12 @@ typedef struct Texture
     GLuint id;
     TextureType type;
     int width, height;
+    char path[MAX_STR_LENGTH];
 } Texture;
 
-void texture_create(Texture* self, const char* img_filename, bool use_mipmap, bool use_alpha);
+void texture_create(Texture* self, const char* img_filename, bool use_mipmap);
 
-void texture_bind(Texture* self);
+void texture_bind(Texture self);
 
 void texture_unit_active(uint8_t unit);
 

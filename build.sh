@@ -1,8 +1,12 @@
 #! /bin/bash
 
 cd build
-rm -rf shaders
-rm -rf res
+
 make
-cp -r ../shaders .
-cp -r ../res .
+
+cd example
+rm -rf shaders
+rm -rf example/res
+
+cp -r ../../shaders .
+cp -r ../../example/res .

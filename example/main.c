@@ -7,15 +7,16 @@ int main(int argc, char* argv[])
     game_init(&state);
     
     float last_time = 0.0f, delta_time = 0.0f;
-    while(!window_should_close(&(state.rd.win)))
+    while(!rd_win_should_close(&(state.rd)))
     {
         float curr_time = (float)glfwGetTime();
         delta_time = curr_time - last_time;
         last_time = curr_time; 
+        rd_begin_frame(&(state.rd));
 
         game_update(&state, curr_time, delta_time);
 
-        window_end_frame(&(state.rd.win));
+        rd_end_frame(&(state.rd));
     }
     
     game_end(&state);

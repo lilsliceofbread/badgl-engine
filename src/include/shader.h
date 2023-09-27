@@ -1,5 +1,5 @@
-#ifndef SHADER_H
-#define SHADER_H
+#ifndef BADGL_SHADER_H
+#define BADGL_SHADER_H
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -20,7 +20,7 @@ typedef struct Shader
     int uniform_count; // found during shader comp
 } Shader;
 
-int shader_compile(GLuint* shader_id, const char* shader_filepath, GLenum shader_type, char* info_log, int log_size);
+int shader_compile(GLuint* shader_id, const char* shader_filepath, GLenum shader_type, char* info_log_out, int log_size);
 
 void shader_init(Shader* self, const char* vert_shader_src, const char* frag_shader_src);
 
