@@ -79,6 +79,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     vertices = (Vertex*)malloc(model_mesh->mNumVertices * sizeof(Vertex));
     ASSERT(vertices != NULL, "ERR: failed to allocate vertices");
 
+    // loop through faces to count indices for allocation of indices array
     for(uint32_t i = 0; i < model_mesh->mNumFaces; i++)
     {
         total_indices += model_mesh->mFaces[i].mNumIndices;
@@ -86,12 +87,11 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     indices = (uint32_t*)malloc(total_indices * sizeof(uint32_t));
     ASSERT(indices != NULL, "ERR: failed to allocate indices");
 
-    //ASSERT(textures != NULL, "ERR: failed to allocate textures");
-
+    // for each vertex in mesh, get pos, normal, uv and copy into vertices array
     for(uint32_t i = 0; i < model_mesh->mNumVertices; i++)
     {
         Vertex vertex;
-        vec3 vec;
+        vec3 vec; // have to use intermediate vec
         vec[0] = model_mesh->mVertices[i].x;
         vec[1] = model_mesh->mVertices[i].y;
         vec[2] = model_mesh->mVertices[i].z;
@@ -117,6 +117,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         vertices[i] = vertex;
     }
 
+    // loop through faces and indices and add each to array
     uint32_t ind_count = 0;
     for(uint32_t i = 0; i < model_mesh->mNumFaces; i++)
     {
@@ -128,21 +129,24 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         }
     }
 
-    if(model_mesh->mMaterialIndex >= 0)
+    if(model_mesh->mMaterialIndex >= 0) // if mesh has materials
     {
+        // aiMesh's material index indexes into scene's pool of materials
         struct aiMaterial* mat = scene->mMaterials[model_mesh->mMaterialIndex];
         uint32_t diffuse_count, specular_count;
-        // inefficient af, but will fix later
+
+        // not the best since allocs multiple temp variables, but it works
         uint32_t* diff_indexes = model_load_textures(self, mat, aiTextureType_DIFFUSE, TEXTURE_DIFFUSE, &diffuse_count);
         uint32_t* spec_indexes = model_load_textures(self, mat, aiTextureType_SPECULAR, TEXTURE_SPECULAR, &specular_count);
         total_textures = diffuse_count + specular_count;
-        if(total_textures)
-        {
-            tex_indexes = (uint32_t*)malloc(total_textures * sizeof(uint32_t));
 
-            size_t offset = diffuse_count * sizeof(uint32_t);
-            memcpy(tex_indexes, diff_indexes, offset);
-            memcpy(tex_indexes + offset, spec_indexes, specular_count * sizeof(uint32_t));
+        if(total_textures) // if no textures, don't allocate/memcpy/free
+        {
+            tex_indexes = (uint32_t*)calloc(total_textures, sizeof(uint32_t));
+
+            // copy separate indexes into tex_indexes
+            memcpy(tex_indexes, diff_indexes, diffuse_count * sizeof(uint32_t));
+            memcpy(tex_indexes + diffuse_count, spec_indexes, specular_count * sizeof(uint32_t));
 
             free(diff_indexes);
             free(spec_indexes);
@@ -155,24 +159,23 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
 
 uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextureType ai_type, TextureType type, uint32_t* tex_count_out)
 {
-    uint32_t add_tex_count = aiGetMaterialTextureCount(mat, ai_type);
+    uint32_t add_tex_count = aiGetMaterialTextureCount(mat, ai_type); // textures of given type
     *tex_count_out = add_tex_count;
-    self->textures = (Texture*)realloc(self->textures, (self->tex_count + add_tex_count) * sizeof(Texture));
-    uint32_t* tex_indexes = (uint32_t*)malloc(add_tex_count * sizeof(uint32_t)); 
+    uint32_t* tex_indexes = (uint32_t*)calloc(add_tex_count, sizeof(uint32_t)); // user of function must free themselves
 
     char img_path[MAX_STR_LENGTH];
-    uint32_t new_add_tex_count = 0;
+    uint32_t new_add_tex_count = 0; // since we only resize if texture doesn't already exist
     for(uint32_t i = 0; i < add_tex_count; i++)
     {
-        memset(img_path, 0, sizeof(img_path));
+        memset(img_path, 0, sizeof(img_path)); // ensure previous string doesn't cause problems
         struct aiString str;
-        aiGetMaterialTexture(mat, ai_type, i, &str, NULL, NULL, NULL, NULL, NULL, NULL);
-        sprintf(img_path, "%s/%s", self->directory, str.data);
+        aiGetMaterialTexture(mat, ai_type, i, &str, NULL, NULL, NULL, NULL, NULL, NULL); // get material texture string
+        sprintf(img_path, "%s/%s", self->directory, str.data); // append texture string to directory
 
-        bool skip = false;
-        for(uint32_t j = 0; j < self->tex_count; j++)
+        bool skip = false; // can't use continue since 2 for loops
+        for(uint32_t j = 0; j < self->tex_count; j++) // loop through model's textures
         {
-            if(strcmp(img_path, self->textures[j].path) == 0)
+            if(strcmp(img_path, self->textures[j].path) == 0) // if texture already exists
             {
                 tex_indexes[i] = j;
                 skip = true;
@@ -180,17 +183,25 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
             }
         }
 
-        if(!skip)
+        if(!skip) // texture doesn't already exist
         {
+            // increase amount to add to tex_count and reallocate textures
+            new_add_tex_count++;
+            self->textures = (Texture*)realloc(self->textures, (self->tex_count + new_add_tex_count) * sizeof(Texture));
+            ASSERT(self->textures != NULL, "ERR: failed to realloc texture array");
+
+            // create new texture
             Texture texture;
             texture_create(&texture, img_path, true);
             texture.type = type;
-            self->textures[self->tex_count + i] = texture;
-            tex_indexes[i] = self->tex_count + i;
-            new_add_tex_count++;
+
+            // set next texture in array to current texture
+            self->textures[self->tex_count + i] = texture; // first iter is tex_count + 0
+            tex_indexes[i] = self->tex_count + i; // store index into textures array for mesh to access
         }
     }
 
+    // increase tex_count to correct size
     self->tex_count += new_add_tex_count;
     return tex_indexes;
 }
@@ -201,6 +212,15 @@ void model_free(Model* self)
     {
         mesh_free(&(self->meshes[i]));
     }
+
+    /*
+    for(int i = 0; i < self->tex_count; i++)
+    {
+        printf("ID: %d %s\n", self->textures[i].id, self->textures[i].path);
+    }
+
+    printf("LOG: model tex count %d\n", self->tex_count);
+    */
 
     free(self->textures);
     free(self->meshes);

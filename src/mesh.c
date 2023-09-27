@@ -38,25 +38,17 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
 {
     // current num of each texture type
     uint32_t diffuse_num = 1, specular_num = 1;
+    char sampler_name[MAX_STR_LENGTH];
     for(uint32_t i = 0; i < self->tex_count; i++)
     {
         uint32_t curr_tex = self->tex_indexes[i];
 
         // activate next tex unit
         texture_unit_active(i);
-        char sampler_name[MAX_STR_LENGTH];
-        switch(textures[curr_tex].type)
-        {
-            case TEXTURE_DIFFUSE:
-                sprintf(sampler_name, "texture_diffuse%d", diffuse_num);
-                diffuse_num++;
-                break;
-            case TEXTURE_SPECULAR:
-                sprintf(sampler_name, "texture_specular%d", specular_num);
-                specular_num++;
-                break;
-        }
+        sprintf(sampler_name, "%s%d", texture_type_get_str(textures[curr_tex].type), diffuse_num);
+
         // tell sampler which texture unit to use
+        //printf("LOG: texture name %s\n", sampler_name);
         shader_uniform_1i(shader, sampler_name, i);
         texture_bind(textures[curr_tex]);
     }
@@ -77,6 +69,13 @@ void mesh_free(Mesh* self)
     {
         free(self->tex_indexes);
     }
+
+    /*// temp
+    for(int i = 0; i < self->tex_count; i++)
+    {
+        printf("MESH: idx - %d\n", self->tex_indexes[i]);
+    }
+    */
 
     vao_free(self->vao);
     bo_free(self->vbo);

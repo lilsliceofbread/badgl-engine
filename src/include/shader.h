@@ -5,10 +5,8 @@
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
 
-#define MAX_UNIFORMS 10
-
 typedef struct uniform_pair {
-    const char* name;
+    char name[50]; // if you make a uniform name longer than 50 characters you suck
     GLuint location;
 } uniform_pair;
 
@@ -16,13 +14,15 @@ typedef struct uniform_pair {
 typedef struct Shader
 {
     GLuint id;
-    uniform_pair stored_uniforms[MAX_UNIFORMS]; // should really be sized during shader compilation and freed
+    uniform_pair* stored_uniforms;
     int uniform_count; // found during shader comp
 } Shader;
 
-int shader_compile(GLuint* shader_id, const char* shader_filepath, GLenum shader_type, char* info_log_out, int log_size);
-
 void shader_init(Shader* self, const char* vert_shader_src, const char* frag_shader_src);
+
+GLuint shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type, char* info_log_out, int log_size, int* success_out);
+
+void shader_find_uniforms_in_source(Shader* self, const char* src_code); // UNIFORMS ARE REPEATED IF DUPLICATED IN SEPARATE SHADER SOURCES
 
 void shader_use(Shader* self);
 

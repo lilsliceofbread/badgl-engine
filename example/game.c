@@ -27,12 +27,9 @@ void game_init(GameState* state)
     float aspect_ratio = (float)(state->rd.width) / (float)(state->rd.height);
     camera_calc_proj(&(state->cam), 90.0f, aspect_ratio, 0.1f, 100.0f); // remove to user
 
-    model_load(&(state->models[0]), "res/backpack.obj");
+    rd_set_cam_bool(&(state->rd), &(state->cam.wait_update));
 
-    // temp
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(2);
+    model_load(&(state->models[0]), "res/backpack/backpack.obj");
 }
 
 void game_update(GameState* state, float curr_time, float delta_time)
@@ -51,7 +48,7 @@ void game_update(GameState* state, float curr_time, float delta_time)
     glm_rotate(model, curr_time, (vec3){0.0f, 1.0f, 0.0f});
     glm_scale(model, (vec3){0.5f, 0.5f, 0.5f});
     shader_uniform_mat4(&(state->rd.shader), "model", model);
-    
+
     // will do in loop with model count
     model_draw(&(state->models[0]), &(state->rd.shader));
 }

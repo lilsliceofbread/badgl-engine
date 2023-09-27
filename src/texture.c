@@ -69,3 +69,19 @@ void texture_unit_active(uint8_t num)
     ASSERT(num <= 31, "ERR: GL texture unit out of range");
     glActiveTexture(GL_TEXTURE0 + num);
 }
+
+const char* texture_type_get_str(TextureType type)
+{
+    switch(type)
+    {
+        case TEXTURE_DIFFUSE:
+            return "texture_diffuse";
+            break; // unsure if necessary
+        case TEXTURE_SPECULAR:
+            return "texture_specular";
+            break;
+        case TEXTURE_NORMAL:
+            return "texture_normal";
+            break;
+    }
+}

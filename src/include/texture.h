@@ -13,7 +13,8 @@
 typedef enum TextureType
 {
     TEXTURE_DIFFUSE, // colour texture
-    TEXTURE_SPECULAR
+    TEXTURE_SPECULAR,
+    TEXTURE_NORMAL // normal map
 } TextureType;
 
 typedef struct Texture
@@ -29,5 +30,7 @@ void texture_create(Texture* self, const char* img_filename, bool use_mipmap);
 void texture_bind(Texture self);
 
 void texture_unit_active(uint8_t unit);
+
+const char* texture_type_get_str(TextureType type);
 
 #endif

@@ -88,19 +88,22 @@ void camera_update(Camera* self, Renderer* rd, float delta_time)
         glm_vec3_sub(self->pos, step_vec, self->pos);
     }
 
-    if(rd->mouse_wait_update || self->wait_update) // if application just started don't update rotation
+    float cursor_x, cursor_y;
+    rd_get_cursor_pos(rd, &cursor_x, &cursor_y);
+
+    if(!rd->cursor_disabled || self->wait_update) // don't update rotation
     {
-        self->last_cursor_x = rd->cursor_x;
-        self->last_cursor_y = rd->cursor_y;
+        self->last_cursor_x = cursor_x;
+        self->last_cursor_y = cursor_y;
         self->wait_update = false;
         camera_calc_view_vecs(self);
         return;
     }
 
-    self->yaw += SENSITIVITY * (rd->cursor_x - self->last_cursor_x); // x offset * sens = yaw
-    self->pitch += SENSITIVITY * (self->last_cursor_y - rd->cursor_y); // y offset needs to be from bottom to top not top to bottom so -()
-    self->last_cursor_x = rd->cursor_x;
-    self->last_cursor_y = rd->cursor_y;
+    self->yaw += SENSITIVITY * (cursor_x - self->last_cursor_x); // x offset * sens = yaw
+    self->pitch += SENSITIVITY * (self->last_cursor_y - cursor_y); // y offset needs to be from bottom to top not top to bottom so -()
+    self->last_cursor_x = cursor_x;
+    self->last_cursor_y = cursor_y;
 
     // constrain pitch so you can't flip your "head"
     if(self->pitch > 89.0f)

@@ -14,10 +14,10 @@ void rd_mouse_callback(GLFWwindow* win, double cursor_x, double cursor_y);
 
 void rd_init(Renderer* self, int width, int height, const char* win_title, const char* vert_src, const char* frag_src)
 {
-    self->height = height;
     self->width = width;
+    self->height = height;
     self->cursor_disabled = true;
-    self->mouse_wait_update = false;
+    self->cam_wait_update = NULL;
 
     ASSERT(glfwInit(), "ERR: failed to init GLFW");
 
@@ -40,13 +40,13 @@ void rd_init(Renderer* self, int width, int height, const char* win_title, const
     ASSERT(win != NULL, "ERR: failed to open window");
 
     glfwMakeContextCurrent(win);
+    glfwSetCursorPos(win, width / 2, height / 2);
     glfwSwapInterval(1);
 
     ASSERT(gladLoadGL((GLADloadfunc)glfwGetProcAddress), "ERR: failed to init GLAD");
 
     glfwSetWindowUserPointer(win, self);
     glfwSetKeyCallback(self->win, rd_key_callback);
-    glfwSetCursorPosCallback(self->win, rd_mouse_callback);
     glfwSetFramebufferSizeCallback(win, rd_resize_callback);
     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -98,7 +98,8 @@ void rd_end_frame(Renderer* self)
 void rd_free(Renderer* self)
 {
     shader_free(&(self->shader));
-    glfwTerminate();
+    glfwDestroyWindow(self->win);
+    glfwTerminate(); // might remove if multiple renderers used
 }
 
 bool rd_get_key(Renderer* self, int key)
@@ -109,6 +110,12 @@ bool rd_get_key(Renderer* self, int key)
 bool rd_win_should_close(Renderer* self)
 {
     return glfwWindowShouldClose(self->win);
+}
+
+void rd_set_cam_bool(Renderer* self, bool* cam_bool)
+{
+    self->cam_wait_update = cam_bool;
+    *cam_bool = true;
 }
 
 void rd_resize_callback(GLFWwindow* win, int width, int height)
@@ -136,16 +143,14 @@ void rd_key_callback(GLFWwindow* win, int key, int scancode, int action, int mod
             glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
             rd->cursor_disabled = false;
-            rd->mouse_wait_update = true;
         }
         else
         {
             glfwFocusWindow(win);
-            glfwSetCursorPos(win, rd->width/2, rd->height/2); // move cursor to middle of screen
             glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
             rd->cursor_disabled = true;
-            rd->mouse_wait_update = false;
+            if(rd->cam_wait_update) *(rd->cam_wait_update) = true;
         }
     }
     if(key == GLFW_KEY_P && action == GLFW_PRESS)
@@ -158,9 +163,11 @@ void rd_key_callback(GLFWwindow* win, int key, int scancode, int action, int mod
     }
 }
 
-void rd_mouse_callback(GLFWwindow* win, double cursor_x, double cursor_y)
+void rd_get_cursor_pos(Renderer* self, float* cursor_x, float* cursor_y)
 {
-    Renderer* rd = (Renderer*)glfwGetWindowUserPointer(win);
-    rd->cursor_x = cursor_x;
-    rd->cursor_y = cursor_y;
+    double xpos, ypos; // have to do this since glfw uses doubles
+    glfwGetCursorPos(self->win, &xpos, &ypos);
+    
+    *cursor_x = xpos;
+    *cursor_y = ypos;
 }

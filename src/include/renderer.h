@@ -15,11 +15,9 @@ typedef struct Renderer
     Shader shader; // shader program
     int width, height;
     GLFWwindow* win;
-    float cursor_x, cursor_y;
-    bool cursor_disabled;
 
-    // camera should wait to use mouse until this is true (prevent flicking turning)
-    bool mouse_wait_update;
+    bool* cam_wait_update; // for preventing camera flicking when cursor jumps (optional)
+    bool cursor_disabled; // anything relying on mouse should not update when this is false
 } Renderer;
 
 void rd_init(Renderer* rd, int width, int height, const char* win_title, const char* vert_src, const char* frag_src);
@@ -31,6 +29,10 @@ void rd_begin_frame();
 void rd_end_frame(Renderer* self);
 
 bool rd_win_should_close(Renderer* self);
+
+void rd_set_cam_bool(Renderer* self, bool* cam_bool); // bit hacky, but works
+
+void rd_get_cursor_pos(Renderer* self, float* cursor_x, float* cursor_y);
 
 bool rd_get_key(Renderer* self, int key);
 
