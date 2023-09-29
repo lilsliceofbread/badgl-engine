@@ -10,6 +10,7 @@
 typedef struct GameState
 {
     Renderer rd;
+    int shader_index;
     Camera cam;
     Model models[MAX_MODELS];
     uint32_t model_count;

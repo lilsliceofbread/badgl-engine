@@ -3,7 +3,7 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include <cglm/cglm.h>
+#include "glmath.h"
 
 #include "renderer.h"
 
@@ -16,14 +16,15 @@ typedef struct Camera
     vec3 pos;
     vec3 dir; // direction from cam - pos + dir = target
 
-    vec3 up; // up perpendicularly to cam
+    // don't need up in cam (not useful for movement)
     vec3 right; // right perpendicularly to cam
 
     float pitch, yaw;
     float last_cursor_x, last_cursor_y;
     bool wait_update;
 
-    mat4 view, proj; // view and projection matrix
+    mat4 view;
+    mat4 proj; // view and projection matrix
 } Camera;
 
 Camera camera_init();

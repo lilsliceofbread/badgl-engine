@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include "shader.h"
 #include "texture.h"
@@ -10,16 +11,16 @@ void rd_resize_callback(GLFWwindow* win, int width, int height);
 
 void rd_key_callback(GLFWwindow* win, int key, int scancode, int action, int mods);
 
-void rd_mouse_callback(GLFWwindow* win, double cursor_x, double cursor_y);
-
-void rd_init(Renderer* self, int width, int height, const char* win_title, const char* vert_src, const char* frag_src)
+void rd_init(Renderer* self, int width, int height, const char* win_title)
 {
     self->width = width;
     self->height = height;
     self->cursor_disabled = true;
     self->cam_wait_update = NULL;
+    self->shader_count = 0;
+    self->shaders = NULL;
 
-    ASSERT(glfwInit(), "ERR: failed to init GLFW");
+    ASSERT(glfwInit(), "RENDERER: failed to init GLFW");
 
     #ifndef NO_DEBUG
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  
@@ -37,13 +38,13 @@ void rd_init(Renderer* self, int width, int height, const char* win_title, const
 
     self->win = win;
 
-    ASSERT(win != NULL, "ERR: failed to open window");
+    ASSERT(win != NULL, "RENDERER: failed to open window");
 
     glfwMakeContextCurrent(win);
     glfwSetCursorPos(win, width / 2, height / 2);
     glfwSwapInterval(1);
 
-    ASSERT(gladLoadGL((GLADloadfunc)glfwGetProcAddress), "ERR: failed to init GLAD");
+    ASSERT(gladLoadGL((GLADloadfunc)glfwGetProcAddress), "RENDERER: failed to init GLAD");
 
     glfwSetWindowUserPointer(win, self);
     glfwSetKeyCallback(self->win, rd_key_callback);
@@ -73,9 +74,21 @@ void rd_init(Renderer* self, int width, int height, const char* win_title, const
     glEnable(GL_DEPTH_TEST);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // black
-    
-    // make user defined shaders
-    shader_init(&(self->shader), vert_src, frag_src);
+}
+
+int rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
+{
+    self->shaders = (Shader*)realloc(self->shaders, (self->shader_count + 1) * sizeof(Shader));
+    ASSERT(self->shaders != NULL, "RENDERER: failed to reallocate shader array");
+    shader_init(&(self->shaders[self->shader_count]), vert_src, frag_src);
+
+    self->shader_count++;
+    return self->shader_count - 1; // returns index to shader in array
+}
+
+Shader* rd_get_shader(Renderer* self, int index)
+{
+    return &(self->shaders[index]);
 }
 
 void rd_set_wireframe(bool useWireframe)
@@ -97,7 +110,15 @@ void rd_end_frame(Renderer* self)
 
 void rd_free(Renderer* self)
 {
-    shader_free(&(self->shader));
+    if(self->shader_count) // if not allocated don't free
+    {
+        for(int i = 0; i < self->shader_count; i++)
+        {
+            shader_free(&(self->shaders[i]));
+        }
+        free(self->shaders);
+    }
+
     glfwDestroyWindow(self->win);
     glfwTerminate(); // might remove if multiple renderers used
 }
@@ -168,6 +189,6 @@ void rd_get_cursor_pos(Renderer* self, float* cursor_x, float* cursor_y)
     double xpos, ypos; // have to do this since glfw uses doubles
     glfwGetCursorPos(self->win, &xpos, &ypos);
     
-    *cursor_x = xpos;
-    *cursor_y = ypos;
+    *cursor_x = (float)xpos;
+    *cursor_y = (float)ypos;
 }

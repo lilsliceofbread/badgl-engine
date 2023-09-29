@@ -7,11 +7,12 @@ out vec2 uv;
 out vec3 normal;
 
 uniform mat4 model;
-uniform mat4 vp;
+uniform mat4 view;
+uniform mat4 proj;
 
 void main()
 {
-    gl_Position = vp * model * vec4(v_pos, 1.0f);
+    gl_Position = proj * view * model * vec4(v_pos, 1.0f);
     //gl_Position = vec4(v_pos, 1.0f);
     uv = v_uv;
     normal = v_normal;

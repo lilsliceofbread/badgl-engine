@@ -21,7 +21,7 @@ char* get_file_data(const char* filepath)
     char* file_data = (char*)malloc((size_t)file_size + 1); // should be big enough
     
     fseek(file, 0, SEEK_SET); // i think since already checked fseek before should be fine
-    if(file_data == NULL || fread(file_data, 1, file_size, file) != file_size)
+    if(file_data == NULL || fread(file_data, 1, (size_t)file_size, file) != (size_t)file_size)
     {
         free(file_data);
         return NULL;
@@ -31,17 +31,6 @@ char* get_file_data(const char* filepath)
     fclose(file);
     return file_data;
 }
-
-/*int str_find_last_of(const char* str, char c)
-{
-    int end = strlen(str) - 1;
-    for(int i = end; i >= 0; i--)
-    {
-        if(str[i] == c) return i;
-    }
-
-   return -1; // if no match
-}*/
 
 int str_find_last_of(const char* str, char c)
 {
@@ -61,7 +50,7 @@ int str_find_last_of(const char* str, char c)
 }
 
 // from learnopengl
-GLenum gl_check_error_(const char* file, int line)
+GLenum _gl_check_error(const char* file, int line)
 {
     GLenum errorCode;
     while ((errorCode = glGetError()) != GL_NO_ERROR)
@@ -92,32 +81,32 @@ void APIENTRY gl_debug_callback(GLenum source, GLenum type, unsigned int id, GLe
 
     switch (source)
     {
-        case GL_DEBUG_SOURCE_API:             printf("Source: API\n"); break;
-        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   printf("Source: Window System\n"); break;
-        case GL_DEBUG_SOURCE_SHADER_COMPILER: printf("Source: Shader Compiler\n"); break;
-        case GL_DEBUG_SOURCE_THIRD_PARTY:     printf("Source: Third Party\n"); break;
-        case GL_DEBUG_SOURCE_APPLICATION:     printf("Source: Application\n"); break;
-        case GL_DEBUG_SOURCE_OTHER:           printf("Source: Other\n"); break;
+        case GL_DEBUG_SOURCE_API:             printf("SOURCE: API\n"); break;
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   printf("SOURCE: Window System\n"); break;
+        case GL_DEBUG_SOURCE_SHADER_COMPILER: printf("SOURCE: Shader Compiler\n"); break;
+        case GL_DEBUG_SOURCE_THIRD_PARTY:     printf("SOURCE: Third Party\n"); break;
+        case GL_DEBUG_SOURCE_APPLICATION:     printf("SOURCE: Application\n"); break;
+        case GL_DEBUG_SOURCE_OTHER:           printf("SOURCE: Other\n"); break;
     }
 
     switch (type)
     {
-        case GL_DEBUG_TYPE_ERROR:               printf("Type: Error\n"); break;
-        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: printf("Type: Deprecated Behaviour\n"); break;
-        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  printf("Type: Undefined Behaviour\n"); break; 
-        case GL_DEBUG_TYPE_PORTABILITY:         printf("Type: Portability\n"); break;
-        case GL_DEBUG_TYPE_PERFORMANCE:         printf("Type: Performance\n"); break;
-        case GL_DEBUG_TYPE_MARKER:              printf("Type: Marker\n"); break;
-        case GL_DEBUG_TYPE_PUSH_GROUP:          printf("Type: Push Group\n"); break;
-        case GL_DEBUG_TYPE_POP_GROUP:           printf("Type: Pop Group\n"); break;
-        case GL_DEBUG_TYPE_OTHER:               printf("Type: Other\n"); break;
+        case GL_DEBUG_TYPE_ERROR:               printf("TYPE: Error\n"); break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: printf("TYPE: Deprecated Behaviour\n"); break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  printf("TYPE: Undefined Behaviour\n"); break; 
+        case GL_DEBUG_TYPE_PORTABILITY:         printf("TYPE: Portability\n"); break;
+        case GL_DEBUG_TYPE_PERFORMANCE:         printf("TYPE: Performance\n"); break;
+        case GL_DEBUG_TYPE_MARKER:              printf("TYPE: Marker\n"); break;
+        case GL_DEBUG_TYPE_PUSH_GROUP:          printf("TYPE: Push Group\n"); break;
+        case GL_DEBUG_TYPE_POP_GROUP:           printf("TYPE: Pop Group\n"); break;
+        case GL_DEBUG_TYPE_OTHER:               printf("TYPE: Other\n"); break;
     }
     
     switch (severity)
     {
-        case GL_DEBUG_SEVERITY_HIGH:         printf("Severity: high\n"); break;
-        case GL_DEBUG_SEVERITY_MEDIUM:       printf("Severity: medium\n"); break;
-        case GL_DEBUG_SEVERITY_LOW:          printf("Severity: low\n"); break;
-        case GL_DEBUG_SEVERITY_NOTIFICATION: printf("Severity: notification\n"); break;
+        case GL_DEBUG_SEVERITY_HIGH:         printf("SEVERITY: high\n"); break;
+        case GL_DEBUG_SEVERITY_MEDIUM:       printf("SEVERITY: medium\n"); break;
+        case GL_DEBUG_SEVERITY_LOW:          printf("SEVERITY: low\n"); break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION: printf("SEVERITY: notification\n"); break;
     }
 }

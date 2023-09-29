@@ -12,6 +12,7 @@ uniform sampler2D texture_specular2;
 
 void main()
 {
-    frag_colour = texture(texture_diffuse1, uv);
+    float test = dot(vec4(normal, 1.0f), texture(texture_specular1, uv));
+    frag_colour = test * texture(texture_diffuse1, uv);
     //frag_colour = vec4(normal, 1.0f);
 }

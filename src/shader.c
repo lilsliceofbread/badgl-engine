@@ -1,5 +1,6 @@
 #include "shader.h"
 #include "util.h"
+#include "glmath.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -15,10 +16,10 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
     info_log[0] = '\0'; // if shader creation failed but no info log
 
     vert_shader = shader_compile(self, vert_shader_src, GL_VERTEX_SHADER, info_log, sizeof(info_log), &success);
-    ASSERT(success, "ERR: vertex shader comp failed. Info Log:\n%s", info_log);
+    ASSERT(success, "SHADER: vertex shader comp failed. Info Log:\n%s", info_log);
 
     frag_shader = shader_compile(self, frag_shader_src, GL_FRAGMENT_SHADER, info_log, sizeof(info_log), &success);
-    ASSERT(success, "ERR: fragment shader comp failed. info log:\n%s", info_log);
+    ASSERT(success, "SHADER: fragment shader comp failed. info log:\n%s", info_log);
 
     shader_program = glCreateProgram();
 
@@ -30,12 +31,14 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
 
     glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
     glGetProgramInfoLog(shader_program, sizeof(info_log), NULL, info_log);
-    ASSERT(success, "ERR: shader program creation failed. info log:\n%s", info_log);
+    ASSERT(success, "SHADER: shader program creation failed. info log:\n%s", info_log);
 
     // here because needs to be done after linking program
     for(int i = 0; i < self->uniform_count; i++)
     {
+        // glGetUniformLocation returns -1 if no uniform
         self->stored_uniforms[i].location = glGetUniformLocation(self->id, self->stored_uniforms[i].name);
+        //printf("LOG: uniform %d: %s\n", self->stored_uniforms[i].location, self->stored_uniforms[i].name);
     }
 
     // can detach shaders as we don't need them anymore once program is linked
@@ -53,7 +56,7 @@ GLuint shader_compile(Shader* self, const char* shader_filepath, GLenum shader_t
 
     shader_src = get_file_data(shader_filepath);
 
-    ASSERT(shader_src != NULL, "ERR: failed to get shader source");
+    ASSERT(shader_src != NULL, "SHADER: failed to get shader source");
 
     shader = glCreateShader(shader_type);
 
@@ -82,14 +85,15 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
     const char* temp = src_code;
 
     // find location of word uniform in shader code
-    while(temp = strstr(temp, "uniform")) // strstr returns NULL when no match, ending loop
+    while((temp = strstr(temp, "uniform"))) // strstr returns NULL when no match, ending loop
     {
-        uniform_pos[add_uniform_count] = (uint32_t)temp - (uint32_t)src_code;
+        uniform_pos[add_uniform_count] = (uint32_t)(temp - src_code);
         temp++; // to prevent strstr from finding the same match again
         add_uniform_count++;
     }
 
     self->stored_uniforms = realloc(self->stored_uniforms, (self->uniform_count + add_uniform_count) * sizeof(uniform_pair));
+    ASSERT(self->stored_uniforms != NULL, "SHADER: failed to reallocate uniforms array");
 
     // get name of uniform from it 
     // (find ; and the space behind it)
@@ -100,7 +104,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
         char c;
         int line_idx = 0;
         uint32_t j = uniform_pos[i];
-        while((c = src_code[j]) != ';') // while we haven't seen ;
+        while((c = src_code[j]) != ';' && line_idx < 200) // while we haven't seen ; and less than 200 for sanity check
         {
             if(c == ' ') // if space reset line and continue
             {
@@ -114,10 +118,10 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
                 j++;
             }
         }
+        ASSERT(line_idx < 200, "SHADER: failed to find uniform name. Missing semicolon in shader?\n");
         line[line_idx] = '\0'; // have to manually null terminate string
 
         strcpy(self->stored_uniforms[self->uniform_count + i].name, line);
-        //printf("LOG: uniform %d: %s\n", self->uniform_count + i, self->stored_uniforms[self->uniform_count + i].name);
     }
 
     self->uniform_count += add_uniform_count;
@@ -128,7 +132,7 @@ void shader_use(Shader* self)
     glUseProgram(self->id);
 }
 
-GLuint shader_find_uniform(Shader* self, const char* name)
+GLint shader_find_uniform(Shader* self, const char* name)
 {
     // find uniforms that have been pre stored by analysing shader src
     uniform_pair curr;
@@ -137,26 +141,31 @@ GLuint shader_find_uniform(Shader* self, const char* name)
         curr = self->stored_uniforms[i];
         if(strcmp(name, curr.name) == 0)
         {
+            if(curr.location == -1)
+                fprintf(stderr, "SHADER: uniform %s does not exist\n", curr.name);
             return curr.location;  
         }
     }
+
+    fprintf(stderr, "SHADER: uniform %s has not been stored\n", name);
+    return -1;
 }
 
 void shader_uniform_mat4(Shader* self, const char* name, mat4 mat)
 {
-    GLuint location = shader_find_uniform(self, name);
-    glUniformMatrix4fv(location, 1, false, (float*)mat);
+    GLint location = shader_find_uniform(self, name);
+    glUniformMatrix4fv(location, 1, GL_FALSE, (float*)mat.data); // true to transpose matrix
 }
 
 void shader_uniform_1f(Shader* self, const char* name, float f)
 {
-    GLuint location = shader_find_uniform(self, name);
+    GLint location = shader_find_uniform(self, name);
     glUniform1f(location, f);
 }
 
 void shader_uniform_1i(Shader* self, const char* name, int i)
 {
-    GLuint location = shader_find_uniform(self, name);
+    GLint location = shader_find_uniform(self, name);
     glUniform1i(location, i);
 }
 

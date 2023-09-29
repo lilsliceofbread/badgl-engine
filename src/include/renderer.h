@@ -6,13 +6,13 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include <cglm/cglm.h>
 
 #include "shader.h"
 
 typedef struct Renderer 
 {
-    Shader shader; // shader program
+    Shader* shaders; // can have multiple shader programs
+    int shader_count;
     int width, height;
     GLFWwindow* win;
 
@@ -20,7 +20,11 @@ typedef struct Renderer
     bool cursor_disabled; // anything relying on mouse should not update when this is false
 } Renderer;
 
-void rd_init(Renderer* rd, int width, int height, const char* win_title, const char* vert_src, const char* frag_src);
+void rd_init(Renderer* rd, int width, int height, const char* win_title);
+
+int rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src); // returns index to shader in array
+
+Shader* rd_get_shader(Renderer* self, int index);
 
 void rd_set_wireframe(bool useWireframe); // true for wireframe, false for filled polygons
 

@@ -29,7 +29,7 @@ void texture_create(Texture* self, const char* img_filename, bool use_mipmap);
 
 void texture_bind(Texture self);
 
-void texture_unit_active(uint8_t unit);
+void texture_unit_active(uint32_t unit);
 
 const char* texture_type_get_str(TextureType type);
 

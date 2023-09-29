@@ -1,5 +1,8 @@
 #include "mesh.h"
 
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "vao.h"
 #include "bo.h"
@@ -45,7 +48,9 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
 
         // activate next tex unit
         texture_unit_active(i);
-        sprintf(sampler_name, "%s%d", texture_type_get_str(textures[curr_tex].type), diffuse_num);
+        // fix for texture types other than diffuse/spec later
+        uint32_t num = textures[curr_tex].type == TEXTURE_DIFFUSE ? diffuse_num : specular_num;
+        sprintf(sampler_name, "%s%d", texture_type_get_str(textures[curr_tex].type), num);
 
         // tell sampler which texture unit to use
         //printf("LOG: texture name %s\n", sampler_name);

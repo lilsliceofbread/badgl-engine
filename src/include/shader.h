@@ -3,11 +3,11 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include <cglm/cglm.h>
+#include "glmath.h"
 
 typedef struct uniform_pair {
     char name[50]; // if you make a uniform name longer than 50 characters you suck
-    GLuint location;
+    GLint location;
 } uniform_pair;
 
 // shader program
@@ -26,7 +26,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code); // UNIF
 
 void shader_use(Shader* self);
 
-GLuint shader_find_uniform(Shader* self, const char* name);
+GLint shader_find_uniform(Shader* self, const char* name);
 
 void shader_uniform_mat4(Shader* self, const char* name, mat4 mat);
 

@@ -3,25 +3,31 @@
 cmake_minimum_required(VERSION 3.13.4)
 
 set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_STANDARD 99)
 
 project(badgl)
+
+if (MSVC)
+    add_compile_options(/W4)
+else()
+    add_compile_options(-Wall -Wextra -Wconversion -pedantic -Wno-missing-braces)
+endif()
 
 # build the example game thing
 set(BADGL_BUILD_EXAMPLE ON)
 
 # cglm build options
-option(CGLM_SHARED "Shared build" OFF)
-option(CGLM_STATIC "Static build" ON)
-option(CGLM_USE_C99 "" ON) # C11
-option(CGLM_USE_TEST "Enable Tests" OFF) # for make check - make test
+#option(CGLM_SHARED "Shared build" OFF)
+#option(CGLM_STATIC "Static build" ON)
+#option(CGLM_USE_C99 "" ON) # C11
+#option(CGLM_USE_TEST "Enable Tests" OFF) # for make check - make test
 
 # assimp build options
-set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE) # build as static lib
+set(BUILD_SHARED_LIBS ON CACHE INTERNAL "" FORCE) # build as SHARED lib, so compilation is faster
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_NO_EXPORT ON CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE INTERNAL "" FORCE)
+set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "" FORCE) # WHY IS THIS ON BY DEFAULT IF COMPILATION FAILS WHEN ITS ON
 
 file(GLOB_RECURSE BADGL_SRCS CMAKE_CONFIGURE_DEPENDS
      "src/*.c"
@@ -48,7 +54,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 endif()
 
 add_subdirectory(external/glfw)
-add_subdirectory(external/cglm)
+#add_subdirectory(external/cglm)
 add_subdirectory(external/assimp)
 if(BADGL_BUILD_EXAMPLE)
     add_subdirectory(example)
@@ -59,9 +65,8 @@ target_include_directories(${PROJECT_NAME}
                             PUBLIC external/stb
                             PUBLIC external/glfw/include 
                             PUBLIC external/glad/include 
-                            PUBLIC external/cglm/include
                             PUBLIC external/assimp/include)
 
 target_link_directories(${PROJECT_NAME} PRIVATE external/glfw/src PRIVATE external/assimp/lib)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC glfw PUBLIC cglm PUBLIC assimp)
+target_link_libraries(${PROJECT_NAME} PUBLIC glfw PUBLIC assimp PUBLIC m)

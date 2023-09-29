@@ -5,6 +5,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/mesh.h>
 #include <string.h>
+#include <stdbool.h>
+#include "glmath.h"
 #include "util.h"
 #include "texture.h"
 
@@ -12,9 +14,10 @@ void model_load(Model* self, const char* path)
 {
     // import scene object (entire model)
     const struct aiScene* scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-    ASSERT(scene || scene->mRootNode, "ERR: model load failed\n%s", aiGetErrorString());
+    ASSERT(scene || scene->mRootNode, "MODEL: model load failed\n%s", aiGetErrorString());
 
     self->mesh_count = 0;
+    self->textures = NULL; // not setting this to null before realloc creates undefined behaviour, if the uninitialised memory is not 0
     self->tex_count = 0;
     self->meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
 
@@ -22,8 +25,8 @@ void model_load(Model* self, const char* path)
         char temp[MAX_STR_LENGTH];
         // hacky way of getting offset from start of string
         int offset = str_find_last_of(path, '/');
-        ASSERT(offset != -1, "ERR: invalid path for model %s\n", path);
-        strncpy(temp, path, offset); // copy up to final / into directory
+        ASSERT(offset != -1, "MODEL: invalid path for model %s\n", path);
+        strncpy(temp, path, (size_t)offset); // copy up to final / into directory
         temp[offset] = '\0'; // strncpy does not null terminate strings
         self->directory = temp;
         //printf("offset: %d dir: %s", offset, self->directory);
@@ -44,7 +47,7 @@ void model_draw(Model* self, Shader* shader)
 
 void model_add_mesh(Model* self, Mesh mesh, uint32_t total_meshes)
 {
-    ASSERT(self->mesh_count <= total_meshes, "ERR: meshes exceeded allocated memory");
+    ASSERT(self->mesh_count <= total_meshes, "MODEL: meshes exceeded allocated memory");
     self->meshes[self->mesh_count] = mesh;
     self->mesh_count++;
 }
@@ -77,41 +80,49 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     // allocation (ownership goes to mesh which is freed in mesh_free())
 
     vertices = (Vertex*)malloc(model_mesh->mNumVertices * sizeof(Vertex));
-    ASSERT(vertices != NULL, "ERR: failed to allocate vertices");
+    ASSERT(vertices != NULL, "MODEL: failed to allocate vertices");
 
     // loop through faces to count indices for allocation of indices array
     for(uint32_t i = 0; i < model_mesh->mNumFaces; i++)
     {
-        total_indices += model_mesh->mFaces[i].mNumIndices;
+        struct aiFace face = model_mesh->mFaces[i];
+
+        // prevent lines or single vertices from being added
+        // should really create a quad when this occurs but oh well
+        if(face.mNumIndices < 3) continue;
+        total_indices += face.mNumIndices;
     }
     indices = (uint32_t*)malloc(total_indices * sizeof(uint32_t));
-    ASSERT(indices != NULL, "ERR: failed to allocate indices");
+    ASSERT(indices != NULL, "MODEL: failed to allocate indices");
 
     // for each vertex in mesh, get pos, normal, uv and copy into vertices array
     for(uint32_t i = 0; i < model_mesh->mNumVertices; i++)
     {
         Vertex vertex;
-        vec3 vec; // have to use intermediate vec
-        vec[0] = model_mesh->mVertices[i].x;
-        vec[1] = model_mesh->mVertices[i].y;
-        vec[2] = model_mesh->mVertices[i].z;
-        glm_vec3_copy(vec, vertex.pos);
+        vec3 vec; // have to use temp vec
+        vec.x = model_mesh->mVertices[i].x;
+        vec.y = model_mesh->mVertices[i].y;
+        vec.z = model_mesh->mVertices[i].z;
+        vertex.pos = vec;
+        //vec3_copy(vec, &(vertex.pos));
 
-        vec[0] = model_mesh->mNormals[i].x;
-        vec[1] = model_mesh->mNormals[i].y;
-        vec[2] = model_mesh->mNormals[i].z;
-        glm_vec3_copy(vec, vertex.normal);
+        vec.x = model_mesh->mNormals[i].x;
+        vec.y = model_mesh->mNormals[i].y;
+        vec.z = model_mesh->mNormals[i].z;
+        vertex.normal = vec;
+        //vec3_copy(vec, &(vertex.normal));
 
         if(model_mesh->mTextureCoords[0])
         {
             vec2 uv_vec;
-            uv_vec[0] = model_mesh->mTextureCoords[0][i].x;
-            uv_vec[1] = model_mesh->mTextureCoords[0][i].y;
-            glm_vec2_copy(uv_vec, vertex.uv);
+            uv_vec.u = model_mesh->mTextureCoords[0][i].x;
+            uv_vec.v = model_mesh->mTextureCoords[0][i].y;
+            vertex.uv = uv_vec;
+            //vec2_copy(uv_vec, &(vertex.uv));
         }
         else
         {
-            glm_vec2_copy((vec2){0.0f, 0.0f}, vertex.uv);
+            vertex.uv = vec2_zero();
         }
 
         vertices[i] = vertex;
@@ -122,6 +133,8 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     for(uint32_t i = 0; i < model_mesh->mNumFaces; i++)
     {
         struct aiFace face = model_mesh->mFaces[i];
+
+        if(face.mNumIndices < 3) continue; // prevent non triangular faces being added
         for(uint32_t j = 0; j < face.mNumIndices; j++)
         {
             indices[ind_count] = face.mIndices[j];
@@ -129,6 +142,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         }
     }
 
+    // 1 mesh only has 1 material
     if(model_mesh->mMaterialIndex >= 0) // if mesh has materials
     {
         // aiMesh's material index indexes into scene's pool of materials
@@ -188,7 +202,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
             // increase amount to add to tex_count and reallocate textures
             new_add_tex_count++;
             self->textures = (Texture*)realloc(self->textures, (self->tex_count + new_add_tex_count) * sizeof(Texture));
-            ASSERT(self->textures != NULL, "ERR: failed to realloc texture array");
+            ASSERT(self->textures != NULL, "MODEL: failed to realloc texture array");
 
             // create new texture
             Texture texture;
