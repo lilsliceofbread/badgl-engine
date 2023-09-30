@@ -6,20 +6,8 @@ set(CMAKE_BUILD_TYPE Debug)
 
 project(badgl)
 
-if (MSVC)
-    add_compile_options(/W4)
-else()
-    add_compile_options(-Wall -Wextra -Wconversion -pedantic -Wno-missing-braces)
-endif()
-
 # build the example game thing
 set(BADGL_BUILD_EXAMPLE ON)
-
-# cglm build options
-#option(CGLM_SHARED "Shared build" OFF)
-#option(CGLM_STATIC "Static build" ON)
-#option(CGLM_USE_C99 "" ON) # C11
-#option(CGLM_USE_TEST "Enable Tests" OFF) # for make check - make test
 
 # assimp build options
 set(BUILD_SHARED_LIBS ON CACHE INTERNAL "" FORCE) # build as SHARED lib, so compilation is faster
@@ -29,9 +17,15 @@ set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "" FORCE) # WHY IS THIS ON BY DEFAULT IF COMPILATION FAILS WHEN ITS ON
 
-file(GLOB_RECURSE BADGL_SRCS CMAKE_CONFIGURE_DEPENDS
+file(GLOB_RECURSE BADGL_SRCS
      "src/*.c"
      external/glad/src/gl.c)
+
+if (MSVC) # don't know if this works; i don't use msvc
+    set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS "/W4")
+else()
+    set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wconversion -pedantic -Wno-missing-braces")
+endif()
 
 add_library(${PROJECT_NAME} ${BADGL_SRCS})
 
@@ -54,7 +48,6 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 endif()
 
 add_subdirectory(external/glfw)
-#add_subdirectory(external/cglm)
 add_subdirectory(external/assimp)
 if(BADGL_BUILD_EXAMPLE)
     add_subdirectory(example)

@@ -2,14 +2,13 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(game)
 
-if (MSVC)
-    add_compile_options(/W4)
-else()
-    add_compile_options(-Wall -Wextra -Wconversion -pedantic)
-endif()
+file(GLOB_RECURSE BADGL_EXAMPLE_SRCS "*.c")
 
-file(GLOB_RECURSE BADGL_EXAMPLE_SRCS CMAKE_CONFIGURE_DEPENDS 
-    "*.c")
+if (MSVC) # don't know if this works; i don't use msvc
+    set_source_files_properties(${BADGL_EXAMPLE_SRCS} PROPERTIES COMPILE_FLAGS "/W4")
+else()
+    set_source_files_properties(${BADGL_EXAMPLE_SRCS} PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wconversion -pedantic -Wno-missing-braces")
+endif()
 
 add_executable(${PROJECT_NAME} ${BADGL_EXAMPLE_SRCS})
 

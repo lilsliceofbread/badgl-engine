@@ -34,7 +34,7 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
     ASSERT(success, "SHADER: shader program creation failed. info log:\n%s", info_log);
 
     // here because needs to be done after linking program
-    for(int i = 0; i < self->uniform_count; i++)
+    for(uint32_t i = 0; i < self->uniform_count; i++)
     {
         // glGetUniformLocation returns -1 if no uniform
         self->stored_uniforms[i].location = glGetUniformLocation(self->id, self->stored_uniforms[i].name);
@@ -80,7 +80,7 @@ GLuint shader_compile(Shader* self, const char* shader_filepath, GLenum shader_t
 // THIS WILL REPEAT UNIFORMS IF IN 2 SHADERS
 void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 {
-    int add_uniform_count = 0;
+    uint32_t add_uniform_count = 0;
     uint32_t uniform_pos[100]; // 100 is probably enough
     const char* temp = src_code;
 
@@ -97,14 +97,14 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 
     // get name of uniform from it 
     // (find ; and the space behind it)
-    for(int i = 0; i < add_uniform_count; i++)
+    for(uint32_t i = 0; i < add_uniform_count; i++)
     {
         char line[100]; // 100 should be fine
 
         char c;
         int line_idx = 0;
         uint32_t j = uniform_pos[i];
-        while((c = src_code[j]) != ';' && line_idx < 200) // while we haven't seen ; and less than 200 for sanity check
+        while((c = src_code[j]) != ';' && line_idx < 300) // while we haven't seen ; and less than 300 for sanity check (shouldn't be that long)
         {
             if(c == ' ') // if space reset line and continue
             {
@@ -118,10 +118,10 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
                 j++;
             }
         }
-        ASSERT(line_idx < 200, "SHADER: failed to find uniform name. Missing semicolon in shader?\n");
+        ASSERT(line_idx < 300, "SHADER: failed to find uniform name. Missing semicolon in shader?\n");
         line[line_idx] = '\0'; // have to manually null terminate string
 
-        strcpy(self->stored_uniforms[self->uniform_count + i].name, line);
+        strncpy(self->stored_uniforms[self->uniform_count + i].name, line, MAX_UNIF_NAME); 
     }
 
     self->uniform_count += add_uniform_count;
@@ -136,7 +136,7 @@ GLint shader_find_uniform(Shader* self, const char* name)
 {
     // find uniforms that have been pre stored by analysing shader src
     uniform_pair curr;
-    for(int i = 0; i < self->uniform_count; i++)
+    for(uint32_t i = 0; i < self->uniform_count; i++)
     {
         curr = self->stored_uniforms[i];
         if(strcmp(name, curr.name) == 0)
@@ -154,7 +154,7 @@ GLint shader_find_uniform(Shader* self, const char* name)
 void shader_uniform_mat4(Shader* self, const char* name, mat4 mat)
 {
     GLint location = shader_find_uniform(self, name);
-    glUniformMatrix4fv(location, 1, GL_FALSE, (float*)mat.data); // true to transpose matrix
+    glUniformMatrix4fv(location, 1, GL_FALSE, (float*)mat.data); // false to transpose matrix
 }
 
 void shader_uniform_1f(Shader* self, const char* name, float f)

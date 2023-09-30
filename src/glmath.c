@@ -252,11 +252,11 @@ mat4 mat4_scale(mat4 mat, vec3 s)
 mat4 mat4_scale_scalar(mat4 mat, float s)
 {
     // optimised method
-    mat4 scaled_mat = {
-        s*mat.m11, s*mat.m12, s*mat.m13, s*mat.m14,
-        s*mat.m21, s*mat.m22, s*mat.m13, s*mat.m14,
-        s*mat.m31, s*mat.m32, s*mat.m13, s*mat.m14,
-        s*mat.m41, s*mat.m42, s*mat.m13, s*mat.m14
+    mat4 scaled_mat = { // appears transposed because opengl column major memory ordering
+        s*mat.m11, s*mat.m21, s*mat.m31, s*mat.m41,
+        s*mat.m12, s*mat.m22, s*mat.m32, s*mat.m42,
+        s*mat.m13, s*mat.m23, s*mat.m33, s*mat.m43,
+          mat.m14,   mat.m24,   mat.m34,   mat.m44
     };
 
     return scaled_mat;
@@ -264,7 +264,7 @@ mat4 mat4_scale_scalar(mat4 mat, float s)
 
 mat4 mat4_trans(mat4 mat, vec3 t)
 {
-    mat4 trans_mat = { // transposed because opengl column major memory ordering
+    mat4 trans_mat = { // appears transposed because opengl column major memory ordering
         1,   0,   0,   0,
         0,   1,   0,   0,
         0,   0,   1,   0,
@@ -280,7 +280,7 @@ mat4 mat4_rotate_x(mat4 mat, float a) // not figuring out arbitrary axis rotatio
 {
     float c = cosf(a);
     float s = sinf(a);
-    mat4 rot_mat = { // transposed because opengl column major memory ordering
+    mat4 rot_mat = { // appears transposed because opengl column major memory ordering
         1,  0,  0,  0,
         0,  c,  s,  0,
         0, -s,  c,  0,
@@ -296,7 +296,7 @@ mat4 mat4_rotate_y(mat4 mat, float a)
 {
     float c = cosf(a);
     float s = sinf(a);
-    mat4 rot_mat = { // transposed because opengl column major memory ordering
+    mat4 rot_mat = { // appears transposed because opengl column major memory ordering
         c,  0, -s,  0,
         0,  1,  0,  0,
         s,  0,  c,  0,
@@ -312,7 +312,7 @@ mat4 mat4_rotate_z(mat4 mat, float a)
 {
     float c = cosf(a);
     float s = sinf(a);
-    mat4 rot_mat = { // transposed because opengl column major
+    mat4 rot_mat = { // appears transposed because opengl column major memory ordering
         c,  s,  0,  0,
         -s, c,  0,  0,
         0,  0,  1,  0,
@@ -324,18 +324,75 @@ mat4 mat4_rotate_z(mat4 mat, float a)
     return rot_mat;
 }
 
-mat4 mat_perspective_fov(float fov, float aspect, float znear, float zfar)
+// calculate perspective matrix based on fov and aspect ratio
+mat4 mat_perspective_fov(float fov, float aspect, float near, float far)
 {
     mat4 mat = mat4_zero();
 
+    // calculating these beforehand is faster
     float s  = 1.0f / tanf(0.5f * fov); // 1 / half of the vertical fov
-    float zdenom = 1.0f / (zfar - znear);
+    float zdenom = 1.0f / (far - near);
 
+    // matrix diagonal
     mat.m11 = s / aspect; // aspect and tan on denominator
     mat.m22 = s;
-    mat.m33 = -(znear + zfar) * zdenom; // scaling z between 1 and -1 (once z/w)
-    mat.m34 = -2.0f * znear * zfar * zdenom; // scaling z between 1 and -1 (once z/w)
+    mat.m33 = -(far + near) * zdenom; // scaling z between 1 and -1 (once z/w)
+
+    // not on diagonal
+    mat.m34 = (-2.0f * far * near) * zdenom; // scaling z between 1 and -1 (once z/w)
     mat.m43 = -1.0f; // copy -z into w (flipped because opengl is in rh coords)
+
+    return mat;
+}
+
+// calculate perspective matrix based on frustrum values
+mat4 mat_perspective_frustrum(float near, float far, float left, float right, float bottom, float top)
+{
+    mat4 mat = mat4_zero();
+
+    // calculating these beforehand is faster
+    float xdenom = 1.0f / (right - left);
+    float ydenom = 1.0f / (top - bottom);
+    float zdenom = 1.0f / (far - near);
+    float near2 = 2.0f * near;
+
+    // matrix diagonal
+    mat.m11 = near2 * xdenom;
+    mat.m22 = near2 * ydenom;
+    mat.m33 = -(far + near) * zdenom;
+
+    // other z thing
+    mat.m34 = (-2.0f * far * near) * zdenom;
+
+    // 3rd column
+    mat.m13 = (right + left) * xdenom;
+    mat.m23 = (top + bottom) * ydenom;
+    //  m33
+    mat.m43 = -1.0f; 
+
+    return mat;
+}
+
+mat4 mat_orthographic_frustrum(float near, float far, float left, float right, float bottom, float top)
+{
+    mat4 mat = mat4_zero();
+
+    // calculating these beforehand is faster
+    float xdenom = 1.0f / (right - left);
+    float ydenom = 1.0f / (top - bottom);
+    float zdenom = 1.0f / (far - near);
+
+    // matrix diagonal
+    mat.m11 = 2 * xdenom;
+    mat.m22 = 2 * ydenom;
+    mat.m33 = -2 * zdenom;
+    mat.m44 = 1.0f;
+
+    // 4th column
+    mat.m14 = -(right + left) * xdenom;
+    mat.m24 = -(top + bottom) * ydenom;
+    mat.m34 = -(far + near) * zdenom;
+    //  m44
 
     return mat;
 }

@@ -16,10 +16,10 @@ typedef struct GameState
     uint32_t model_count;
 } GameState;
 
-void game_init(GameState* state);
+void game_init(GameState* s);
 
-void game_update(GameState* state, float curr_time, float delta_time);
+void game_update(GameState* s, float curr_time, float delta_time);
 
-void game_end(GameState* state);
+void game_end(GameState* s);
 
 #endif

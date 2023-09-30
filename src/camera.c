@@ -6,11 +6,12 @@
 #define SENSITIVITY 0.1f
 #define CAM_SPEED 5.0f
 
-Camera camera_init()
+Camera camera_init(vec3 start_pos, float start_yaw, float start_pitch)
 {
     Camera self;
-    self.yaw = -90.0f;
-    self.pitch = 0.0f;
+    self.pos = start_pos;
+    self.yaw = start_yaw;
+    self.pitch = start_pitch;
     self.last_cursor_x = 0.0f; // default value for starting
     self.last_cursor_y = 0.0f;
     self.wait_update = true;
@@ -39,6 +40,8 @@ void camera_calc_view_vecs(Camera* self)
 void camera_calc_proj(Camera* self, float fov, float aspect_ratio, float znear, float zfar)
 {
     self->proj = mat_perspective_fov(fov, aspect_ratio, znear, zfar);
+    //self->proj = mat_perspective_frustrum(0.01f, 100.0f, -0.1f, 0.1f, -0.1f, 0.1f);
+    //self->proj = mat_orthographic_frustrum(0.01f, 100.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 }
 
 // MOVE TO PLAYER LATER, w/ vel, accel, player_pos

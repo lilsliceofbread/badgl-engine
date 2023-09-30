@@ -23,8 +23,8 @@ typedef struct Mesh
     uint32_t vert_count, ind_count, tex_count;
 
     VAO vao;
-    BO vbo;
-    BO ebo;
+    VBO vbo;
+    EBO ebo;
 } Mesh;
 
 // all vertices, indices and textures should be pre-allocated, and will be freed in mesh_free()

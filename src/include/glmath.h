@@ -8,31 +8,6 @@
 
 #define math_rad(deg) ((deg) * GL_DEG2RAD)
 
-// align types based on cglm
-#if defined(_MSC_VER)
-/* do not use alignment for older visual studio versions */
-#  if _MSC_VER < 1913 /*  Visual Studio 2017 version 15.6  */
-#    define BADGL_ALL_UNALIGNED
-#    define BADGL_ALIGN(X) /* no alignment */
-#  else
-#    define BADGL_ALIGN(X) __declspec(align(X))
-#  endif
-#else
-#  define BADGL_ALIGN(X) __attribute((aligned(X)))
-#endif
-
-#ifndef BADGL_ALL_UNALIGNED
-#  define BADGL_ALIGN_IF(X) BADGL_ALIGN(X)
-#else
-#  define BADGL_ALIGN_IF(X) /* no alignment */
-#endif
-
-#ifdef __AVX__
-#  define BADGL_ALIGN_MAT BADGL_ALIGN(32)
-#else
-#  define BADGL_ALIGN_MAT BADGL_ALIGN(16)
-#endif
-
 typedef union vec2
 {
     float data[2];
@@ -68,7 +43,7 @@ typedef union vec3
     };
 } vec3;
 
-typedef union BADGL_ALIGN_IF(16) vec4
+typedef union vec4
 {
     float data[4];
 
@@ -89,7 +64,7 @@ typedef union BADGL_ALIGN_IF(16) vec4
     };
 } vec4;
 
-typedef union BADGL_ALIGN_MAT mat4
+typedef union mat4
 {
     float data[16]; 
     vec4 cols[4];
@@ -142,11 +117,14 @@ mat4 mat4_identity();
 mat4 mat4_zero();
 mat4 mat4_transpose(mat4 mat);
 mat4 mat4_scale(mat4 mat, vec3 s);
+mat4 mat4_scale_scalar(mat4 mat, float s);
 mat4 mat4_trans(mat4 mat, vec3 t);
 mat4 mat4_rotate_x(mat4 mat, float a); // not figuring out arbitrary axis rotation
 mat4 mat4_rotate_y(mat4 mat, float a);
 mat4 mat4_rotate_z(mat4 mat, float a);
-mat4 mat_perspective_fov(float fov, float aspect, float znear, float zfar);
-mat4 mat_look_at(vec3 t, vec3 k, vec3 i); // k is dir or "z axis", i is right or "x axis" and t is pos
+mat4 mat_perspective_fov(float fov, float aspect, float near, float far);
+mat4 mat_perspective_frustrum(float near, float far, float left, float right, float bottom, float top);
+mat4 mat_orthographic_frustrum(float near, float far, float left, float right, float bottom, float top);
+mat4 mat_look_at(vec3 t, vec3 k, vec3 i); // t is pos or translation vec, k is dir or "z axis", i is right or "x axis"
 
 #endif

@@ -1,7 +1,19 @@
 #include "texture.h"
 
+// prevent warnings for stb_image
+#ifndef _MSC_VER // doesn't work for MSVC
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wsign-conversion"
+    #pragma GCC diagnostic ignored "-Wconversion"
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+#ifndef _MSC_VER // doesn't work for MSVC
+    #pragma GCC diagnostic pop
+#endif
+
 #include <stdio.h>
 #include <stdbool.h>
 #include "util.h"
@@ -16,7 +28,7 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
     unsigned char* image_data = stbi_load(img_path, &width, &height, &num_channels, 0);
     ASSERT(image_data, "RENDERER: could not load image %s\n", img_path);
 
-    GLint internal_format;
+    GLint internal_format; // need to do this because they use separate values
     GLenum img_format;
     switch(num_channels)
     {
@@ -34,7 +46,6 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
             break;
     }
 
-    // GL_SRGB8_ALPHA8?
     glBindTexture(GL_TEXTURE_2D, texture_id);
     glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, img_format, GL_UNSIGNED_BYTE, image_data);
 
@@ -60,7 +71,7 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
     self->height = height;
     // super scuffed but works (must create new array since img_path will change)
     // idk why img_path has a lifetime/ is created in the same location everytime but whatever
-    strcpy(self->path, img_path);
+    strncpy(self->path, img_path, 100);
 }
 
 void texture_bind(Texture self)

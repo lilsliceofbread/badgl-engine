@@ -19,16 +19,16 @@ void mesh_init(Mesh* self, Vertex* vertices, uint32_t vertices_count, uint32_t* 
     self->tex_count = textures_count;
 
     self->vao = vao_create();
-    self->vbo = bo_create(GL_ARRAY_BUFFER);
-    self->ebo = bo_create(GL_ELEMENT_ARRAY_BUFFER);
+    self->vbo = vbo_create();
+    self->ebo = ebo_create();
 
     vao_bind(self->vao);
 
-    bo_bind(self->vbo);
-    bo_set_buffer(self->vbo, &vertices[0], vertices_count * sizeof(Vertex), false);
+    vbo_bind(self->vbo);
+    vbo_set_buffer(self->vbo, &vertices[0], vertices_count * sizeof(Vertex), false);
 
-    bo_bind(self->ebo);
-    bo_set_buffer(self->ebo, &indices[0], indices_count * sizeof(uint32_t), false);
+    ebo_bind(self->ebo);
+    ebo_set_buffer(self->ebo, &indices[0], indices_count * sizeof(uint32_t), false);
 
     vao_attribute(0, 3, GL_FLOAT, sizeof(Vertex), 0);
     vao_attribute(1, 3, GL_FLOAT, sizeof(Vertex), offsetof(Vertex, normal));
@@ -41,7 +41,7 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
 {
     // current num of each texture type
     uint32_t diffuse_num = 1, specular_num = 1;
-    char sampler_name[MAX_STR_LENGTH];
+    char sampler_name[100];
     for(uint32_t i = 0; i < self->tex_count; i++)
     {
         uint32_t curr_tex = self->tex_indexes[i];
@@ -50,16 +50,16 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
         texture_unit_active(i);
         // fix for texture types other than diffuse/spec later
         uint32_t num = textures[curr_tex].type == TEXTURE_DIFFUSE ? diffuse_num : specular_num;
-        sprintf(sampler_name, "%s%d", texture_type_get_str(textures[curr_tex].type), num);
+        snprintf(sampler_name, 100, "%s%d", texture_type_get_str(textures[curr_tex].type), num);
 
         // tell sampler which texture unit to use
         //printf("LOG: texture name %s\n", sampler_name);
-        shader_uniform_1i(shader, sampler_name, i);
+        shader_uniform_1i(shader, sampler_name, (int)i);
         texture_bind(textures[curr_tex]);
     }
 
     vao_bind(self->vao);
-    glDrawElements(GL_TRIANGLES, self->ind_count, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, (GLsizei)self->ind_count, GL_UNSIGNED_INT, 0);
     vao_unbind();
 
     // good practice to reset
@@ -75,8 +75,8 @@ void mesh_free(Mesh* self)
         free(self->tex_indexes);
     }
 
-    /*// temp
-    for(int i = 0; i < self->tex_count; i++)
+    /*
+    for(uint32_t i = 0; i < self->tex_count; i++)
     {
         printf("MESH: idx - %d\n", self->tex_indexes[i]);
     }
@@ -85,5 +85,4 @@ void mesh_free(Mesh* self)
     vao_free(self->vao);
     bo_free(self->vbo);
     bo_free(self->ebo);
-    // free textures?
 }

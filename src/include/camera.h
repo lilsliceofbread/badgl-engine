@@ -27,7 +27,7 @@ typedef struct Camera
     mat4 proj; // view and projection matrix
 } Camera;
 
-Camera camera_init();
+Camera camera_init(vec3 start_pos, float start_yaw, float start_pitch);
 
 void camera_update(Camera* self, Renderer* rd, float delta_time);
 

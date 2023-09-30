@@ -80,7 +80,7 @@ int rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
 {
     self->shaders = (Shader*)realloc(self->shaders, (self->shader_count + 1) * sizeof(Shader));
     ASSERT(self->shaders != NULL, "RENDERER: failed to reallocate shader array");
-    shader_init(&(self->shaders[self->shader_count]), vert_src, frag_src);
+    shader_init(&self->shaders[self->shader_count], vert_src, frag_src);
 
     self->shader_count++;
     return self->shader_count - 1; // returns index to shader in array
@@ -88,7 +88,7 @@ int rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
 
 Shader* rd_get_shader(Renderer* self, int index)
 {
-    return &(self->shaders[index]);
+    return &self->shaders[index];
 }
 
 void rd_set_wireframe(bool useWireframe)
@@ -114,7 +114,7 @@ void rd_free(Renderer* self)
     {
         for(int i = 0; i < self->shader_count; i++)
         {
-            shader_free(&(self->shaders[i]));
+            shader_free(&self->shaders[i]);
         }
         free(self->shaders);
     }

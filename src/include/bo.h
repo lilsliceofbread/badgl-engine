@@ -15,8 +15,19 @@ typedef struct BO
     GLenum type;
 } BO;
 
-//#define VBO BO
-//#define EBO BO
+// this might be bad code practice but it looks nice
+#define VBO BO
+#define vbo_create() bo_create(GL_ARRAY_BUFFER)
+#define vbo_bind bo_bind
+#define vbo_set_buffer bo_set_buffer
+#define vbo_free bo_free
+
+#define EBO BO
+#define ebo_create() bo_create(GL_ELEMENT_ARRAY_BUFFER)
+#define ebo_bind bo_bind
+#define ebo_set_buffer bo_set_buffer
+#define ebo_free bo_free
+
 
 BO bo_create(GLenum type);
 

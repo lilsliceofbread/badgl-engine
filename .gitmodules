@@ -1,6 +1,6 @@
 [submodule "modules/glfw"]
 	path = external/glfw
 	url = https://github.com/glfw/glfw.git
-[submodule "/home/yeshu/programming/badgl-engine/external/assimp"]
+[submodule "external/assimp"]
 	path = external/assimp
 	url = https://github.com/assimp/assimp

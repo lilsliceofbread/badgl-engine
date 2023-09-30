@@ -3,7 +3,7 @@
 VAO vao_create()
 {
     VAO self;
-    glGenVertexArrays(1, &(self.id));
+    glGenVertexArrays(1, &self.id);
     return self;
 }
 
@@ -26,5 +26,5 @@ void vao_attribute(GLuint index, GLint size, GLenum type, GLsizei stride, size_t
 
 void vao_free(VAO self)
 {
-    glDeleteVertexArrays(1, &(self.id));
+    glDeleteVertexArrays(1, &self.id);
 }
