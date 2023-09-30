@@ -4,6 +4,7 @@
 #include "renderer.h"
 #include "model.h"
 #include "camera.h"
+#include "sphere.h"
 
 #define MAX_MODELS 5
 
@@ -14,6 +15,7 @@ typedef struct GameState
     Camera cam;
     Model models[MAX_MODELS];
     uint32_t model_count;
+    Sphere sphere;
 } GameState;
 
 void game_init(GameState* s);

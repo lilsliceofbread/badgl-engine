@@ -58,7 +58,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
         {
             glEnable(GL_DEBUG_OUTPUT);
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-            glDebugMessageCallback(gl_debug_callback, NULL);
+            glDebugMessageCallback(rd_debug_callback, NULL);
             glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
         }
     #endif
@@ -191,4 +191,44 @@ void rd_get_cursor_pos(Renderer* self, float* cursor_x, float* cursor_y)
     
     *cursor_x = (float)xpos;
     *cursor_y = (float)ypos;
+}
+
+// from learnopengl
+void APIENTRY rd_debug_callback(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *user_param)
+{
+    // ignore non-significant error/warning codes
+    if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return; 
+
+    printf("GLDEBUG: ID - %d\nMessage: %s\n", id, message);
+
+    switch (source)
+    {
+        case GL_DEBUG_SOURCE_API:             printf("SOURCE: API\n"); break;
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   printf("SOURCE: Window System\n"); break;
+        case GL_DEBUG_SOURCE_SHADER_COMPILER: printf("SOURCE: Shader Compiler\n"); break;
+        case GL_DEBUG_SOURCE_THIRD_PARTY:     printf("SOURCE: Third Party\n"); break;
+        case GL_DEBUG_SOURCE_APPLICATION:     printf("SOURCE: Application\n"); break;
+        case GL_DEBUG_SOURCE_OTHER:           printf("SOURCE: Other\n"); break;
+    }
+
+    switch (type)
+    {
+        case GL_DEBUG_TYPE_ERROR:               printf("TYPE: Error\n"); break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: printf("TYPE: Deprecated Behaviour\n"); break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  printf("TYPE: Undefined Behaviour\n"); break; 
+        case GL_DEBUG_TYPE_PORTABILITY:         printf("TYPE: Portability\n"); break;
+        case GL_DEBUG_TYPE_PERFORMANCE:         printf("TYPE: Performance\n"); break;
+        case GL_DEBUG_TYPE_MARKER:              printf("TYPE: Marker\n"); break;
+        case GL_DEBUG_TYPE_PUSH_GROUP:          printf("TYPE: Push Group\n"); break;
+        case GL_DEBUG_TYPE_POP_GROUP:           printf("TYPE: Pop Group\n"); break;
+        case GL_DEBUG_TYPE_OTHER:               printf("TYPE: Other\n"); break;
+    }
+    
+    switch (severity)
+    {
+        case GL_DEBUG_SEVERITY_HIGH:         printf("SEVERITY: high\n"); break;
+        case GL_DEBUG_SEVERITY_MEDIUM:       printf("SEVERITY: medium\n"); break;
+        case GL_DEBUG_SEVERITY_LOW:          printf("SEVERITY: low\n"); break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION: printf("SEVERITY: notification\n"); break;
+    }
 }

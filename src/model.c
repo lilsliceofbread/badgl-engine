@@ -17,10 +17,11 @@ void model_load(Model* self, const char* path)
     ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "MODEL: model load failed\n%s", aiGetErrorString());
 
     self->mesh_count = 0;
+    self->meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
     self->textures = NULL; // not setting this to null before realloc creates undefined behaviour, if the uninitialised memory is not 0
     self->tex_count = 0;
-    self->meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
 
+    // get directory of model and store
     {
         char temp[500]; // for safety
         // hacky way of getting offset from start of string

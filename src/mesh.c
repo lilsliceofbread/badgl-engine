@@ -70,10 +70,12 @@ void mesh_free(Mesh* self)
 {
     free(self->vertices);
     free(self->indices);
-    if(self->tex_count > 0)
+    if(self->tex_count > 0 && self->tex_indexes != NULL)
     {
         free(self->tex_indexes);
     }
+    
+    printf("MESH: vertices: %d indices %d\n", self->vert_count, self->ind_count);
 
     /*
     for(uint32_t i = 0; i < self->tex_count; i++)

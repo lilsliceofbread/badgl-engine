@@ -23,6 +23,4 @@ int str_find_last_of(const char* str, char c);
 
 GLenum gl_check_error_(const char* file, int line);
 
-void APIENTRY gl_debug_callback(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *user_param);
-
 #endif

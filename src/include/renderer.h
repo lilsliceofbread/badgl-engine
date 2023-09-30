@@ -42,4 +42,6 @@ bool rd_get_key(Renderer* self, int key);
 
 void rd_free(Renderer* self);
 
+void APIENTRY rd_debug_callback(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *user_param);
+
 #endif
