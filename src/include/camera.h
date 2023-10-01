@@ -21,7 +21,6 @@ typedef struct Camera
 
     float pitch, yaw;
     float last_cursor_x, last_cursor_y;
-    bool wait_update;
 
     mat4 view;
     mat4 proj; // view and projection matrix
@@ -29,11 +28,11 @@ typedef struct Camera
 
 Camera camera_init(vec3 start_pos, float start_yaw, float start_pitch);
 
-void camera_update(Camera* self, Renderer* rd, float delta_time);
+void camera_update(Camera* self, Renderer* rd);
 
-void camera_calc_view_vecs(Camera* self); // recalculate up/right vecs and view matrix based on pos/dir
+void camera_update_view(Camera* self); // recalculate up/right vecs and view matrix based on pos/dir
 
-void camera_calc_proj(Camera* self, float fov, float aspect_ratio, float znear, float zfar);
+void camera_update_proj(Camera* self, float fov, float aspect_ratio, float znear, float zfar);
 
 
 #endif

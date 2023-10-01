@@ -42,20 +42,27 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
     // current num of each texture type
     uint32_t diffuse_num = 1, specular_num = 1;
     char sampler_name[100];
+
     for(uint32_t i = 0; i < self->tex_count; i++)
     {
         uint32_t curr_tex = self->tex_indexes[i];
 
-        // activate next tex unit
-        texture_unit_active(i);
-        // fix for texture types other than diffuse/spec later
-        uint32_t num = textures[curr_tex].type == TEXTURE_DIFFUSE ? diffuse_num : specular_num;
-        snprintf(sampler_name, 100, "%s%d", texture_type_get_str(textures[curr_tex].type), num);
-
+        switch(textures[curr_tex].type)
+        {
+            case TEXTURE_CUBEMAP:
+                break;
+            case TEXTURE_DIFFUSE: case TEXTURE_SPECULAR: case TEXTURE_NORMAL:
+                // activate next tex unit
+                texture_unit_active(i);
+                // fix for texture types other than diffuse/spec later
+                uint32_t num = textures[curr_tex].type == TEXTURE_DIFFUSE ? diffuse_num : specular_num;
+                snprintf(sampler_name, 100, "%s%d", texture_type_get_str(textures[curr_tex].type), num);
+                shader_uniform_1i(shader, sampler_name, (int)i);
+                break;
+        }
         // tell sampler which texture unit to use
         //printf("LOG: texture name %s\n", sampler_name);
-        shader_uniform_1i(shader, sampler_name, (int)i);
-        texture_bind(textures[curr_tex]);
+        texture_bind(&textures[curr_tex]);
     }
 
     vao_bind(self->vao);
@@ -76,13 +83,6 @@ void mesh_free(Mesh* self)
     }
     
     printf("MESH: vertices: %d indices %d\n", self->vert_count, self->ind_count);
-
-    /*
-    for(uint32_t i = 0; i < self->tex_count; i++)
-    {
-        printf("MESH: idx - %d\n", self->tex_indexes[i]);
-    }
-    */
 
     vao_free(self->vao);
     bo_free(self->vbo);

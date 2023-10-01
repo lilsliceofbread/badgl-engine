@@ -14,49 +14,52 @@
 void game_init(GameState* s)
 {
     rd_init(&s->rd, GAME_WIDTH, GAME_HEIGHT, "cool stuff");
-    s->shader_index = rd_add_shader(&s->rd, "shaders/default.vert", "shaders/default.frag");
+    s->model_count = 1;
+    s->shader_indices[0] = rd_add_shader(&s->rd, "shaders/default.vert", "shaders/default.frag");
+    s->shader_indices[1] = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
 
     // cam starting position and angle
     vec3 start_pos = {0.0f, 0.0f, 3.0f};
     s->cam = camera_init(start_pos, -90.0f, 0.0f);
-    vec3_copy((vec3){0.0f, 0.0f, 3.0f}, &s->cam.pos);
 
     float aspect_ratio = (float)(s->rd.width) / (float)(s->rd.height);
-    camera_calc_view_vecs(&s->cam);
-    camera_calc_proj(&s->cam, 90.0f, aspect_ratio, 0.01f, 100.0f);
+    camera_update_view(&s->cam);
+    camera_update_proj(&s->cam, 90.0f, aspect_ratio, 0.01f, 100.0f);
 
-    rd_set_cam_bool(&s->rd, &s->cam.wait_update);
-
-    //model_load(&s->models[0], "res/backpack/backpack.obj");
-    s->sphere = gen_uv_sphere((vec3){0.0f, 3.0f, 0.0f}, 2.0f, 9, 17, "res/test/beans2.png");
+    model_load(&s->models[0], "res/backpack/backpack.obj");
+    s->sphere = uv_sphere_gen((vec3){0.0f, 3.0f, 0.0f}, 2.0f, 15, "res/earth/e.png");
 }
 
-void game_update(GameState* s, float curr_time, float delta_time)
+void game_update(GameState* s)
 {
-    Shader* shader = rd_get_shader(&s->rd, s->shader_index);
-    camera_update(&s->cam, &s->rd, delta_time);
+    Shader* default_shader = &s->rd.shaders[s->shader_indices[0]];
+    Shader* sphere_shader = &s->rd.shaders[s->shader_indices[1]];
+    camera_update(&s->cam, &s->rd);
 
     // multiply view and proj matrices, and send to uniform on shader
-    shader_use(shader);
-    mat4 vp = mat4_mul(s->cam.proj, s->cam.view);
-    shader_uniform_mat4(shader, "vp", vp);
+    shader_use(default_shader);
+    mat4 vp;
+    mat4_mul(&vp, s->cam.proj, s->cam.view);
+    shader_uniform_mat4(default_shader, "vp", vp);
 
-    // could do in model_draw !!!
-    //
-    //
     mat4 model = mat4_identity();
-    model = mat4_rotate_y(model, curr_time);
-    //model = mat4_scale_scalar(model, 1.0f);
-    shader_uniform_mat4(shader, "model", model);
+    mat4_rotate_y(&model, rd_get_time()); // GET TICKS
+    mat4_scale_scalar(&model, 1.0f);
+    shader_uniform_mat4(default_shader, "model", model);
 
-    sphere_draw(&s->sphere, shader);
-    // will do in loop with model count
-    //model_draw(&s->models[0], shader);
+    for(uint32_t i = 0; i < s->model_count; i++)
+        model_draw(&s->models[i], default_shader);
+
+    shader_use(sphere_shader);
+    shader_uniform_mat4(sphere_shader, "vp", vp);
+    sphere_draw(&s->sphere, sphere_shader);
 }
 
 void game_end(GameState* s)
 {
-    //model_free(&s->models[0]);
+    for(uint32_t i = 0; i < s->model_count; i++)
+        model_free(&s->models[i]);
+
     sphere_free(&s->sphere);
     rd_free(&s->rd);
 }

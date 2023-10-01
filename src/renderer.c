@@ -6,6 +6,7 @@
 #include "shader.h"
 #include "texture.h"
 #include "util.h"
+#include <threads.h>
 
 void rd_resize_callback(GLFWwindow* win, int width, int height);
 
@@ -16,9 +17,12 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     self->width = width;
     self->height = height;
     self->cursor_disabled = true;
-    self->cam_wait_update = NULL;
+    self->mouse_wait_update = 1;
     self->shader_count = 0;
     self->shaders = NULL;
+    self->delta_time = 0.0f;
+    self->last_time = 0.0f;
+    self->framecount = 0;
 
     ASSERT(glfwInit(), "RENDERER: failed to init GLFW");
 
@@ -30,9 +34,11 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    #ifdef __APPLE__
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    #endif
+    /* Mac doesn't support OpenGL 4.6 anyway :/
+     * #ifdef __APPLE__
+     *    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+     * #endif
+     */
     
     GLFWwindow* win = glfwCreateWindow(width, height, win_title, NULL, NULL);
 
@@ -72,11 +78,12 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     //glDisable(GL_MULTISAMPLE);
 
     glEnable(GL_DEPTH_TEST);
+    //glDepthFunc(GL_LEQUAL);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // black
 }
 
-int rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
+uint32_t rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
 {
     self->shaders = (Shader*)realloc(self->shaders, (self->shader_count + 1) * sizeof(Shader));
     ASSERT(self->shaders != NULL, "RENDERER: failed to reallocate shader array");
@@ -86,33 +93,42 @@ int rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
     return self->shader_count - 1; // returns index to shader in array
 }
 
-Shader* rd_get_shader(Renderer* self, int index)
-{
-    return &self->shaders[index];
-}
-
 void rd_set_wireframe(bool useWireframe)
 {
     GLenum mode = useWireframe ? GL_LINE : GL_FILL;
     glPolygonMode(GL_FRONT_AND_BACK, mode);
 }
 
-void rd_begin_frame()
+void rd_begin_frame(Renderer* self)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    float curr_time = rd_get_time();
+    self->delta_time = curr_time - self->last_time;
+    self->last_time = curr_time; 
 }
 
 void rd_end_frame(Renderer* self)
 {
     glfwSwapBuffers(self->win);
     glfwPollEvents();
+
+    if(self->mouse_wait_update > 0) // if mouse still needs to wait
+        self->mouse_wait_update--;
+
+    self->framecount++;
+}
+
+float rd_get_time(void)
+{
+    return (float)glfwGetTime();
 }
 
 void rd_free(Renderer* self)
 {
     if(self->shader_count) // if not allocated don't free
     {
-        for(int i = 0; i < self->shader_count; i++)
+        for(uint32_t i = 0; i < self->shader_count; i++)
         {
             shader_free(&self->shaders[i]);
         }
@@ -133,20 +149,12 @@ bool rd_win_should_close(Renderer* self)
     return glfwWindowShouldClose(self->win);
 }
 
-void rd_set_cam_bool(Renderer* self, bool* cam_bool)
-{
-    self->cam_wait_update = cam_bool;
-    *cam_bool = true;
-}
-
 void rd_resize_callback(GLFWwindow* win, int width, int height)
 {
     glViewport(0, 0, width, height);
     Renderer* rd = (Renderer*)glfwGetWindowUserPointer(win); 
     rd->width = width;
     rd->height = height;
-    
-    //printf("window resized - w: %d h: %d\n", width, height);
 }
 
 void rd_key_callback(GLFWwindow* win, int key, int scancode, int action, int mods)
@@ -164,6 +172,7 @@ void rd_key_callback(GLFWwindow* win, int key, int scancode, int action, int mod
             glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
             rd->cursor_disabled = false;
+            rd->mouse_wait_update = 2; // mouse updates should wait 2 frames to prevent flicking
         }
         else
         {
@@ -171,7 +180,7 @@ void rd_key_callback(GLFWwindow* win, int key, int scancode, int action, int mod
             glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
             rd->cursor_disabled = true;
-            if(rd->cam_wait_update) *(rd->cam_wait_update) = true;
+            rd->mouse_wait_update = 2;
         }
     }
     if(key == GLFW_KEY_P && action == GLFW_PRESS)
@@ -199,7 +208,7 @@ void APIENTRY rd_debug_callback(GLenum source, GLenum type, unsigned int id, GLe
     // ignore non-significant error/warning codes
     if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return; 
 
-    printf("GLDEBUG: ID - %d\nMessage: %s\n", id, message);
+    printf("GLDEBUG: ID - %d\nMESSAGE: %s\n", id, message);
 
     switch (source)
     {

@@ -1,6 +1,6 @@
 #include "vao.h"
 
-VAO vao_create()
+VAO vao_create(void)
 {
     VAO self;
     glGenVertexArrays(1, &self.id);
@@ -12,7 +12,7 @@ void vao_bind(VAO self)
     glBindVertexArray(self.id);
 }
 
-void vao_unbind()
+void vao_unbind(void)
 {
     glBindVertexArray(0);
 }

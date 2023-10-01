@@ -92,39 +92,39 @@ typedef union mat4
     };
 } mat4;
 
+vec3 vec3_zero(void);
 void vec3_copy(vec3 src, vec3* dest);
-vec3 vec3_zero();
 float vec3_dot(vec3 v1, vec3 v2);
 vec3 vec3_scale(vec3 vec, float s);
 vec3 vec3_add_scalar(vec3 vec, float s);
 vec3 vec3_add(vec3 v1, vec3 v2);
 vec3 vec3_sub(vec3 v1, vec3 v2);
-vec3 vec3_norm(vec3 vec);
+void vec3_norm(vec3* out);
 vec3 vec_cross(vec3 v1, vec3 v2); // only exists for vec3
 
+vec2 vec2_zero(void);
 void vec2_copy(vec2 src, vec2* dest);
-vec2 vec2_zero();
 float vec2_dot(vec2 v1, vec2 v2);
 vec2 vec2_scale(vec2 vec, float s);
 vec2 vec2_add_scalar(vec2 vec, float s);
 vec2 vec2_add(vec2 v1, vec2 v2);
 vec2 vec2_sub(vec2 v1, vec2 v2);
-vec2 vec2_norm(vec2 vec);
+void vec2_norm(vec2* out);
 
 // opengl is column major so in memory matrices are flipped from traditional matrices
-mat4 mat4_mul(mat4 m1, mat4 m2);
-mat4 mat4_identity();
-mat4 mat4_zero();
+mat4 mat4_identity(void);
+mat4 mat4_zero(void);
+void mat4_mul(mat4* out, mat4 m1, mat4 m2);
 mat4 mat4_transpose(mat4 mat);
-mat4 mat4_scale(mat4 mat, vec3 s);
-mat4 mat4_scale_scalar(mat4 mat, float s);
-mat4 mat4_trans(mat4 mat, vec3 t);
-mat4 mat4_rotate_x(mat4 mat, float a); // not figuring out arbitrary axis rotation
-mat4 mat4_rotate_y(mat4 mat, float a);
-mat4 mat4_rotate_z(mat4 mat, float a);
-mat4 mat_perspective_fov(float fov, float aspect, float near, float far);
-mat4 mat_perspective_frustrum(float near, float far, float left, float right, float bottom, float top);
-mat4 mat_orthographic_frustrum(float near, float far, float left, float right, float bottom, float top);
-mat4 mat_look_at(vec3 t, vec3 k, vec3 i); // t is pos or translation vec, k is dir or "z axis", i is right or "x axis"
+void mat4_scale(mat4* out, vec3 s);
+void mat4_scale_scalar(mat4* out, float s);
+void mat4_trans(mat4* out, vec3 t);
+void mat4_rotate_x(mat4* out, float a); // not figuring out arbitrary axis rotation
+void mat4_rotate_y(mat4* out, float a);
+void mat4_rotate_z(mat4* out, float a);
+void mat_perspective_fov(mat4* out, float fov, float aspect, float near, float far);
+void mat_perspective_frustrum(mat4* out, float near, float far, float left, float right, float bottom, float top);
+void mat_orthographic_frustrum(mat4* out, float near, float far, float left, float right, float bottom, float top);
+void mat_look_at(mat4* out, vec3 t, vec3 k, vec3 i); // t is pos or translation vec, k is dir or "z axis", i is right or "x axis"
 
 #endif

@@ -11,10 +11,10 @@ typedef struct Sphere
     vec3 pos;
     float radius;
     Mesh mesh;
-    Texture texture; // only 1 texture for now, may want specular or others later
+    Texture texture; // only 1 texture, a cubemap
 } Sphere;
 
-Sphere gen_uv_sphere(vec3 pos, float radius, int horizontals, int verticals, const char* img_path);
+Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cubemap_path);
 
 void sphere_draw(Sphere* self, Shader* shader);
 

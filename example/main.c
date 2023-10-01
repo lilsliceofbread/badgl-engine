@@ -1,22 +1,18 @@
 #include "game.h"
 
-int main()
+int main(void)
 {
     GameState state;
     
     game_init(&state);
     
-    float last_time = 0.0f, delta_time = 0.0f;
-    while(!rd_win_should_close(&(state.rd)))
+    while(!rd_win_should_close(&state.rd))
     {
-        float curr_time = (float)glfwGetTime();
-        delta_time = curr_time - last_time;
-        last_time = curr_time; 
-        rd_begin_frame(&(state.rd));
+        rd_begin_frame(&state.rd);
 
-        game_update(&state, curr_time, delta_time);
+        game_update(&state);
 
-        rd_end_frame(&(state.rd));
+        rd_end_frame(&state.rd);
     }
     
     game_end(&state);

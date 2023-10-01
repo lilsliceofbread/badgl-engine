@@ -12,29 +12,30 @@
 typedef struct Renderer 
 {
     Shader* shaders; // can have multiple shader programs
-    int shader_count;
+    uint32_t shader_count;
     int width, height;
     GLFWwindow* win;
 
-    bool* cam_wait_update; // for preventing camera flicking when cursor jumps (optional)
+    int mouse_wait_update; // frames until mouse can update, for preventing camera flicking when cursor jumps (optional)
     bool cursor_disabled; // anything relying on mouse should not update when this is false
+
+    float last_time, delta_time; // delta time of last frame, last_time to calculate delta_time (not used by user)
+    uint32_t framecount;
 } Renderer;
 
 void rd_init(Renderer* rd, int width, int height, const char* win_title);
 
-int rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src); // returns index to shader in array
-
-Shader* rd_get_shader(Renderer* self, int index);
+uint32_t rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src); // returns index to shader in array
 
 void rd_set_wireframe(bool useWireframe); // true for wireframe, false for filled polygons
 
-void rd_begin_frame();
+void rd_begin_frame(Renderer* self);
 
 void rd_end_frame(Renderer* self);
 
-bool rd_win_should_close(Renderer* self);
+float rd_get_time(void);
 
-void rd_set_cam_bool(Renderer* self, bool* cam_bool); // bit hacky, but works
+bool rd_win_should_close(Renderer* self);
 
 void rd_get_cursor_pos(Renderer* self, float* cursor_x, float* cursor_y);
 

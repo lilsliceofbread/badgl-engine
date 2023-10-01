@@ -14,7 +14,8 @@ typedef enum TextureType
 {
     TEXTURE_DIFFUSE, // colour texture
     TEXTURE_SPECULAR,
-    TEXTURE_NORMAL // normal map
+    TEXTURE_NORMAL, // normal map
+    TEXTURE_CUBEMAP
 } TextureType;
 
 typedef struct Texture
@@ -25,9 +26,15 @@ typedef struct Texture
     char path[MAX_STR_LENGTH];
 } Texture;
 
-void texture_create(Texture* self, const char* img_filename, bool use_mipmap);
+void texture_create(Texture* self, const char* img_path, bool use_mipmap);
 
-void texture_bind(Texture self);
+/* expects faces to have suffixes _px, _nx, etc for all sides
+ * should all have the same extension and name
+ * example file: res/img_px.png, res/img_nx.png - pass in ("res/img.png")
+ */
+void texture_cubemap_create(Texture* self, const char* generic_path);
+
+void texture_bind(Texture* self);
 
 void texture_unit_active(uint32_t unit);
 

@@ -15,6 +15,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include <stdbool.h>
 #include "util.h"
 
@@ -26,7 +27,7 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
     int width, height, num_channels;
     stbi_set_flip_vertically_on_load(true);
     unsigned char* image_data = stbi_load(img_path, &width, &height, &num_channels, 0);
-    ASSERT(image_data, "RENDERER: could not load image %s\n", img_path);
+    ASSERT(image_data, "TEXTURE: could not load image %s\n", img_path);
 
     GLint internal_format; // need to do this because they use separate values
     GLenum img_format;
@@ -69,19 +70,93 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
     self->id = texture_id;
     self->width = width;
     self->height = height;
-    // super scuffed but works (must create new array since img_path will change)
-    // idk why img_path has a lifetime/ is created in the same location everytime but whatever
+
     strncpy(self->path, img_path, 100);
 }
 
-void texture_bind(Texture self)
+void texture_cubemap_create(Texture* self, const char* generic_path)
 {
-    glBindTexture(GL_TEXTURE_2D, self.id);
+    GLuint texture_id;
+    glGenTextures(1, &texture_id);
+    self->id = texture_id;
+    self->type = TEXTURE_CUBEMAP;
+    const char* suffixes[6] = {
+        "_px",
+        "_nx",
+        "_py",
+        "_ny",
+        "_pz",
+        "_nz"
+    };
+
+    uint32_t path_idx = 0;
+    char curr;
+    char path_no_ext[100];
+    char* extension;
+
+    // 100 is max length sanity check in case no null terminator
+    // (should really go from end of str to start and then strncpy as it would find ext far faster)
+    while((curr = generic_path[path_idx]) != '.' && generic_path[path_idx] != '\0' && path_idx < 100)
+    {
+        path_no_ext[path_idx] = curr;
+        path_idx++;
+    }
+    extension = (char*)(generic_path + path_idx);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); // since it can be sampled in 3 dimensions
+
+    int width, height, num_channels;
+    for(int i = 0; i < 6; i++)
+    {
+        char img_path[120];
+        strncpy(img_path, path_no_ext, 100);
+        strcat(img_path, suffixes[i]); // don't need to use strncat here, known sizes
+        strncat(img_path, extension, 10);
+
+        stbi_set_flip_vertically_on_load(false);
+        unsigned char* image_data = stbi_load(img_path, &width, &height, &num_channels, 0);
+        ASSERT(image_data, "TEXTURE: could not load image %s\n", img_path);
+
+        GLenum img_format;
+        switch(num_channels)
+        {
+            case 1:
+                img_format = GL_RED;
+                break;
+            case 3:
+                img_format = GL_RGB;
+                break;
+            case 4:
+                img_format = GL_RGBA;
+                break;
+        }
+
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + (GLenum)i, 0, GL_RGB, width, height, 0, img_format, GL_UNSIGNED_BYTE, image_data);
+
+        stbi_image_free(image_data);
+    }
+    
+    self->width = width; // will be the size of 1 square
+    self->height = height;
+
+    strncpy(self->path, generic_path, 100);
+}
+
+void texture_bind(Texture* self)
+{
+    GLenum target = self->type == TEXTURE_CUBEMAP ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D; 
+    glBindTexture(target, self->id);
 }
 
 void texture_unit_active(uint32_t num)
 {
-    ASSERT(num <= 31, "RENDERER: GL texture unit out of range");
+    ASSERT(num <= 31, "TEXTURE: GL texture unit out of range");
     glActiveTexture(GL_TEXTURE0 + num);
 }
 
@@ -97,6 +172,9 @@ const char* texture_type_get_str(TextureType type)
             break;
         case TEXTURE_NORMAL:
             return "texture_normal";
+            break;
+        case TEXTURE_CUBEMAP:
+            return "cubemap";
             break;
     }
     ASSERT(false, "TEXTURE: invalid texture type");

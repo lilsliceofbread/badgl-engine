@@ -7,11 +7,12 @@
 #include "sphere.h"
 
 #define MAX_MODELS 5
+#define MAX_SHADERS 10
 
 typedef struct GameState
 {
     Renderer rd;
-    int shader_index;
+    uint32_t shader_indices[MAX_SHADERS]; // index into renderer shaders
     Camera cam;
     Model models[MAX_MODELS];
     uint32_t model_count;
@@ -20,7 +21,7 @@ typedef struct GameState
 
 void game_init(GameState* s);
 
-void game_update(GameState* s, float curr_time, float delta_time);
+void game_update(GameState* s);
 
 void game_end(GameState* s);
 
