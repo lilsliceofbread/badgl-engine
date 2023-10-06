@@ -15,6 +15,8 @@ Camera camera_init(vec3 start_pos, float start_yaw, float start_pitch)
     self.last_cursor_x = 0.0f; // default value for starting
     self.last_cursor_y = 0.0f;
 
+    camera_update_view(&self);
+
     return self;
 }
 
@@ -68,32 +70,32 @@ void camera_update(Camera* self, Renderer* rd)
 
     vec3 world_up = {0.0f, 1.0f, 0.0f};
 
-    if(rd_get_key(rd, GLFW_KEY_W))
+    if(rd_key_pressed(rd, GLFW_KEY_W))
     {
         step_vec = vec3_scale(flat_dir, cam_step);
         self->pos = vec3_add(self->pos, step_vec);
     }
-    if(rd_get_key(rd, GLFW_KEY_S))
+    if(rd_key_pressed(rd, GLFW_KEY_S))
     {
         step_vec = vec3_scale(flat_dir, cam_step);
         self->pos = vec3_sub(self->pos, step_vec);
     }
-    if(rd_get_key(rd, GLFW_KEY_A))
+    if(rd_key_pressed(rd, GLFW_KEY_A))
     {
         step_vec = vec3_scale(flat_right, cam_step);
         self->pos = vec3_sub(self->pos, step_vec);
     }
-    if(rd_get_key(rd, GLFW_KEY_D))
+    if(rd_key_pressed(rd, GLFW_KEY_D))
     {
         step_vec = vec3_scale(flat_right, cam_step);
         self->pos = vec3_add(self->pos, step_vec);
     }
-    if(rd_get_key(rd, GLFW_KEY_SPACE))
+    if(rd_key_pressed(rd, GLFW_KEY_SPACE))
     {
         step_vec = vec3_scale(world_up, cam_step);
         self->pos = vec3_add(self->pos, step_vec);
     }
-    if(rd_get_key(rd, GLFW_KEY_LEFT_CONTROL))
+    if(rd_key_pressed(rd, GLFW_KEY_LEFT_CONTROL))
     {
         step_vec = vec3_scale(world_up, cam_step);
         self->pos = vec3_sub(self->pos, step_vec);

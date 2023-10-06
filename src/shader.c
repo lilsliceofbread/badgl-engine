@@ -141,8 +141,8 @@ GLint shader_find_uniform(Shader* self, const char* name)
         curr = self->stored_uniforms[i];
         if(strcmp(name, curr.name) == 0)
         {
-            if(curr.location == -1)
-                fprintf(stderr, "SHADER: uniform %s does not exist\n", curr.name);
+            /*if(curr.location == -1)
+                fprintf(stderr, "SHADER: uniform %s does not exist. forgot to use in shader?\n", curr.name);*/
             return curr.location;  
         }
     }

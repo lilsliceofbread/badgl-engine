@@ -54,8 +54,8 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
         for(uint32_t j = 0; j < verticals; j++) // longitudes (< to stop before 2PI which is a repeat of 0)
         {
             /* 2PI because it's going around the full circumference.
-               because opengl is right-handed, sin/cos of vertical angle
-               rotates opposite to normal unit circle (clockwise instead of anti) */
+               since opengl is right-handed this creates vertices clockwise
+               as the unit circle is reversed with +z going "down" */
             float vertical_angle = (float)j * pi2 * inv_vert;
 
             Vertex vertex;
@@ -89,11 +89,11 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
     // top triangle's indices
     for(uint32_t i = 0; i < verticals; i++)
     {
-        uint32_t p1 = i + 1; // add 1 because 0 is top vertex
+        uint32_t p1 = (i) + 1; // add 1 because 0 is top vertex
         uint32_t p2 = ((i + 1) % verticals) + 1; // i + 2 but remember to wrap around back to 0 instead of going above verticals
 
         indices[ind_count] = 0; // first vertex is top vertex
-        indices[ind_count + 1] = p2; // p2 first in anticlockwise order
+        indices[ind_count + 1] = p2; // p2 first in clockwise order
         indices[ind_count + 2] = p1;
 
         ind_count += 3;
@@ -101,8 +101,9 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
 
     /* loop through quads
        horizontals - 2 represents stopping before final bottom triangles,
-       as each iteration involves 1 layer and another below, so another
-       iteration would go past that and there are h-1 horizontals as i said before */
+       as each iteration involves 1 layer and another below, and the top
+       and bottom layers only have 1 set of triangle indices as they are
+       triangles but the quads have 2, so 1 less set on top */
     for(uint32_t i = 0; i < horizontals - 2; i++)
     {
         uint32_t layer1 = i * verticals + 1; // add 1 because of top vertex and then go down horizontals by multiplying by num verticals
@@ -110,20 +111,20 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
         
         for(uint32_t j = 0; j < verticals; j++)
         {
-            // top right and anticlockwise
-            uint32_t tr = layer1 + j; // j: from 0 to verticals - 1
-            uint32_t tl = layer1 + (j + 1) % verticals; // j + 1 but remembering to wrap back to 0
-            uint32_t br = layer2 + j;
-            uint32_t bl = layer2 + (j + 1) % verticals;
+            // top right and clockwise
+            uint32_t tl = layer1 + j; // j: from 0 to verticals - 1
+            uint32_t tr = layer1 + (j + 1) % verticals; // j + 1 but remembering to wrap back to 0
+            uint32_t bl = layer2 + j;
+            uint32_t br = layer2 + (j + 1) % verticals;
 
-            // anticlockwise quad indices
-            indices[ind_count] = tr; // tri 1
-            indices[ind_count + 1] = tl;
-            indices[ind_count + 2] = bl;
+            // clockwise quad indices
+            indices[ind_count] = tl; // tri 1
+            indices[ind_count + 1] = tr;
+            indices[ind_count + 2] = br;
 
-            indices[ind_count + 3] = tr; // tri 2
-            indices[ind_count + 4] = bl;
-            indices[ind_count + 5] = br;
+            indices[ind_count + 3] = tl; // tri 2
+            indices[ind_count + 4] = br;
+            indices[ind_count + 5] = bl;
 
             ind_count += 6;
         }
@@ -149,6 +150,7 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
     return self;
 }
 
+// this could have a fixed path to the sphere shader?
 void sphere_draw(Sphere* self, Shader* shader)
 {
     mat4 model = mat4_identity();
@@ -160,4 +162,5 @@ void sphere_draw(Sphere* self, Shader* shader)
 void sphere_free(Sphere* self)
 {
     mesh_free(&self->mesh);
+    texture_free(&self->texture);
 }

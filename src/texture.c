@@ -21,6 +21,8 @@
 
 void texture_create(Texture* self, const char* img_path, bool use_mipmap)
 {
+    double start_time = glfwGetTime();
+
     GLuint texture_id;
     glGenTextures(1, &texture_id);
 
@@ -71,11 +73,15 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
     self->width = width;
     self->height = height;
 
-    strncpy(self->path, img_path, 100);
+    strncpy(self->path, img_path, 128);
+
+    printf("TEXTURE: loading texture %s took %fs\n", img_path, glfwGetTime() - start_time);
 }
 
 void texture_cubemap_create(Texture* self, const char* generic_path)
 {
+    double start_time = glfwGetTime();
+
     GLuint texture_id;
     glGenTextures(1, &texture_id);
     self->id = texture_id;
@@ -91,17 +97,17 @@ void texture_cubemap_create(Texture* self, const char* generic_path)
 
     uint32_t path_idx = 0;
     char curr;
-    char path_no_ext[100];
-    char* extension;
+    char path_no_ext[128];
 
     // 100 is max length sanity check in case no null terminator
     // (should really go from end of str to start and then strncpy as it would find ext far faster)
-    while((curr = generic_path[path_idx]) != '.' && generic_path[path_idx] != '\0' && path_idx < 100)
+    while((curr = generic_path[path_idx]) != '.' && generic_path[path_idx] != '\0' && path_idx < 128)
     {
         path_no_ext[path_idx] = curr;
         path_idx++;
     }
-    extension = (char*)(generic_path + path_idx);
+    path_no_ext[path_idx] = '\0'; // must manually null terminate
+    char* extension = (char*)(generic_path + path_idx);
 
     glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
 
@@ -111,13 +117,16 @@ void texture_cubemap_create(Texture* self, const char* generic_path)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); // since it can be sampled in 3 dimensions
 
+
+    char img_path[256];
     int width, height, num_channels;
     for(int i = 0; i < 6; i++)
     {
-        char img_path[120];
-        strncpy(img_path, path_no_ext, 100);
+        memset(img_path, 0, sizeof(img_path));
+        //snprintf(img_path, 100, "%s%s%s", path_no_ext, suffixes[i], extension);
+        strncpy(img_path, path_no_ext, 256);
         strcat(img_path, suffixes[i]); // don't need to use strncat here, known sizes
-        strncat(img_path, extension, 10);
+        strncat(img_path, extension, 32); // no extension is longer than this... right?
 
         stbi_set_flip_vertically_on_load(false);
         unsigned char* image_data = stbi_load(img_path, &width, &height, &num_channels, 0);
@@ -141,11 +150,13 @@ void texture_cubemap_create(Texture* self, const char* generic_path)
 
         stbi_image_free(image_data);
     }
-    
+
     self->width = width; // will be the size of 1 square
     self->height = height;
 
-    strncpy(self->path, generic_path, 100);
+    strncpy(self->path, generic_path, 128);
+
+    printf("TEXTURE: loading cubemap %s took %fs\n", generic_path, glfwGetTime() - start_time);
 }
 
 void texture_bind(Texture* self)
@@ -158,6 +169,11 @@ void texture_unit_active(uint32_t num)
 {
     ASSERT(num <= 31, "TEXTURE: GL texture unit out of range");
     glActiveTexture(GL_TEXTURE0 + num);
+}
+
+void texture_free(Texture* self)
+{
+    glDeleteTextures(1, &self->id);
 }
 
 const char* texture_type_get_str(TextureType type)

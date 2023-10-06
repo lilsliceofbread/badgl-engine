@@ -13,26 +13,34 @@
 
 void game_init(GameState* s)
 {
+    s->model_count = 0;
+    s->shader_count = 0;
+
     rd_init(&s->rd, GAME_WIDTH, GAME_HEIGHT, "cool stuff");
-    s->model_count = 1;
-    s->shader_indices[0] = rd_add_shader(&s->rd, "shaders/default.vert", "shaders/default.frag");
-    s->shader_indices[1] = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
 
-    // cam starting position and angle
+    // better method to use a counter instead of manually keeping track of numbers
+    s->shader_indices[s->shader_count] = rd_add_shader(&s->rd, "shaders/default.vert", "shaders/default.frag");
+    s->shader_count++;
+    s->shader_indices[s->shader_count] = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
+    s->shader_count++;
+
+    // cam setup
     vec3 start_pos = {0.0f, 0.0f, 3.0f};
-    s->cam = camera_init(start_pos, -90.0f, 0.0f);
-
     float aspect_ratio = (float)(s->rd.width) / (float)(s->rd.height);
-    camera_update_view(&s->cam);
+    s->cam = camera_init(start_pos, -90.0f, 0.0f);
     camera_update_proj(&s->cam, 90.0f, aspect_ratio, 0.01f, 100.0f);
 
     model_load(&s->models[0], "res/backpack/backpack.obj");
-    s->sphere = uv_sphere_gen((vec3){0.0f, 3.0f, 0.0f}, 2.0f, 15, "res/earth/e.png");
+    s->model_count++;
+
+    s->sphere = uv_sphere_gen((vec3){5.0f, 3.0f, 0.0f}, 2.0f, 15, "res/earth/e.png");
+    s->skybox = skybox_init("res/xonotic/distant_sunset/distant_sunset.jpg");
 }
 
 void game_update(GameState* s)
 {
-    Shader* default_shader = &s->rd.shaders[s->shader_indices[0]];
+    // have to keep track of these manually unfortunately
+    Shader* default_shader = &s->rd.shaders[s->shader_indices[0]]; 
     Shader* sphere_shader = &s->rd.shaders[s->shader_indices[1]];
     camera_update(&s->cam, &s->rd);
 
@@ -53,6 +61,9 @@ void game_update(GameState* s)
     shader_use(sphere_shader);
     shader_uniform_mat4(sphere_shader, "vp", vp);
     sphere_draw(&s->sphere, sphere_shader);
+
+    // must be drawn last after everything else. do twice with 2 cams?
+    skybox_draw(&s->skybox, &s->cam);
 }
 
 void game_end(GameState* s)
@@ -60,6 +71,7 @@ void game_end(GameState* s)
     for(uint32_t i = 0; i < s->model_count; i++)
         model_free(&s->models[i]);
 
+    skybox_free(&s->skybox);
     sphere_free(&s->sphere);
     rd_free(&s->rd);
 }

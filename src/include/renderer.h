@@ -37,9 +37,9 @@ float rd_get_time(void);
 
 bool rd_win_should_close(Renderer* self);
 
-void rd_get_cursor_pos(Renderer* self, float* cursor_x, float* cursor_y);
+void rd_get_cursor_pos(Renderer* self, float* cursor_x_out, float* cursor_y_out);
 
-bool rd_get_key(Renderer* self, int key);
+bool rd_key_pressed(Renderer* self, int key);
 
 void rd_free(Renderer* self);
 

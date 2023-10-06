@@ -80,6 +80,12 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     glEnable(GL_DEPTH_TEST);
     //glDepthFunc(GL_LEQUAL);
 
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CW); // front face has clockwise vertices
+    glCullFace(GL_FRONT);
+
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // black
 }
 
@@ -106,6 +112,8 @@ void rd_begin_frame(Renderer* self)
     float curr_time = rd_get_time();
     self->delta_time = curr_time - self->last_time;
     self->last_time = curr_time; 
+
+    printf("FPS: %f\n", 1 / self->delta_time);
 }
 
 void rd_end_frame(Renderer* self)
@@ -124,9 +132,19 @@ float rd_get_time(void)
     return (float)glfwGetTime();
 }
 
+bool rd_key_pressed(Renderer* self, int key)
+{
+    return GLFW_PRESS == glfwGetKey(self->win, key);
+}
+
+bool rd_win_should_close(Renderer* self)
+{
+    return glfwWindowShouldClose(self->win);
+}
+
 void rd_free(Renderer* self)
 {
-    if(self->shader_count) // if not allocated don't free
+    if(self->shader_count > 0) // if not allocated don't free
     {
         for(uint32_t i = 0; i < self->shader_count; i++)
         {
@@ -137,16 +155,6 @@ void rd_free(Renderer* self)
 
     glfwDestroyWindow(self->win);
     glfwTerminate(); // might remove if multiple renderers used
-}
-
-bool rd_get_key(Renderer* self, int key)
-{
-    return GLFW_PRESS == glfwGetKey(self->win, key);
-}
-
-bool rd_win_should_close(Renderer* self)
-{
-    return glfwWindowShouldClose(self->win);
 }
 
 void rd_resize_callback(GLFWwindow* win, int width, int height)
@@ -193,13 +201,13 @@ void rd_key_callback(GLFWwindow* win, int key, int scancode, int action, int mod
     }
 }
 
-void rd_get_cursor_pos(Renderer* self, float* cursor_x, float* cursor_y)
+void rd_get_cursor_pos(Renderer* self, float* cursor_x_out, float* cursor_y_out)
 {
     double xpos, ypos; // have to do this since glfw uses doubles
     glfwGetCursorPos(self->win, &xpos, &ypos);
     
-    *cursor_x = (float)xpos;
-    *cursor_y = (float)ypos;
+    *cursor_x_out = (float)xpos;
+    *cursor_y_out = (float)ypos;
 }
 
 // from learnopengl

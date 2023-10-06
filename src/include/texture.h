@@ -8,7 +8,7 @@
 #undef bool
 #define bool _Bool
 
-#define MAX_STR_LENGTH 100
+#define MAX_STR_LENGTH 128
 
 typedef enum TextureType
 {
@@ -37,6 +37,8 @@ void texture_cubemap_create(Texture* self, const char* generic_path);
 void texture_bind(Texture* self);
 
 void texture_unit_active(uint32_t unit);
+
+void texture_free(Texture* self);
 
 const char* texture_type_get_str(TextureType type);
 

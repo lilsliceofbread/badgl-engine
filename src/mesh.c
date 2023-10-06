@@ -82,7 +82,7 @@ void mesh_free(Mesh* self)
         free(self->tex_indexes);
     }
     
-    printf("MESH: vertices: %d indices %d\n", self->vert_count, self->ind_count);
+    //printf("MESH: vertices: %d indices %d\n", self->vert_count, self->ind_count);
 
     vao_free(self->vao);
     bo_free(self->vbo);

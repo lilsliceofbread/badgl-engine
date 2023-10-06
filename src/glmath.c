@@ -155,6 +155,7 @@ void vec2_norm(vec2* out)
     *out = vec2_scale(tmp, 1.0f / denom);
 }
 
+// bad, has to copy 2 whole matrices
 void mat4_mul(mat4* out, mat4 m1, mat4 m2)
 {
     out->m11 = m1.m11 * m2.m11 + m1.m12 * m2.m21 + m1.m13 * m2.m31 + m1.m14 * m2.m41;
@@ -241,6 +242,7 @@ void mat4_scale(mat4* out, vec3 s)
     mat4_mul(out, *out, scale_mat);
 }
 
+// doesn't scale 4th column
 void mat4_scale_scalar(mat4* out, float s)
 {
     // optimised method (we know the result of matrix mul will be this)
@@ -357,7 +359,7 @@ void mat_perspective_frustrum(mat4* out, float near, float far, float left, floa
     // 3rd column
     out->m13 = (right + left) * xdenom;
     out->m23 = (top + bottom) * ydenom;
-    //  m33
+    //   m33
     out->m43 = -1.0f; 
 }
 
@@ -380,7 +382,7 @@ void mat_orthographic_frustrum(mat4* out, float near, float far, float left, flo
     out->m14 = -(right + left) * xdenom;
     out->m24 = -(top + bottom) * ydenom;
     out->m34 = -(far + near) * zdenom;
-    //  m44
+    //   m44
 }
 
 // t is pos, k is dir or "z axis", i is right or "x axis"

@@ -12,9 +12,11 @@
 
 void model_load(Model* self, const char* path)
 {
+    double start_time = glfwGetTime();
+
     // import scene object (entire model)
     const struct aiScene* scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-    ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "MODEL: model load failed\n%s", aiGetErrorString());
+    ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "MODEL: loading %s failed\n%s", path, aiGetErrorString());
 
     self->mesh_count = 0;
     self->meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
@@ -36,6 +38,8 @@ void model_load(Model* self, const char* path)
     model_process_node(self, scene->mRootNode, scene);
 
     aiReleaseImport(scene); // need to free scene ourselves in c
+
+    printf("MODEL: loading %s took %fs\n", path, glfwGetTime() - start_time);
 }
 
 void model_draw(Model* self, Shader* shader)
@@ -223,6 +227,11 @@ void model_free(Model* self)
     for(uint32_t i = 0; i < self->mesh_count; i++)
     {
         mesh_free(&self->meshes[i]);
+    }
+
+    for(uint32_t i = 0; i < self->tex_count; i++)
+    {
+        texture_free(&self->textures[i]);
     }
 
     /*

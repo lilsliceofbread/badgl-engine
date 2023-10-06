@@ -15,12 +15,8 @@
     }                                       \
 }
 
-#define gl_check_error() gl_check_error_(__FILE__, __LINE__)
-
 char* get_file_data(const char* filepath);
 
 int str_find_last_of(const char* str, char c);
-
-GLenum gl_check_error_(const char* file, int line);
 
 #endif
