@@ -80,7 +80,7 @@ void skybox_draw(Skybox* self, Camera* cam)
 {
     mat4 vp; // no translation
     mat4 corrected_view = cam->view;
-    corrected_view.m14 = corrected_view.m24 =  corrected_view.m34 = 0.0f; // remove translation
+    corrected_view.m14 = corrected_view.m24 = corrected_view.m34 = 0.0f; // remove translation
     mat4_mul(&vp, cam->proj, corrected_view);
 
     glDepthFunc(GL_LEQUAL);

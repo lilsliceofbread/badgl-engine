@@ -34,7 +34,7 @@ void game_init(GameState* s)
     s->model_count++;
 
     s->sphere = uv_sphere_gen((vec3){5.0f, 3.0f, 0.0f}, 2.0f, 15, "res/earth/e.png");
-    s->skybox = skybox_init("res/xonotic/distant_sunset/distant_sunset.jpg");
+    s->skybox = skybox_init("res/xonotic/distant_sunset/d.jpg");
 }
 
 void game_update(GameState* s)

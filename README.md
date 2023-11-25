@@ -5,9 +5,11 @@ WIP
 
 # requirements
 
-- GPU supporting OpenGL 4.6
+- GPU supporting OpenGL 4.3
 
 - CMake
+
+- gcc/g++
 
 # compilation
 

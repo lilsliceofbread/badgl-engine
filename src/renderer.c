@@ -6,7 +6,6 @@
 #include "shader.h"
 #include "texture.h"
 #include "util.h"
-#include <threads.h>
 
 void rd_resize_callback(GLFWwindow* win, int width, int height);
 
@@ -30,11 +29,11 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  
     #endif
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    /* Mac doesn't support OpenGL 4.6 anyway :/
+    /* Mac doesn't support OpenGL 4.3 anyway :/
      * #ifdef __APPLE__
      *    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
      * #endif
@@ -112,8 +111,6 @@ void rd_begin_frame(Renderer* self)
     float curr_time = rd_get_time();
     self->delta_time = curr_time - self->last_time;
     self->last_time = curr_time; 
-
-    printf("FPS: %f\n", 1 / self->delta_time);
 }
 
 void rd_end_frame(Renderer* self)

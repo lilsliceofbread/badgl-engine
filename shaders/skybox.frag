@@ -1,4 +1,4 @@
-#version 460 core
+#version 430 core
 
 in vec3 f_pos; // this value becomes interpolated between vertices
 
