@@ -1,12 +1,11 @@
 #! /bin/bash
 
-cd build
+cmake --build build
 
-make
+cd build/example
 
-cd example
 rm -rf shaders
-rm -rf example/res
+rm -rf res
 
 cp -r ../../shaders .
 cp -r ../../example/res .

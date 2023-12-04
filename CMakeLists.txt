@@ -3,27 +3,27 @@
 cmake_minimum_required(VERSION 3.13.4)
 
 set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_COMPILER "gcc")
-set(CMAKE_CXX_COMPILER "g++")
+set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE) # build all libs as shared if not explicitly static. DO NOT USE ON WINDOWS.
 
 project(badgl)
 
-# build the example game thing
-set(BADGL_BUILD_EXAMPLE ON)
+option(BADGL_BUILD_EXAMPLE "Build the example game for badgl?" ON)
 
 # assimp build options
-set(BUILD_SHARED_LIBS ON CACHE INTERNAL "" FORCE) # build as SHARED lib, so compilation is faster
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_NO_EXPORT ON CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "" FORCE) # WHY IS THIS ON BY DEFAULT IF COMPILATION FAILS WHEN ITS ON
 
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+
 file(GLOB_RECURSE BADGL_SRCS
      "src/*.c"
      external/glad/src/gl.c)
 
-if (MSVC) # don't know if this works; i don't use msvc
+if (MSVC)
     set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS "/W4")
 else()
     set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wconversion -pedantic -Wno-missing-braces")
@@ -64,4 +64,8 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_directories(${PROJECT_NAME} PRIVATE external/glfw/src PRIVATE external/assimp/lib)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC glfw PUBLIC assimp PUBLIC m)
+target_link_libraries(${PROJECT_NAME} PUBLIC glfw PUBLIC assimp)
+
+if(NOT MSVC)
+    target_link_libraries(${PROJECT_NAME} PUBLIC m) # m is libc math library, not automatically linked for some reason
+endif()

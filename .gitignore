@@ -1,3 +1,3 @@
 ./build
 ./external/glfw
-./.vscode
+./.vscode/settings.json

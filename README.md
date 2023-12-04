@@ -1,7 +1,9 @@
 # badgl-engine
-making a terrible graphics "engine" (barely a framework) to learn c and opengl. DON'T USE THIS
+making a terrible graphics "engine" (barely a framework) to learn c and opengl.
 
-WIP
+WIP (no documentation, have fun!)
+
+the example program should help to give some idea of the structure of the engine
 
 # requirements
 
@@ -9,10 +11,10 @@ WIP
 
 - CMake
 
-- gcc/g++
+- all compilers should *theoretically* work (gcc tested on linux and windows) 
 
-# compilation
+# compiling and running the example
 
-run config.sh, then build.sh, then run with run.sh
+*Linux*: run `config.sh`, then `build.sh`, then run with `run.sh`
 
-if on Windows, you may want to either use a program to run the .sh files, or look at the files and use the corresponding Windows commands manually
+*Windows*: Build with `build.bat`, then navigate to build/example and run `start game.exe`. NOTE: if msvc was used, you may need to run `start ./[Debug or Release]/game.exe` so that the working directory remains in build/example (or just don't use msvc lol).
