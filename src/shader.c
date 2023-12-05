@@ -152,10 +152,10 @@ GLint shader_find_uniform(Shader* self, const char* name)
     return -1;
 }
 
-void shader_uniform_mat4(Shader* self, const char* name, mat4 mat)
+void shader_uniform_mat4(Shader* self, const char* name, mat4* mat)
 {
     GLint location = shader_find_uniform(self, name);
-    glUniformMatrix4fv(location, 1, GL_FALSE, (float*)mat.data); // false to transpose matrix
+    glUniformMatrix4fv(location, 1, GL_FALSE, (float*)mat->data); // false to transpose matrix
 }
 
 void shader_uniform_1f(Shader* self, const char* name, float f)

@@ -30,7 +30,7 @@ void shader_use(Shader* self);
 
 GLint shader_find_uniform(Shader* self, const char* name);
 
-void shader_uniform_mat4(Shader* self, const char* name, mat4 mat);
+void shader_uniform_mat4(Shader* self, const char* name, mat4* mat);
 
 void shader_uniform_1f(Shader* self, const char* name, float f);
 

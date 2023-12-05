@@ -8,16 +8,16 @@
 #include "bo.h"
 #include "shader.h"
 
-typedef struct Vertex
-{
-    vec3 pos;
-    vec3 normal;
-    vec2 uv;
-} Vertex;
+typedef struct VertexBuffer
+{ // really should be made as contiguous in memory
+    vec3* pos;
+    vec3* normal;
+    vec2* uv;
+} VertexBuffer;
 
 typedef struct Mesh
 {
-    Vertex* vertices;
+    VertexBuffer vertex_buffer;
     uint32_t* indices;
     uint32_t* tex_indexes; // indexes into parent structure's array
     uint32_t vert_count, ind_count, tex_count;
@@ -28,8 +28,8 @@ typedef struct Mesh
 } Mesh;
 
 // all vertices, indices and textures should be pre-allocated, and will be freed in mesh_free()
-void mesh_init(Mesh* self, Vertex* vertices, uint32_t vertices_count, uint32_t* indices, uint32_t indices_count,
-               uint32_t* tex_indexes, uint32_t textures_count);
+void mesh_init(Mesh* self, VertexBuffer vertex_buffer, uint32_t vert_count, uint32_t* indices, uint32_t ind_count,
+               uint32_t* tex_indexes, uint32_t tex_count);
 
 void mesh_draw(Mesh* self, Shader* shader, Texture* textures);
 

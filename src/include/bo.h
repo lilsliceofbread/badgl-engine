@@ -20,12 +20,14 @@ typedef struct BO
 #define vbo_create() bo_create(GL_ARRAY_BUFFER)
 #define vbo_bind bo_bind
 #define vbo_set_buffer bo_set_buffer
+#define vbo_set_buffer_region bo_set_buffer_region
 #define vbo_free bo_free
 
 #define EBO BO
 #define ebo_create() bo_create(GL_ELEMENT_ARRAY_BUFFER)
 #define ebo_bind bo_bind
 #define ebo_set_buffer bo_set_buffer
+#define ebo_set_buffer_region bo_set_buffer_region
 #define ebo_free bo_free
 
 
@@ -33,7 +35,9 @@ BO bo_create(GLenum type);
 
 void bo_bind(BO self);
 
-void bo_set_buffer(BO self, void* data, size_t size, bool dynamic); // can't use dynamic rn
+void bo_set_buffer(BO self, const void* data, size_t size, bool dynamic); // can't use dynamic rn
+
+void bo_set_buffer_region(BO self, const void* data, int offset, size_t size);
 
 void bo_free(BO self); // free gpu allocation
 

@@ -8,19 +8,25 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
     Sphere self;
     self.pos = pos;
     self.radius = radius;
-    Vertex* vertices = NULL;
     uint32_t* indices = NULL;
     uint32_t* tex_indexes = NULL;
     uint32_t vert_count = 0, ind_count = 0;
     uint32_t tex_count = cubemap_path == NULL ? 0 : 1; // only 1 if cubemap path has been given
 
+    shader_init(&self.shader, "shaders/sphere.vert", "shaders/sphere.frag");
+
     const uint32_t horizontals = resolution, verticals = 2 * resolution;
 
-    // calloc to initialise all uvs to 0 since we won't be using them
-    vertices = (Vertex*)calloc((horizontals * verticals + 2), sizeof(Vertex)); // (h * v) + 2 is the amt of vertices
-    ASSERT(vertices != NULL, "SPHERE: failed to allocate vertices");
+    VertexBuffer vertex_buffer = {
+        .pos = (vec3*)malloc((horizontals * verticals + 2) * sizeof(vec3)), // (h * v) + 2 is the amt of vertices,
+        .normal = (vec3*)malloc((horizontals * verticals + 2) * sizeof(vec3)),
+        .uv = NULL
+    };
+    ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices");
+
     indices = (uint32_t*)malloc((6 * verticals * (horizontals - 1)) * sizeof(uint32_t)); // 6 * v * (h - 1) is the amt of indices
     ASSERT(indices != NULL, "SPHERE: failed to allocate indices");
+
     if(cubemap_path != NULL) // for now
     {
         texture_cubemap_create(&self.texture, cubemap_path);
@@ -29,13 +35,13 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
     }
 
     // top vertex
-    vertices[0].pos.x = 0.0f;
-    vertices[0].pos.y = radius;
-    vertices[0].pos.z = 0.0f;
+    vertex_buffer.pos[0].x = 0.0f;
+    vertex_buffer.pos[0].y = radius;
+    vertex_buffer.pos[0].z = 0.0f;
 
-    vertices[0].normal.x = 0.0f;
-    vertices[0].normal.y = 1.0f;
-    vertices[0].normal.z = 0.0f;
+    vertex_buffer.normal[0].x = 0.0f;
+    vertex_buffer.normal[0].y = 1.0f;
+    vertex_buffer.normal[0].z = 0.0f;
 
     vert_count++;
 
@@ -58,31 +64,31 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
                as the unit circle is reversed with +z going "down" */
             float vertical_angle = (float)j * pi2 * inv_vert;
 
-            Vertex vertex;
-
+            vec3 pos, normal;
             // calculate cartesian coords from spherical
-            vertex.pos.x = radius * sh * cosf(vertical_angle);
-            vertex.pos.y = y;
-            vertex.pos.z = radius * sh * sinf(vertical_angle);
+            pos.x = radius * sh * cosf(vertical_angle);
+            pos.y = y;
+            pos.z = radius * sh * sinf(vertical_angle);
 
-            vertex.normal.x = vertex.pos.x * inv_radius;
-            vertex.normal.y = vertex.pos.y * inv_radius;
-            vertex.normal.z = vertex.pos.z * inv_radius;
+            normal.x = pos.x * inv_radius;
+            normal.y = pos.y * inv_radius;
+            normal.z = pos.z * inv_radius;
 
-            vertices[vert_count] = vertex;
+            vertex_buffer.pos[vert_count] = pos;
+            vertex_buffer.normal[vert_count] = normal;
             vert_count++;
         }
     }
     // this creates (horizontals - 1) horizontals as the loop goes from 1 to horizontals
 
     // bottom vertex
-    vertices[vert_count].pos.x = 0.0f;
-    vertices[vert_count].pos.y = -radius;
-    vertices[vert_count].pos.z = 0.0f;
+    vertex_buffer.pos[vert_count].x = 0.0f;
+    vertex_buffer.pos[vert_count].y = -radius;
+    vertex_buffer.pos[vert_count].z = 0.0f;
 
-    vertices[vert_count].normal.x = 0.0f;
-    vertices[vert_count].normal.y = -1.0f;
-    vertices[vert_count].normal.z = 0.0f;
+    vertex_buffer.normal[vert_count].x = 0.0f;
+    vertex_buffer.normal[vert_count].y = -1.0f;
+    vertex_buffer.normal[vert_count].z = 0.0f;
 
     vert_count++;
 
@@ -145,22 +151,27 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
         ind_count += 3;
     }
 
-    mesh_init(&self.mesh, vertices, vert_count, indices, ind_count, tex_indexes, tex_count);
+    mesh_init(&self.mesh, vertex_buffer, vert_count, indices, ind_count, tex_indexes, tex_count);
 
     return self;
 }
 
-// this could have a fixed path to the sphere shader?
-void sphere_draw(Sphere* self, Shader* shader)
+void sphere_draw(Sphere* self, mat4* vp)
 {
+    shader_use(&self->shader);
+
+    shader_uniform_mat4(&self->shader, "vp", vp);
+
     mat4 model = mat4_identity();
     mat4_trans(&model, self->pos);
-    shader_uniform_mat4(shader, "model", model);
-    mesh_draw(&self->mesh, shader, &self->texture);
+    shader_uniform_mat4(&self->shader, "model", &model);
+
+    mesh_draw(&self->mesh, &self->shader, &self->texture);
 }
 
 void sphere_free(Sphere* self)
 {
     mesh_free(&self->mesh);
+    shader_free(&self->shader);
     texture_free(&self->texture);
 }

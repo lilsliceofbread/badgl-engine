@@ -1,9 +1,9 @@
 # badgl-engine
-making a terrible graphics "engine" (barely a framework) to learn c and opengl.
+making a terrible graphics "engine" to learn c and opengl.
 
 WIP (no documentation, have fun!)
 
-the example program should help to give some idea of the structure of the engine
+the example program should help to give some idea of the structure of the engine.
 
 # requirements
 

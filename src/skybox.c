@@ -12,7 +12,11 @@ Skybox skybox_init(const char* cubemap_path)
     texture_cubemap_create(&self.texture, cubemap_path);
 
     // skybox has predefined sizes
-    Vertex* vertices = (Vertex*)malloc(8 * sizeof(Vertex));
+    VertexBuffer vertex_buffer;
+    vertex_buffer.pos = (vec3*)malloc(8 * sizeof(vec3));
+    vertex_buffer.normal = NULL;
+    vertex_buffer.uv = NULL;
+
     uint32_t* indices = (uint32_t*)malloc(6 * 6 * sizeof(uint32_t));
     uint32_t* tex_indexes = (uint32_t*)malloc(sizeof(uint32_t));
     tex_indexes[0] = 0; // only 1 texture
@@ -30,48 +34,41 @@ Skybox skybox_init(const char* cubemap_path)
             { 1,  1, -1}  // 7
         };
 
-        for(int i = 0; i < 8; i++)
-        {
-            vertices[i].pos = vertex_positions[i];
-
-            vertices[i].normal = vec3_zero();
-            vertices[i].uv = vec2_zero();
-        }
+        memcpy(vertex_buffer.pos, vertex_positions, sizeof(vertex_positions));
     }
 
     {
         // clockwise indices for inside of the cube (technically anticlockwise)
         uint32_t indices_tmp[] = {
-            //Top
+            // top
             2, 6, 7,
             2, 7, 3,
 
-            //Bottom
+            // bottom
             0, 5, 4,
             0, 1, 5,
 
-            //Left
+            // left
             0, 6, 2,
             0, 4, 6,
 
-            //Right
+            // right
             1, 3, 7,
             1, 7, 5,
 
-            //Front
+            // front
             0, 2, 3,
             0, 3, 1,
 
-            //Back
+            // back
             4, 7, 6,
             4, 5, 7
         };
 
-        // have to set it this way because it is on the heap
         memcpy(indices, indices_tmp, sizeof(indices_tmp));
     }
 
-    mesh_init(&self.mesh, vertices, 8, indices, 6 * 6, tex_indexes, 1);
+    mesh_init(&self.mesh, vertex_buffer, 8, indices, 6 * 6, tex_indexes, 1);
 
     return self;
 }
@@ -86,7 +83,7 @@ void skybox_draw(Skybox* self, Camera* cam)
     glDepthFunc(GL_LEQUAL);
 
     shader_use(&self->shader);
-    shader_uniform_mat4(&self->shader, "vp", vp);
+    shader_uniform_mat4(&self->shader, "vp", &vp);
     mesh_draw(&self->mesh, &self->shader, &self->texture);
 
     glDepthFunc(GL_LESS);

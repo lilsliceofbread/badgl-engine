@@ -76,7 +76,6 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
 {
     Mesh mesh;
 
-    Vertex* vertices = NULL;
     uint32_t* indices = NULL;
     uint32_t* tex_indexes = NULL; // indexes into model textures array
     uint32_t total_indices = 0;
@@ -84,8 +83,12 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
 
     // allocation (ownership goes to mesh which is freed in mesh_free())
 
-    vertices = (Vertex*)malloc(model_mesh->mNumVertices * sizeof(Vertex));
-    ASSERT(vertices != NULL, "MODEL: failed to allocate vertices");
+    VertexBuffer vertex_buffer = {
+        .pos = (vec3*)malloc(model_mesh->mNumVertices * sizeof(vec3)),
+        .normal = (vec3*)malloc(model_mesh->mNumVertices * sizeof(vec3)),
+        .uv = (vec2*)calloc(model_mesh->mNumVertices, sizeof(vec2)) // if there are no tex coords calloc will have zeroed out all values
+    };
+    ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL || vertex_buffer.uv != NULL, "MODEL: failed to allocate vertices");
 
     // loop through faces to count indices for allocation of indices array
     for(uint32_t i = 0; i < model_mesh->mNumFaces; i++)
@@ -103,31 +106,30 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     // for each vertex in mesh, get pos, normal, uv and copy into vertices array
     for(uint32_t i = 0; i < model_mesh->mNumVertices; i++)
     {
-        Vertex vertex;
-        vec3 vec; // have to use temp vec
-        vec.x = model_mesh->mVertices[i].x;
-        vec.y = model_mesh->mVertices[i].y;
-        vec.z = model_mesh->mVertices[i].z;
-        vertex.pos = vec;
+        vec3 pos, normal;
+        vec2 uv;
 
-        vec.x = model_mesh->mNormals[i].x;
-        vec.y = model_mesh->mNormals[i].y;
-        vec.z = model_mesh->mNormals[i].z;
-        vertex.normal = vec;
+        pos.x = model_mesh->mVertices[i].x;
+        pos.y = model_mesh->mVertices[i].y;
+        pos.z = model_mesh->mVertices[i].z;
+
+        normal.x = model_mesh->mNormals[i].x;
+        normal.y = model_mesh->mNormals[i].y;
+        normal.z = model_mesh->mNormals[i].z;
 
         if(model_mesh->mTextureCoords[0])
         {
-            vec2 uv_vec;
-            uv_vec.u = model_mesh->mTextureCoords[0][i].x;
-            uv_vec.v = model_mesh->mTextureCoords[0][i].y;
-            vertex.uv = uv_vec;
+            uv.u = model_mesh->mTextureCoords[0][i].x;
+            uv.v = model_mesh->mTextureCoords[0][i].y;
         }
         else
         {
-            vertex.uv = vec2_zero();
+            uv = vec2_zero();
         }
 
-        vertices[i] = vertex;
+        vertex_buffer.pos[i] = pos;
+        vertex_buffer.normal[i] = normal;
+        vertex_buffer.uv[i] = uv;
     }
 
     // loop through faces and indices and add each to array
@@ -169,7 +171,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     } // if no textures then skip
     //}
 
-    mesh_init(&mesh, vertices, model_mesh->mNumVertices, indices, total_indices, tex_indexes, total_textures);
+    mesh_init(&mesh, vertex_buffer, model_mesh->mNumVertices, indices, total_indices, tex_indexes, total_textures);
     return mesh;
 }
 

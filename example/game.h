@@ -13,7 +13,7 @@
 typedef struct GameState
 {
     Renderer rd;
-    uint32_t shader_indices[MAX_SHADERS]; // index into renderer shaders
+    uint32_t shader_indices[MAX_SHADERS]; // index into renderer's shader array
     uint32_t shader_count;
     Camera cam;
     Model models[MAX_MODELS];
