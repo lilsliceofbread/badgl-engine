@@ -167,7 +167,7 @@ void texture_bind(Texture* self)
 
 void texture_unit_active(uint32_t num)
 {
-    ASSERT(num <= 31, "TEXTURE: GL texture unit out of range");
+    ASSERT(num <= 31, "TEXTURE: GL texture unit out of range\n");
     glActiveTexture(GL_TEXTURE0 + num);
 }
 
@@ -193,5 +193,5 @@ const char* texture_type_get_str(TextureType type)
             return "cubemap";
             break;
     }
-    ASSERT(false, "TEXTURE: invalid texture type");
+    ASSERT(false, "TEXTURE: invalid texture type\n");
 }

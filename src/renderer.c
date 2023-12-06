@@ -6,6 +6,22 @@
 #include "shader.h"
 #include "texture.h"
 #include "util.h"
+#ifdef __linux__
+    #include <GL/glx.h>
+    #include <GL/glxext.h>
+
+    PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
+    // the GLX_EXT_swap_control extension does not have
+    // a GetSwapIntervalEXT func, use glXQueryDrawable instead
+#elif _WIN32
+    #include <windows.h>
+    #include "wglext.h"
+
+    PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
+    //PFNWGLGETSWAPINTERVALEXTPROC wglGetSwapIntervalEXT = NULL;
+#endif
+
+bool rd_get_vsync_functions(Renderer* self);
 
 void rd_resize_callback(GLFWwindow* win, int width, int height);
 
@@ -22,8 +38,9 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     self->delta_time = 0.0f;
     self->last_time = 0.0f;
     self->framecount = 0;
+    self->vsync_enabled = false;
 
-    ASSERT(glfwInit(), "RENDERER: failed to init GLFW");
+    ASSERT(glfwInit(), "RENDERER: failed to init GLFW\n");
 
     #ifndef NO_DEBUG
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  
@@ -43,13 +60,13 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 
     self->win = win;
 
-    ASSERT(win != NULL, "RENDERER: failed to open window");
+    ASSERT(win != NULL, "RENDERER: failed to open window\n");
 
     glfwMakeContextCurrent(win);
     glfwSetCursorPos(win, width / 2, height / 2);
-    glfwSwapInterval(1);
 
-    ASSERT(gladLoadGL((GLADloadfunc)glfwGetProcAddress), "RENDERER: failed to init GLAD");
+    ASSERT(gladLoadGL((GLADloadfunc)glfwGetProcAddress), "RENDERER: failed to init GLAD\n");
+
 
     glfwSetWindowUserPointer(win, self);
     glfwSetKeyCallback(self->win, rd_key_callback);
@@ -67,6 +84,15 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
             glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
         }
     #endif
+
+    if(rd_get_vsync_functions(self))
+    {
+        rd_set_vsync(true);
+    }
+    else 
+    {
+        fprintf(stderr, "RENDERER: OpenGL vsync extension not enabled");
+    }
 
     glViewport(0, 0, width, height);
 
@@ -91,7 +117,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 uint32_t rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
 {
     self->shaders = (Shader*)realloc(self->shaders, (self->shader_count + 1) * sizeof(Shader));
-    ASSERT(self->shaders != NULL, "RENDERER: failed to reallocate shader array");
+    ASSERT(self->shaders != NULL, "RENDERER: failed to reallocate shader array\n");
     shader_init(&self->shaders[self->shader_count], vert_src, frag_src);
 
     self->shader_count++;
@@ -111,6 +137,8 @@ void rd_begin_frame(Renderer* self)
     float curr_time = rd_get_time();
     self->delta_time = curr_time - self->last_time;
     self->last_time = curr_time; 
+    
+    //printf("FPS: %f\n", 1.0f / self->delta_time);
 }
 
 void rd_end_frame(Renderer* self)
@@ -137,6 +165,37 @@ bool rd_key_pressed(Renderer* self, int key)
 bool rd_win_should_close(Renderer* self)
 {
     return glfwWindowShouldClose(self->win);
+}
+
+bool rd_get_vsync_functions(Renderer* self) {
+    #ifdef __linux__
+        if(!gl_extension_supported("GLX_EXT_swap_control")) return false;
+
+        glXSwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddress((const GLubyte*)"glXSwapIntervalEXT");
+    #elif _WIN32
+        if(!gl_extension_supported("WGL_EXT_swap_control")) return false;
+
+        wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC) wglGetProcAddress("wglSwapIntervalEXT");
+        //wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC) wglGetProcAddress("wglGetSwapIntervalEXT");
+    #elif __APPLE__
+        // no apple support yet
+    #endif
+
+    self->vsync_enabled = true;
+    return true;
+}
+
+void rd_set_vsync(bool on) {
+    #ifdef __linux__
+        Display* display = glXGetCurrentDisplay();
+        GLXDrawable drawable = glXGetCurrentDrawable();
+
+        glXSwapIntervalEXT(display, drawable, (int)on);
+    #elif _WIN32
+        wglSwapIntervalEXT((int)on);
+    #elif __APPLE__
+        // no apple support yet
+    #endif
 }
 
 void rd_free(Renderer* self)
@@ -207,7 +266,6 @@ void rd_get_cursor_pos(Renderer* self, float* cursor_x_out, float* cursor_y_out)
     *cursor_y_out = (float)ypos;
 }
 
-// from learnopengl
 void APIENTRY rd_debug_callback(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *user_param)
 {
     // ignore non-significant error/warning codes

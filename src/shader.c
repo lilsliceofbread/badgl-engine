@@ -17,10 +17,10 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
     info_log[0] = '\0'; // if shader creation failed but no info log
 
     vert_shader = shader_compile(self, vert_shader_src, GL_VERTEX_SHADER, info_log, sizeof(info_log), &success);
-    ASSERT(success, "SHADER: vertex shader comp failed. Info Log:\n%s", info_log);
+    ASSERT(success, "SHADER: vertex shader comp failed. Info Log:\n%s\n", info_log);
 
     frag_shader = shader_compile(self, frag_shader_src, GL_FRAGMENT_SHADER, info_log, sizeof(info_log), &success);
-    ASSERT(success, "SHADER: fragment shader comp failed. info log:\n%s", info_log);
+    ASSERT(success, "SHADER: fragment shader comp failed. info log:\n%s\n", info_log);
 
     shader_program = glCreateProgram();
 
@@ -32,7 +32,7 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
 
     glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
     glGetProgramInfoLog(shader_program, sizeof(info_log), NULL, info_log);
-    ASSERT(success, "SHADER: shader program creation failed. info log:\n%s", info_log);
+    ASSERT(success, "SHADER: shader program creation failed. info log:\n%s\n", info_log);
 
     // here because needs to be done after linking program
     for(uint32_t i = 0; i < self->uniform_count; i++)
@@ -57,7 +57,7 @@ GLuint shader_compile(Shader* self, const char* shader_filepath, GLenum shader_t
 
     shader_src = get_file_data(shader_filepath);
 
-    ASSERT(shader_src != NULL, "SHADER: failed to get shader source");
+    ASSERT(shader_src != NULL, "SHADER: failed to get shader source\n");
 
     shader = glCreateShader(shader_type);
 
@@ -78,7 +78,7 @@ GLuint shader_compile(Shader* self, const char* shader_filepath, GLenum shader_t
     return shader;
 }
 
-// THIS WILL REPEAT UNIFORMS IF IN 2 SHADERS
+// THIS WILL REPEAT UNIFORMS IF IN BOTH SHADERS
 void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 {
     uint32_t add_uniform_count = 0;
@@ -94,7 +94,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
     }
 
     self->stored_uniforms = realloc(self->stored_uniforms, (self->uniform_count + add_uniform_count) * sizeof(uniform_pair));
-    ASSERT(self->stored_uniforms != NULL, "SHADER: failed to reallocate uniforms array");
+    ASSERT(self->stored_uniforms != NULL, "SHADER: failed to reallocate uniforms array\n");
 
     // get name of uniform from it 
     // (find ; and the space behind it)
@@ -105,7 +105,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
         char c;
         int line_idx = 0;
         uint32_t j = uniform_pos[i];
-        while((c = src_code[j]) != ';' && line_idx < 300) // while we haven't seen ; and less than 300 for sanity check (shouldn't be that long)
+        while((c = src_code[j]) != ';' && line_idx < 300) // while we haven't seen ; and less than 300 for sanity check (line shouldn't be that long)
         {
             if(c == ' ') // if space reset line and continue
             {

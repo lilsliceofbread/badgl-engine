@@ -7,7 +7,7 @@ set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE) # build all libs as shared if
 
 project(badgl)
 
-option(BADGL_BUILD_EXAMPLE "Build the example game for badgl?" ON)
+set(BADGL_BUILD_EXAMPLE ON)
 
 # assimp build options
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
@@ -19,7 +19,7 @@ set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "" FORCE) # WHY IS THIS ON BY D
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 
-file(GLOB_RECURSE BADGL_SRCS
+file(GLOB_RECURSE BADGL_SRCS CONFIGURE_DEPENDS
      "src/*.c"
      external/glad/src/gl.c)
 
@@ -66,6 +66,12 @@ target_link_directories(${PROJECT_NAME} PRIVATE external/glfw/src PRIVATE extern
 
 target_link_libraries(${PROJECT_NAME} PUBLIC glfw PUBLIC assimp)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(${PROJECT_NAME} PUBLIC GLX) # linux libGLX.so is required for glX extensions (might be lowercase for some)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    target_link_libraries(${PROJECT_NAME} PUBLIC OpenGL32) # windows needs OpenGL32.lib
+endif()
+
 if(NOT MSVC)
-    target_link_libraries(${PROJECT_NAME} PUBLIC m) # m is libc math library, not automatically linked for some reason
+    target_link_libraries(${PROJECT_NAME} PUBLIC m) # libm is libc math library, not automatically linked for some reason
 endif()

@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.13.4)
 
 project(game)
 
-file(GLOB_RECURSE BADGL_EXAMPLE_SRCS "*.c")
+file(GLOB_RECURSE BADGL_EXAMPLE_SRCS CONFIGURE_DEPENDS "*.c")
 
-if (MSVC) # don't know if this works; i don't use msvc
+if (MSVC)
     set_source_files_properties(${BADGL_EXAMPLE_SRCS} PROPERTIES COMPILE_FLAGS "/W4")
 else()
     set_source_files_properties(${BADGL_EXAMPLE_SRCS} PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wconversion -pedantic -Wno-missing-braces")
@@ -13,6 +13,7 @@ endif()
 add_executable(${PROJECT_NAME} ${BADGL_EXAMPLE_SRCS})
 
 target_include_directories(${PROJECT_NAME} 
+                            PUBLIC .
                             PUBLIC ../include
                             PUBLIC ../external/stb
                             PUBLIC ../external/glfw/include 

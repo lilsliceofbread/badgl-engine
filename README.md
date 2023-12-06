@@ -15,6 +15,6 @@ the example program should help to give some idea of the structure of the engine
 
 # compiling and running the example
 
-*Linux*: run `config.sh`, then `build.sh`, then run with `run.sh`
+*Linux*: `libglx-dev` is the only package required (needs the glx*.h headers for vsync). Run `cmake -S . -B build` to configure cmake, then `./build.sh`. Now you can run the example with `./run.sh`
 
-*Windows*: Build with `build.bat`, then navigate to build/example and run `start game.exe`. NOTE: if msvc was used, you may need to run `start ./[Debug or Release]/game.exe` so that the working directory remains in build/example (or just don't use msvc lol).
+*Windows*: Build with `build.bat`, then navigate to build/example and run `start game.exe`. NOTE: if the MSVC compiler was used, you may need to run `start .\[Debug or Release]\game.exe` so that the working directory remains in build/example (or just don't use msvc lol).

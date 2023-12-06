@@ -21,6 +21,8 @@ typedef struct Renderer
 
     float last_time, delta_time; // delta time of last frame, last_time to calculate delta_time (not used by user)
     uint32_t framecount;
+
+    bool vsync_enabled; // if vsync extension exists on this machine
 } Renderer;
 
 void rd_init(Renderer* rd, int width, int height, const char* win_title);
@@ -42,6 +44,8 @@ void rd_get_cursor_pos(Renderer* self, float* cursor_x_out, float* cursor_y_out)
 bool rd_key_pressed(Renderer* self, int key);
 
 void rd_free(Renderer* self);
+
+void rd_set_vsync(bool on);
 
 void APIENTRY rd_debug_callback(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *user_param);
 

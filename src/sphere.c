@@ -22,10 +22,10 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
         .normal = (vec3*)malloc((horizontals * verticals + 2) * sizeof(vec3)),
         .uv = NULL
     };
-    ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices");
+    ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices\n");
 
     indices = (uint32_t*)malloc((6 * verticals * (horizontals - 1)) * sizeof(uint32_t)); // 6 * v * (h - 1) is the amt of indices
-    ASSERT(indices != NULL, "SPHERE: failed to allocate indices");
+    ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");
 
     if(cubemap_path != NULL) // for now
     {

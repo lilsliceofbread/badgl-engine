@@ -16,7 +16,7 @@ void model_load(Model* self, const char* path)
 
     // import scene object (entire model)
     const struct aiScene* scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-    ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "MODEL: loading %s failed\n%s", path, aiGetErrorString());
+    ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "MODEL: loading %s failed\n%s\n", path, aiGetErrorString());
 
     self->mesh_count = 0;
     self->meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
@@ -52,7 +52,7 @@ void model_draw(Model* self, Shader* shader)
 
 void model_add_mesh(Model* self, Mesh mesh, uint32_t total_meshes)
 {
-    ASSERT(self->mesh_count <= total_meshes, "MODEL: meshes exceeded allocated memory");
+    ASSERT(self->mesh_count <= total_meshes, "MODEL: meshes exceeded allocated memory\n");
     self->meshes[self->mesh_count] = mesh;
     self->mesh_count++;
 }
@@ -88,7 +88,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         .normal = (vec3*)malloc(model_mesh->mNumVertices * sizeof(vec3)),
         .uv = (vec2*)calloc(model_mesh->mNumVertices, sizeof(vec2)) // if there are no tex coords calloc will have zeroed out all values
     };
-    ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL || vertex_buffer.uv != NULL, "MODEL: failed to allocate vertices");
+    ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL || vertex_buffer.uv != NULL, "MODEL: failed to allocate vertices\n");
 
     // loop through faces to count indices for allocation of indices array
     for(uint32_t i = 0; i < model_mesh->mNumFaces; i++)
@@ -101,7 +101,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         total_indices += face.mNumIndices;
     }
     indices = (uint32_t*)malloc(total_indices * sizeof(uint32_t));
-    ASSERT(indices != NULL, "MODEL: failed to allocate indices");
+    ASSERT(indices != NULL, "MODEL: failed to allocate indices\n");
 
     // for each vertex in mesh, get pos, normal, uv and copy into vertices array
     for(uint32_t i = 0; i < model_mesh->mNumVertices; i++)
@@ -206,7 +206,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
             // increase amount to add to tex_count and reallocate textures
             new_add_tex_count++;
             self->textures = (Texture*)realloc(self->textures, (self->tex_count + new_add_tex_count) * sizeof(Texture));
-            ASSERT(self->textures != NULL, "MODEL: failed to realloc texture array");
+            ASSERT(self->textures != NULL, "MODEL: failed to realloc texture array\n");
 
             // create new texture
             Texture texture;
