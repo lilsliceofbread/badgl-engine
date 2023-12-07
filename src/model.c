@@ -9,10 +9,11 @@
 #include "glmath.h"
 #include "util.h"
 #include "texture.h"
+#include "renderer.h"
 
-void model_load(Model* self, const char* path)
+void model_load(Model* self, const char* path, uint32_t shader_index)
 {
-    double start_time = glfwGetTime();
+    float start_time = rd_get_time();
 
     // import scene object (entire model)
     const struct aiScene* scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -22,6 +23,8 @@ void model_load(Model* self, const char* path)
     self->meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
     self->textures = NULL; // not setting this to null before realloc creates undefined behaviour, if the uninitialised memory is not 0
     self->tex_count = 0;
+    self->shader_index = shader_index;
+    self->transform = mat4_identity();
 
     // get directory of model and store
     {
@@ -39,14 +42,20 @@ void model_load(Model* self, const char* path)
 
     aiReleaseImport(scene); // need to free scene ourselves in c
 
-    printf("MODEL: loading %s took %fs\n", path, glfwGetTime() - start_time);
+    printf("MODEL: loading %s took %fs\n", path, rd_get_time() - start_time);
 }
 
-void model_draw(Model* self, Shader* shader)
+void model_draw(Model* self, Renderer* rd, mat4* vp)
 {
+    Shader* shader_ptr = &rd->shaders[self->shader_index];
+
+    shader_use(shader_ptr);
+    shader_uniform_mat4(shader_ptr, "vp", vp);
+    shader_uniform_mat4(shader_ptr, "model", &self->transform);
+
     for(uint32_t i = 0; i < self->mesh_count; i++)
     {
-        mesh_draw(&self->meshes[i], shader, self->textures);
+        mesh_draw(&self->meshes[i], shader_ptr, self->textures);
     }
 }
 
@@ -82,11 +91,10 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     uint32_t total_textures = 0;
 
     // allocation (ownership goes to mesh which is freed in mesh_free())
-
     VertexBuffer vertex_buffer = {
         .pos = (vec3*)malloc(model_mesh->mNumVertices * sizeof(vec3)),
         .normal = (vec3*)malloc(model_mesh->mNumVertices * sizeof(vec3)),
-        .uv = (vec2*)calloc(model_mesh->mNumVertices, sizeof(vec2)) // if there are no tex coords calloc will have zeroed out all values
+        .uv = (vec2*)calloc(model_mesh->mNumVertices, sizeof(vec2)) // if there are no tex coords calloc will have already zeroed out all values
     };
     ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL || vertex_buffer.uv != NULL, "MODEL: failed to allocate vertices\n");
 
@@ -95,15 +103,13 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     {
         struct aiFace face = model_mesh->mFaces[i];
 
-        // prevent lines or single vertices from being added
-        // should really create a quad when this occurs but oh well
+        // prevent lines or single vertices from being added if triangulation didn't work
         if(face.mNumIndices < 3) continue;
         total_indices += face.mNumIndices;
     }
     indices = (uint32_t*)malloc(total_indices * sizeof(uint32_t));
     ASSERT(indices != NULL, "MODEL: failed to allocate indices\n");
 
-    // for each vertex in mesh, get pos, normal, uv and copy into vertices array
     for(uint32_t i = 0; i < model_mesh->mNumVertices; i++)
     {
         vec3 pos, normal;

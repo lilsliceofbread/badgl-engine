@@ -14,48 +14,37 @@
 void game_init(GameState* s)
 {
     s->model_count = 0;
-    s->shader_count = 0;
 
     rd_init(&s->rd, GAME_WIDTH, GAME_HEIGHT, "cool stuff");
 
-    // better method to use a counter instead of manually keeping track of numbers
-    s->shader_indices[s->shader_count] = rd_add_shader(&s->rd, "shaders/model_default.vert", "shaders/model_default.frag");
-    s->shader_count++;
-
-    // cam setup
     vec3 start_pos = {0.0f, 0.0f, 3.0f};
-    float aspect_ratio = (float)(s->rd.width) / (float)(s->rd.height);
+    const float aspect_ratio = (float)(s->rd.width) / (float)(s->rd.height); // not casting these to float causes the aspect ratio to be rounded
     s->cam = camera_init(start_pos, -90.0f, 0.0f);
     camera_update_proj(&s->cam, 90.0f, aspect_ratio, 0.01f, 100.0f);
 
-    model_load(&s->models[0], "res/backpack/backpack.obj");
+    // we create these shader's ourselves and then pass the index to the structures so multiple can use the same shader
+    uint32_t model_shader = rd_add_shader(&s->rd, "shaders/model_default.vert", "shaders/model_default.frag");
+    uint32_t sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
+
+    model_load(&s->models[0], "res/backpack/backpack.obj", model_shader);
     s->model_count++;
 
-    s->sphere = uv_sphere_gen((vec3){5.0f, 3.0f, 0.0f}, 2.0f, 15, "res/earth/e.png");
+    s->sphere = uv_sphere_gen((vec3){5.0f, 3.0f, 0.0f}, 2.0f, 15, "res/earth/e.png", sphere_shader);
     s->skybox = skybox_init("res/meadow/m.png");
 }
 
 void game_update(GameState* s)
 {
-    Shader* model_shader = &s->rd.shaders[s->shader_indices[0]]; 
-    camera_update(&s->cam, &s->rd);
-
-    shader_use(model_shader);
-
     mat4 vp;
+    camera_update(&s->cam, &s->rd);
     mat4_mul(&vp, s->cam.proj, s->cam.view);
 
-    shader_uniform_mat4(model_shader, "vp", &vp);
-
-    mat4 model = mat4_identity();
-    mat4_rotate_y(&model, rd_get_time()); // GET TICKS
-    mat4_scale_scalar(&model, 1.0f);
-    shader_uniform_mat4(model_shader, "model", &model);
+    mat4_rotate_y(&s->models[0].transform, s->rd.delta_time);
 
     for(uint32_t i = 0; i < s->model_count; i++)
-        model_draw(&s->models[i], model_shader);
+        model_draw(&s->models[i], &s->rd, &vp);
 
-    sphere_draw(&s->sphere, &vp);
+    sphere_draw(&s->sphere, &s->rd, &vp);
 
     // must be drawn last after everything else has filled the depth buffer
     skybox_draw(&s->skybox, &s->cam);

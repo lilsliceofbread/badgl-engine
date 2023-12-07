@@ -8,6 +8,8 @@
 #include "mesh.h"
 #include "texture.h"
 #include "shader.h"
+#include "renderer.h"
+#include "glmath.h"
 
 typedef struct Model
 {
@@ -16,11 +18,14 @@ typedef struct Model
     const char* directory;
     Texture* textures;
     uint32_t tex_count;
+    uint32_t shader_index; // index into renderer's shader array
+
+    mat4 transform;
 } Model;
 
-void model_load(Model* self, const char* path);
+void model_load(Model* self, const char* path, uint32_t shader_index);
 
-void model_draw(Model* self, Shader* shader);
+void model_draw(Model* self, Renderer* rd, mat4* vp);
 
 void model_add_mesh(Model* self, Mesh mesh, uint32_t total_meshes);
 

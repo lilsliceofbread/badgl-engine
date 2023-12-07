@@ -41,6 +41,11 @@ void camera_update_view(Camera* self)
 
 void camera_update_proj(Camera* self, float fov, float aspect_ratio, float znear, float zfar)
 {
+    self->fov = fov;
+    self->aspect_ratio = aspect_ratio;
+    self->znear = znear;
+    self->zfar = zfar;
+
     mat_perspective_fov(&self->proj, fov, aspect_ratio, znear, zfar);
     //self->proj = mat_perspective_frustrum(0.01f, 100.0f, -0.1f, 0.1f, -0.1f, 0.1f);
     //self->proj = mat_orthographic_frustrum(0.01f, 100.0f, -1.0f, 1.0f, -1.0f, 1.0f);
@@ -128,4 +133,10 @@ void camera_update(Camera* self, Renderer* rd)
     }
 
     camera_update_view(self);
+
+    const float aspect_ratio = (float)(rd->width) / (float)(rd->height);
+    if(aspect_ratio != self->aspect_ratio) // if aspect ratio has changed
+    {
+        camera_update_proj(self, self->fov, aspect_ratio, self->znear, self->zfar);
+    }
 }

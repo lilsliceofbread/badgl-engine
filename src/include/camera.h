@@ -22,6 +22,9 @@ typedef struct Camera
     float pitch, yaw;
     float last_cursor_x, last_cursor_y;
 
+    float fov;
+    float aspect_ratio; // store aspect ratio to know if it has changed
+    float znear, zfar;
     mat4 view;
     mat4 proj; // view and projection matrix
 } Camera;

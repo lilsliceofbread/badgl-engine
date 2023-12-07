@@ -11,7 +11,6 @@ void mesh_init(Mesh* self, VertexBuffer vertex_buffer, uint32_t vert_count, uint
                uint32_t* tex_indexes, uint32_t tex_count)
 {
     // preallocated
-    self->vertex_buffer = vertex_buffer;
     self->indices = indices;
     self->tex_indexes = tex_indexes;
     self->vert_count = vert_count;
@@ -20,12 +19,12 @@ void mesh_init(Mesh* self, VertexBuffer vertex_buffer, uint32_t vert_count, uint
 
     size_t vertex_size = 3;
     bool use_normals = false, use_UVs = false;
-    if(self->vertex_buffer.normal != NULL)
+    if(vertex_buffer.normal != NULL)
     {
         use_normals = true;
         vertex_size += 3;
     }
-    if(self->vertex_buffer.uv != NULL)
+    if(vertex_buffer.uv != NULL)
     {
         use_UVs = true;
         vertex_size += (size_t)(2 + 3 * (!use_normals)); // too complicated to figure out how to do vertex attributes if uvs but not normals so do this instead
@@ -43,9 +42,9 @@ void mesh_init(Mesh* self, VertexBuffer vertex_buffer, uint32_t vert_count, uint
     size_t single_size = self->vert_count * sizeof(float);
     vbo_set_buffer(self->vbo, NULL, single_size * vertex_size, false);
 
-    vbo_set_buffer_region(self->vbo, self->vertex_buffer.pos, 0, 3 * single_size);
-    if(use_normals) vbo_set_buffer_region(self->vbo, self->vertex_buffer.normal, 3 * (int)single_size, 3 * single_size);
-    if(use_UVs)     vbo_set_buffer_region(self->vbo, self->vertex_buffer.uv, 6 * (int)single_size, 2 * single_size);
+    vbo_set_buffer_region(self->vbo, vertex_buffer.pos, 0, 3 * single_size);
+    if(use_normals) vbo_set_buffer_region(self->vbo, vertex_buffer.normal, 3 * (int)single_size, 3 * single_size);
+    if(use_UVs)     vbo_set_buffer_region(self->vbo, vertex_buffer.uv, 6 * (int)single_size, 2 * single_size);
 
     ebo_bind(self->ebo);
     ebo_set_buffer(self->ebo, &indices[0], ind_count * sizeof(uint32_t), false);
@@ -55,6 +54,17 @@ void mesh_init(Mesh* self, VertexBuffer vertex_buffer, uint32_t vert_count, uint
     if(use_UVs)     vao_attribute(2, 2, GL_FLOAT, 2 * sizeof(float), 6 * single_size);
 
     vao_unbind();
+
+    // don't need this data anymore
+    free(vertex_buffer.pos);
+    if(vertex_buffer.normal != NULL)
+    {
+        free(vertex_buffer.normal);
+    }
+    if(vertex_buffer.uv != NULL)
+    {
+        free(vertex_buffer.uv);
+    }
 }
 
 void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
@@ -95,16 +105,6 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
 
 void mesh_free(Mesh* self)
 {
-    free(self->vertex_buffer.pos);
-    if(self->vertex_buffer.normal != NULL)
-    {
-        free(self->vertex_buffer.normal);
-    }
-    if(self->vertex_buffer.uv != NULL)
-    {
-        free(self->vertex_buffer.uv);
-    }
-
     free(self->indices);
     if(self->tex_count > 0 && self->tex_indexes != NULL)
     {

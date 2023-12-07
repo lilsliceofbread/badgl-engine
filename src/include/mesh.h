@@ -17,7 +17,8 @@ typedef struct VertexBuffer
 
 typedef struct Mesh
 {
-    VertexBuffer vertex_buffer;
+    // don't need to store this since it's only used in mesh_init()
+    //VertexBuffer vertex_buffer;
     uint32_t* indices;
     uint32_t* tex_indexes; // indexes into parent structure's array
     uint32_t vert_count, ind_count, tex_count;

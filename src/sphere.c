@@ -3,17 +3,16 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cubemap_path)
+Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cubemap_path, uint32_t shader_index)
 {
     Sphere self;
     self.pos = pos;
     self.radius = radius;
+    self.shader_index = shader_index;
     uint32_t* indices = NULL;
     uint32_t* tex_indexes = NULL;
     uint32_t vert_count = 0, ind_count = 0;
     uint32_t tex_count = cubemap_path == NULL ? 0 : 1; // only 1 if cubemap path has been given
-
-    shader_init(&self.shader, "shaders/sphere.vert", "shaders/sphere.frag");
 
     const uint32_t horizontals = resolution, verticals = 2 * resolution;
 
@@ -156,22 +155,22 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
     return self;
 }
 
-void sphere_draw(Sphere* self, mat4* vp)
+void sphere_draw(Sphere* self, Renderer* rd, mat4* vp)
 {
-    shader_use(&self->shader);
+    Shader* shader_ptr = &rd->shaders[self->shader_index];
+    shader_use(shader_ptr);
 
-    shader_uniform_mat4(&self->shader, "vp", vp);
+    shader_uniform_mat4(shader_ptr, "vp", vp);
 
     mat4 model = mat4_identity();
     mat4_trans(&model, self->pos);
-    shader_uniform_mat4(&self->shader, "model", &model);
+    shader_uniform_mat4(shader_ptr, "model", &model);
 
-    mesh_draw(&self->mesh, &self->shader, &self->texture);
+    mesh_draw(&self->mesh, shader_ptr, &self->texture);
 }
 
 void sphere_free(Sphere* self)
 {
     mesh_free(&self->mesh);
-    shader_free(&self->shader);
     texture_free(&self->texture);
 }

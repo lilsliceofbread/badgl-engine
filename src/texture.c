@@ -18,39 +18,41 @@
 #include <string.h>
 #include <stdbool.h>
 #include "util.h"
+#include "renderer.h"
 
 void texture_create(Texture* self, const char* img_path, bool use_mipmap)
 {
-    double start_time = glfwGetTime();
+    float start_time = rd_get_time();
 
     GLuint texture_id;
     glGenTextures(1, &texture_id);
 
     int width, height, num_channels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char* image_data = stbi_load(img_path, &width, &height, &num_channels, 0);
+    unsigned char* image_data = stbi_load(img_path, &width, &height, &num_channels, 4);
     ASSERT(image_data, "TEXTURE: could not load image %s\n", img_path);
 
-    GLint internal_format; // need to do this because they use separate values
-    GLenum img_format;
-    switch(num_channels)
-    {
-        case 1:
-            img_format = GL_RED;
-            internal_format = GL_RED;
-            break;
-        case 3:
-            img_format = GL_RGB;
-            internal_format = GL_RGB;
-            break;
-        case 4:
-            img_format = GL_RGBA;
-            internal_format = GL_SRGB8_ALPHA8;
-            break;
-    }
+    //GLint internal_format; // need to do this because they use separate values
+    //GLenum img_format;
+    //switch(num_channels)
+    //{
+    //    case 1:
+    //        img_format = GL_RED;
+    //        internal_format = GL_RED;
+    //        break;
+    //    case 3:
+    //        img_format = GL_RGB;
+    //        internal_format = GL_RGB;
+    //        break;
+    //    case 4:
+    //        img_format = GL_RGBA;
+    //        internal_format = GL_SRGB8_ALPHA8;
+    //        break;
+    //}
 
     glBindTexture(GL_TEXTURE_2D, texture_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, img_format, GL_UNSIGNED_BYTE, image_data);
+    //glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, img_format, GL_UNSIGNED_BYTE, image_data); // IF IMAGE TYPE IS COLORMAP THIS BREAKS
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
 
     stbi_image_free(image_data);
 
@@ -75,12 +77,12 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
 
     strncpy(self->path, img_path, 128);
 
-    printf("TEXTURE: loading texture %s took %fs\n", img_path, glfwGetTime() - start_time);
+    printf("TEXTURE: loading texture %s took %fs\n", img_path, rd_get_time() - start_time);
 }
 
 void texture_cubemap_create(Texture* self, const char* generic_path)
 {
-    double start_time = glfwGetTime();
+    float start_time = rd_get_time();
 
     GLuint texture_id;
     glGenTextures(1, &texture_id);
@@ -129,24 +131,10 @@ void texture_cubemap_create(Texture* self, const char* generic_path)
         strncat(img_path, extension, 32); // no extension is longer than this... right?
 
         stbi_set_flip_vertically_on_load(false);
-        unsigned char* image_data = stbi_load(img_path, &width, &height, &num_channels, 0);
+        unsigned char* image_data = stbi_load(img_path, &width, &height, &num_channels, 4);
         ASSERT(image_data, "TEXTURE: could not load image %s\n", img_path);
 
-        GLenum img_format;
-        switch(num_channels)
-        {
-            case 1:
-                img_format = GL_RED;
-                break;
-            case 3:
-                img_format = GL_RGB;
-                break;
-            case 4:
-                img_format = GL_RGBA;
-                break;
-        }
-
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + (GLenum)i, 0, GL_RGB, width, height, 0, img_format, GL_UNSIGNED_BYTE, image_data);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + (GLenum)i, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
 
         stbi_image_free(image_data);
     }
@@ -156,7 +144,7 @@ void texture_cubemap_create(Texture* self, const char* generic_path)
 
     strncpy(self->path, generic_path, 128);
 
-    printf("TEXTURE: loading cubemap %s took %fs\n", generic_path, glfwGetTime() - start_time);
+    printf("TEXTURE: loading cubemap %s took %fs\n", generic_path, rd_get_time() - start_time);
 }
 
 void texture_bind(Texture* self)

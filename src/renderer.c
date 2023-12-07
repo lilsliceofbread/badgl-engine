@@ -87,7 +87,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 
     if(rd_get_vsync_functions(self))
     {
-        rd_set_vsync(true);
+        rd_toggle_vsync(true);
     }
     else 
     {
@@ -185,7 +185,7 @@ bool rd_get_vsync_functions(Renderer* self) {
     return true;
 }
 
-void rd_set_vsync(bool on) {
+void rd_toggle_vsync(bool on) {
     #ifdef __linux__
         Display* display = glXGetCurrentDisplay();
         GLXDrawable drawable = glXGetCurrentDrawable();
