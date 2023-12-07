@@ -69,6 +69,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC glfw PUBLIC assimp)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(${PROJECT_NAME} PUBLIC GLX) # linux libGLX.so is required for glX extensions (might be lowercase for some)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    target_include_directories(${PROJECT_NAME} PUBLIC external/wgl)
     target_link_libraries(${PROJECT_NAME} PUBLIC OpenGL32) # windows needs OpenGL32.lib
 endif()
 
