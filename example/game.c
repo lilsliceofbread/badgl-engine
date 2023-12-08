@@ -11,6 +11,8 @@
 #define GAME_WIDTH 1280
 #define GAME_HEIGHT 720
 
+bool vsync_on = true;
+
 void game_init(GameState* s)
 {
     s->model_count = 0;
@@ -35,6 +37,16 @@ void game_init(GameState* s)
 
 void game_update(GameState* s)
 {
+    igSetNextWindowPos((ImVec2){0,0}, ImGuiCond_FirstUseEver, (ImVec2){0,0});
+    igBegin("Settings", NULL, 0);
+        igText("FPS: %f", 1.0f / s->rd.delta_time);
+        if(igButton("Toggle V-Sync",(struct ImVec2){0,0}))
+        {
+            rd_toggle_vsync(!vsync_on);
+            vsync_on = !vsync_on; 
+        }
+    igEnd();
+
     mat4 vp;
     camera_update(&s->cam, &s->rd);
     mat4_mul(&vp, s->cam.proj, s->cam.view);

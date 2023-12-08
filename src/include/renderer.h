@@ -4,6 +4,9 @@
 #undef bool
 #define bool _Bool
 
+#define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
+#include "cimgui.h"
+
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
@@ -23,9 +26,14 @@ typedef struct Renderer
     uint32_t framecount;
 
     bool vsync_enabled; // if vsync extension exists on this machine
+
+    ImGuiContext* imgui_ctx; 
+    ImGuiIO* imgui_io; 
 } Renderer;
 
 void rd_init(Renderer* rd, int width, int height, const char* win_title);
+
+void rd_imgui_init(Renderer* self, const char* glsl_version);
 
 uint32_t rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src); // returns index to shader in array
 

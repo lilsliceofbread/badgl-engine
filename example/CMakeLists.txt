@@ -12,14 +12,14 @@ endif()
 
 add_executable(${PROJECT_NAME} ${BADGL_EXAMPLE_SRCS})
 
-target_include_directories(${PROJECT_NAME} 
-                            PUBLIC .
-                            PUBLIC ../include
-                            PUBLIC ../external/stb
-                            PUBLIC ../external/glfw/include 
-                            PUBLIC ../external/glad/include 
-                            PUBLIC ../external/assimp/include
-)
+target_include_directories(${PROJECT_NAME} PUBLIC .
+                                           PUBLIC ../include
+                                           PUBLIC ../external/stb
+                                           PUBLIC ../external/glfw/include 
+                                           PUBLIC ../external/glad/include 
+                                           PUBLIC ../external/assimp/include
+                                           PUBLIC external/cimgui
+                                           PUBLIC external/cimgui/generator/output)
 
 target_link_directories(${PROJECT_NAME} PRIVATE src)
 

@@ -1,4 +1,9 @@
 #include "renderer.h"
+
+#define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
+#include "cimgui.h"
+#include "cimgui_impl.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -46,7 +51,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  
     #endif
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // set to 1 if apple?
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
@@ -96,6 +101,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 
     glViewport(0, 0, width, height);
 
+    rd_imgui_init(self, "#version 430 core");
 
     glEnable(GL_BLEND); // enable transparent textures
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // which blending function for transparency
@@ -112,6 +118,16 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // black
+}
+
+void rd_imgui_init(Renderer* self, const char* glsl_version)
+{
+    self->imgui_ctx = igCreateContext(NULL); 
+    self->imgui_io = igGetIO(); 
+    ImGui_ImplGlfw_InitForOpenGL(self->win, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+    igStyleColorsDark(NULL);
 }
 
 uint32_t rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
@@ -132,8 +148,11 @@ void rd_set_wireframe(bool useWireframe)
 
 void rd_begin_frame(Renderer* self)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    igNewFrame();
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     float curr_time = rd_get_time();
     self->delta_time = curr_time - self->last_time;
     self->last_time = curr_time; 
@@ -143,6 +162,9 @@ void rd_begin_frame(Renderer* self)
 
 void rd_end_frame(Renderer* self)
 {
+    igRender();
+    ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
+
     glfwSwapBuffers(self->win);
     glfwPollEvents();
 
@@ -208,6 +230,10 @@ void rd_free(Renderer* self)
         }
         free(self->shaders);
     }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    igDestroyContext(self->imgui_ctx);
 
     glfwDestroyWindow(self->win);
     glfwTerminate(); // might remove if multiple renderers used

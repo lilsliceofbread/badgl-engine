@@ -5,6 +5,8 @@ WIP (no documentation, have fun!)
 
 the example program should help to give some idea of the structure of the engine.
 
+press *Esc* to toggle keyboard and mouse input, *P* to toggle wireframe view, and *Q* to quit.
+
 # requirements
 
 - GPU supporting OpenGL 4.3
