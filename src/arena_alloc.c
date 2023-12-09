@@ -2,11 +2,15 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include "util.h"
 
 Arena arena_create(size_t size)
 {
     Arena self;
+
     self.raw_memory = malloc(size);
+    ASSERT(self.raw_memory != NULL, "ARENA: malloc(%lu) failed", size);
+
     self.cursor = self.raw_memory;
     self.size = size;
 

@@ -105,7 +105,6 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
 
     const size_t total_mem_size = ((size_t)total_vertices * 8 * sizeof(float)) + ((size_t)total_indices * sizeof(uint32_t));
     arena = arena_create(total_mem_size);
-    ASSERT(arena.raw_memory != NULL, "MODEL: failed to allocate arena for buffer\n");
 
     VertexBuffer vertex_buffer = {
         .pos = (vec3*)arena_alloc(&arena, total_vertices * sizeof(vec3)),
@@ -113,7 +112,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         .uv = (vec2*)arena_alloc(&arena, total_vertices * sizeof(vec2))
     };
     memset(vertex_buffer.uv, 0, total_vertices * sizeof(vec2)); // if no tex coords, then all values zeroed out
-    ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL || vertex_buffer.uv != NULL, "MODEL: failed to allocate vertices\n");
+    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL && vertex_buffer.uv != NULL, "MODEL: failed to allocate vertices\n");
 
     indices = (uint32_t*)arena_alloc(&arena, total_indices * sizeof(uint32_t));
     ASSERT(indices != NULL, "MODEL: failed to allocate indices\n");

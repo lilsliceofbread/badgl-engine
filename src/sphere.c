@@ -19,14 +19,13 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
     const size_t total_indices = 6 * verticals * (horizontals - 1); // 6 indices per square, but top and bottom rings are triangles (3 per), so h - 2 + 1
 
     Arena arena = arena_create((total_vertices * 2 * sizeof(vec3)) + (total_indices * sizeof(uint32_t)));
-    ASSERT(arena.raw_memory != NULL, "SPHERE: failed to allocate arena for buffer\n");
 
     VertexBuffer vertex_buffer = {
         .pos = (vec3*)arena_alloc(&arena, total_vertices * sizeof(vec3)),
         .normal = (vec3*)arena_alloc(&arena, total_vertices * sizeof(vec3)),
         .uv = NULL
     };
-    ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices\n");
+    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices\n");
 
     indices = (uint32_t*)arena_alloc(&arena, total_indices * sizeof(uint32_t));
     ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");

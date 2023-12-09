@@ -55,7 +55,6 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 
     ASSERT(gladLoadGL((GLADloadfunc)glfwGetProcAddress), "RENDERER: failed to init GLAD\n");
 
-
     glfwSetWindowUserPointer(win, self);
     glfwSetKeyCallback(self->win, rd_key_callback);
     glfwSetFramebufferSizeCallback(win, rd_resize_callback);
@@ -89,11 +88,9 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 
     glEnable(GL_BLEND); // enable transparent textures
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // which blending function for transparency
-    glEnable(GL_FRAMEBUFFER_SRGB); // use standard rgb for framebuffer
-    //glDisable(GL_MULTISAMPLE);
 
     glEnable(GL_DEPTH_TEST);
-    //glDepthFunc(GL_LEQUAL);
+    glDepthFunc(GL_LEQUAL);
 
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW); // front face has clockwise vertices

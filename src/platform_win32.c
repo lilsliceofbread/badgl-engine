@@ -2,6 +2,7 @@
 
 #ifdef _WIN32
 
+#include "glad/gl.h"
 #include <windows.h>
 #include "wglext.h"
 #include <string.h>
@@ -25,7 +26,7 @@ bool platform_gl_extension_supported(const char* extension)
 
 bool platform_init_vsync()
 {
-    if(!gl_extension_supported("WGL_EXT_swap_control")) return false;
+    if(!platform_gl_extension_supported("WGL_EXT_swap_control")) return false;
 
     wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC) wglGetProcAddress("wglSwapIntervalEXT");
     //wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC) wglGetProcAddress("wglGetSwapIntervalEXT");
