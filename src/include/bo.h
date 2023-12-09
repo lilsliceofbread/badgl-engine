@@ -3,10 +3,7 @@
 
 #include <glad/gl.h>
 #include <stddef.h>
-
-// forward declarations
-#undef bool
-#define bool _Bool
+#include <stdbool.h>
 
 // buffer object
 typedef struct BO

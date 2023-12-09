@@ -7,11 +7,12 @@
 #include "camera.h"
 #include "util.h"
 #include "model.h"
+#include "platform.h"
 
 #define GAME_WIDTH 1280
 #define GAME_HEIGHT 720
 
-bool vsync_on = true;
+static bool vsync_on = true;
 
 void game_init(GameState* s)
 {
@@ -42,7 +43,7 @@ void game_update(GameState* s)
         igText("FPS: %f", 1.0f / s->rd.delta_time);
         if(igButton("Toggle V-Sync",(struct ImVec2){0,0}))
         {
-            rd_toggle_vsync(!vsync_on);
+            platform_toggle_vsync(!vsync_on);
             vsync_on = !vsync_on; 
         }
     igEnd();

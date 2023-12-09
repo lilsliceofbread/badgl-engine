@@ -2,6 +2,7 @@
 
 int main(void)
 {
+    // reload dll here
     GameState state;
     
     game_init(&state);

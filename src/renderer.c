@@ -8,25 +8,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "platform.h"
 #include "shader.h"
 #include "texture.h"
 #include "util.h"
-#ifdef __linux__
-    #include <GL/glx.h>
-    #include <GL/glxext.h>
-
-    PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
-    // the GLX_EXT_swap_control extension does not have
-    // a GetSwapIntervalEXT func, use glXQueryDrawable instead
-#elif _WIN32
-    #include <windows.h>
-    #include "wglext.h"
-
-    PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
-    //PFNWGLGETSWAPINTERVALEXTPROC wglGetSwapIntervalEXT = NULL;
-#endif
-
-bool rd_get_vsync_functions(Renderer* self);
 
 void rd_resize_callback(GLFWwindow* win, int width, int height);
 
@@ -62,9 +47,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
      */
     
     GLFWwindow* win = glfwCreateWindow(width, height, win_title, NULL, NULL);
-
     self->win = win;
-
     ASSERT(win != NULL, "RENDERER: failed to open window\n");
 
     glfwMakeContextCurrent(win);
@@ -90,9 +73,10 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
         }
     #endif
 
-    if(rd_get_vsync_functions(self))
+    if(platform_init_vsync(self))
     {
-        rd_toggle_vsync(true);
+        self->vsync_enabled = true;
+        platform_toggle_vsync(true);
     }
     else 
     {
@@ -189,37 +173,6 @@ bool rd_win_should_close(Renderer* self)
     return glfwWindowShouldClose(self->win);
 }
 
-bool rd_get_vsync_functions(Renderer* self) {
-    #ifdef __linux__
-        if(!gl_extension_supported("GLX_EXT_swap_control")) return false;
-
-        glXSwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddress((const GLubyte*)"glXSwapIntervalEXT");
-    #elif _WIN32
-        if(!gl_extension_supported("WGL_EXT_swap_control")) return false;
-
-        wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC) wglGetProcAddress("wglSwapIntervalEXT");
-        //wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC) wglGetProcAddress("wglGetSwapIntervalEXT");
-    #elif __APPLE__
-        // no apple support yet
-    #endif
-
-    self->vsync_enabled = true;
-    return true;
-}
-
-void rd_toggle_vsync(bool on) {
-    #ifdef __linux__
-        Display* display = glXGetCurrentDisplay();
-        GLXDrawable drawable = glXGetCurrentDrawable();
-
-        glXSwapIntervalEXT(display, drawable, (int)on);
-    #elif _WIN32
-        wglSwapIntervalEXT((int)on);
-    #elif __APPLE__
-        // no apple support yet
-    #endif
-}
-
 void rd_free(Renderer* self)
 {
     if(self->shader_count > 0) // if not allocated don't free
@@ -292,7 +245,9 @@ void rd_get_cursor_pos(Renderer* self, float* cursor_x_out, float* cursor_y_out)
     *cursor_y_out = (float)ypos;
 }
 
-void APIENTRY rd_debug_callback(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *user_param)
+void APIENTRY rd_debug_callback(GLenum source, GLenum type, unsigned int id,
+                                GLenum severity, GLsizei length,
+                                const char *message, const void *user_param)
 {
     // ignore non-significant error/warning codes
     if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return; 

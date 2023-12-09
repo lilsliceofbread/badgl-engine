@@ -61,12 +61,12 @@ file(GLOB
 	"${imgui_impl}/imgui_impl_glfw.cpp"
 	"${imgui_impl}/imgui_impl_opengl3.cpp")
 add_library(cimgui ${CIMGUI_SRCS})
-set_target_properties(cimgui PROPERTIES POSITION_INDEPENDENT_CODE ON) # compile cimgui so it can be in a shared library
 target_include_directories(cimgui PUBLIC ${cimgui}/imgui PUBLIC external/glfw/include)
 target_compile_definitions(cimgui PRIVATE IMGUI_IMPL_API=extern\ \"C\")
 
 # shared lib is faster to build but is broken on windows
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set_target_properties(cimgui PROPERTIES POSITION_INDEPENDENT_CODE ON) # compile cimgui so it can be in a shared library
     add_library(${PROJECT_NAME} SHARED ${BADGL_SRCS})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_library(${PROJECT_NAME} ${BADGL_SRCS})

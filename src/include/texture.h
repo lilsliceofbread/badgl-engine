@@ -3,10 +3,7 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
-
-// 'forward declare' bool
-#undef bool
-#define bool _Bool
+#include <stdbool.h>
 
 #define MAX_STR_LENGTH 128
 

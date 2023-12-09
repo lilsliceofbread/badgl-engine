@@ -12,18 +12,23 @@ Skybox skybox_init(const char* cubemap_path)
     texture_cubemap_create(&self.texture, cubemap_path);
 
     // skybox has predefined sizes
+
+    const size_t vert_size = 8 * sizeof(vec3);
+    const size_t ind_size = 6 * 6 * sizeof(uint32_t);
+    Arena arena = arena_create(vert_size + ind_size);
+
     VertexBuffer vertex_buffer;
-    vertex_buffer.pos = (vec3*)malloc(8 * sizeof(vec3));
+    vertex_buffer.pos = (vec3*)arena_alloc(&arena, vert_size);
     vertex_buffer.normal = NULL;
     vertex_buffer.uv = NULL;
 
-    uint32_t* indices = (uint32_t*)malloc(6 * 6 * sizeof(uint32_t));
+    uint32_t* indices = (uint32_t*)arena_alloc(&arena, ind_size);
     uint32_t* tex_indexes = (uint32_t*)malloc(sizeof(uint32_t));
     tex_indexes[0] = 0; // only 1 texture
 
     // fix later, shouldn't need to do this (mesh specify normal/uv separately)
     {
-        vec3 vertex_positions[] = {
+        const vec3 vertex_positions[] = {
             {-1, -1,  1}, // 0
             { 1, -1,  1}, // 1
             {-1,  1,  1}, // 2
@@ -34,12 +39,12 @@ Skybox skybox_init(const char* cubemap_path)
             { 1,  1, -1}  // 7
         };
 
-        memcpy(vertex_buffer.pos, vertex_positions, sizeof(vertex_positions));
+        memcpy(vertex_buffer.pos, vertex_positions, vert_size);
     }
 
     {
-        // clockwise indices for inside of the cube (technically anticlockwise)
-        uint32_t indices_tmp[] = {
+        // clockwise indices for inside of the cube (anticlockwise from outside perspective)
+        const uint32_t indices_tmp[] = {
             // top
             2, 6, 7,
             2, 7, 3,
@@ -65,17 +70,17 @@ Skybox skybox_init(const char* cubemap_path)
             4, 5, 7
         };
 
-        memcpy(indices, indices_tmp, sizeof(indices_tmp));
+        memcpy(indices, indices_tmp, ind_size);
     }
 
-    mesh_init(&self.mesh, vertex_buffer, 8, indices, 6 * 6, tex_indexes, 1);
+    mesh_init(&self.mesh, arena, vertex_buffer, 8, indices, 6 * 6, tex_indexes, 1);
 
     return self;
 }
 
 void skybox_draw(Skybox* self, Camera* cam)
 {
-    mat4 vp; // no translation
+    mat4 vp; // no translation allowed to keep skybox at consistent distance
     mat4 corrected_view = cam->view;
     corrected_view.m14 = corrected_view.m24 = corrected_view.m34 = 0.0f; // remove translation
     mat4_mul(&vp, cam->proj, corrected_view);

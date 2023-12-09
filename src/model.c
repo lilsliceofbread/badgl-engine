@@ -87,17 +87,12 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
 
     uint32_t* indices = NULL;
     uint32_t* tex_indexes = NULL; // indexes into model textures array
+    const uint32_t total_vertices = model_mesh->mNumVertices;
     uint32_t total_indices = 0;
     uint32_t total_textures = 0;
 
-    // allocation (ownership goes to mesh which is freed in mesh_free())
-    VertexBuffer vertex_buffer = {
-        .pos = (vec3*)malloc(model_mesh->mNumVertices * sizeof(vec3)),
-        .normal = (vec3*)malloc(model_mesh->mNumVertices * sizeof(vec3)),
-        .uv = (vec2*)calloc(model_mesh->mNumVertices, sizeof(vec2)) // if there are no tex coords calloc will have already zeroed out all values
-    };
-    ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL || vertex_buffer.uv != NULL, "MODEL: failed to allocate vertices\n");
-
+    // allocation (arena freed by mesh)
+    Arena arena;
     // loop through faces to count indices for allocation of indices array
     for(uint32_t i = 0; i < model_mesh->mNumFaces; i++)
     {
@@ -107,10 +102,23 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         if(face.mNumIndices < 3) continue;
         total_indices += face.mNumIndices;
     }
-    indices = (uint32_t*)malloc(total_indices * sizeof(uint32_t));
+
+    const size_t total_mem_size = ((size_t)total_vertices * 8 * sizeof(float)) + ((size_t)total_indices * sizeof(uint32_t));
+    arena = arena_create(total_mem_size);
+    ASSERT(arena.raw_memory != NULL, "MODEL: failed to allocate arena for buffer\n");
+
+    VertexBuffer vertex_buffer = {
+        .pos = (vec3*)arena_alloc(&arena, total_vertices * sizeof(vec3)),
+        .normal = (vec3*)arena_alloc(&arena, total_vertices * sizeof(vec3)),
+        .uv = (vec2*)arena_alloc(&arena, total_vertices * sizeof(vec2))
+    };
+    memset(vertex_buffer.uv, 0, total_vertices * sizeof(vec2)); // if no tex coords, then all values zeroed out
+    ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL || vertex_buffer.uv != NULL, "MODEL: failed to allocate vertices\n");
+
+    indices = (uint32_t*)arena_alloc(&arena, total_indices * sizeof(uint32_t));
     ASSERT(indices != NULL, "MODEL: failed to allocate indices\n");
 
-    for(uint32_t i = 0; i < model_mesh->mNumVertices; i++)
+    for(uint32_t i = 0; i < total_vertices; i++)
     {
         vec3 pos, normal;
         vec2 uv;
@@ -177,7 +185,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     } // if no textures then skip
     //}
 
-    mesh_init(&mesh, vertex_buffer, model_mesh->mNumVertices, indices, total_indices, tex_indexes, total_textures);
+    mesh_init(&mesh, arena, vertex_buffer, total_vertices, indices, total_indices, tex_indexes, total_textures);
     return mesh;
 }
 

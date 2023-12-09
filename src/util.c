@@ -2,12 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef __linux__
-    #include <GL/glx.h>
-#elif _WIN32
-    #include <windows.h>
-    #include "wglext.h"
-#endif
 
 char* get_file_data(const char* filepath)
 {
@@ -53,27 +47,4 @@ int str_find_last_of(const char* str, char c)
     }
 
     return latest_occurrence;
-}
-
-bool gl_extension_supported(const char* extension)
-{
-    #ifdef __linux__
-        //Display* display = XOpenDisplay(":0");
-        Display* display = glXGetCurrentDisplay();
-        const char* extension_list = glXQueryExtensionsString(display, 0);
-
-        // if extension not found in extension list
-    #elif _WIN32
-        PFNWGLGETEXTENSIONSSTRINGEXTPROC wglGetExtensionsStringEXT = NULL;
-
-        wglGetExtensionsStringEXT = (PFNWGLGETEXTENSIONSSTRINGEXTPROC)wglGetProcAddress("wglGetExtensionsStringEXT");
-
-        const char* extension_list = wglGetExtensionsStringEXT();
-    #elif __APPLE__
-        // no support for apple
-    #endif
-
-    if(strstr(extension_list, extension) == NULL) return false;
-
-    return true;
 }

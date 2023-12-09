@@ -78,7 +78,8 @@ GLuint shader_compile(Shader* self, const char* shader_filepath, GLenum shader_t
     return shader;
 }
 
-// THIS WILL REPEAT UNIFORMS IF IN BOTH SHADERS
+// this will repeat uniforms if in both shaders
+// also doesn't allow use of uniform buffer objects
 void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 {
     uint32_t add_uniform_count = 0;
@@ -88,7 +89,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
     // find location of word uniform in shader code
     while((temp = strstr(temp, "uniform"))) // strstr returns NULL when no match, ending loop
     {
-        uniform_pos[add_uniform_count] = (uint32_t)(temp - src_code);
+        uniform_pos[add_uniform_count] = (uint32_t)(temp - src_code); // byte distance to uniform beginning
         temp++; // to prevent strstr from finding the same match again
         add_uniform_count++;
     }

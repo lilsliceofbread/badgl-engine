@@ -15,15 +15,20 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
     uint32_t tex_count = cubemap_path == NULL ? 0 : 1; // only 1 if cubemap path has been given
 
     const uint32_t horizontals = resolution, verticals = 2 * resolution;
+    const size_t total_vertices = horizontals * verticals + 2;
+    const size_t total_indices = 6 * verticals * (horizontals - 1); // 6 indices per square, but top and bottom rings are triangles (3 per), so h - 2 + 1
+
+    Arena arena = arena_create((total_vertices * 2 * sizeof(vec3)) + (total_indices * sizeof(uint32_t)));
+    ASSERT(arena.raw_memory != NULL, "SPHERE: failed to allocate arena for buffer\n");
 
     VertexBuffer vertex_buffer = {
-        .pos = (vec3*)malloc((horizontals * verticals + 2) * sizeof(vec3)), // (h * v) + 2 is the amt of vertices,
-        .normal = (vec3*)malloc((horizontals * verticals + 2) * sizeof(vec3)),
+        .pos = (vec3*)arena_alloc(&arena, total_vertices * sizeof(vec3)),
+        .normal = (vec3*)arena_alloc(&arena, total_vertices * sizeof(vec3)),
         .uv = NULL
     };
     ASSERT(vertex_buffer.pos != NULL || vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices\n");
 
-    indices = (uint32_t*)malloc((6 * verticals * (horizontals - 1)) * sizeof(uint32_t)); // 6 * v * (h - 1) is the amt of indices
+    indices = (uint32_t*)arena_alloc(&arena, total_indices * sizeof(uint32_t));
     ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");
 
     if(cubemap_path != NULL) // for now
@@ -150,7 +155,7 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
         ind_count += 3;
     }
 
-    mesh_init(&self.mesh, vertex_buffer, vert_count, indices, ind_count, tex_indexes, tex_count);
+    mesh_init(&self.mesh, arena, vertex_buffer, vert_count, indices, ind_count, tex_indexes, tex_count);
 
     return self;
 }

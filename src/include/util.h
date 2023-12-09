@@ -5,7 +5,6 @@
 #include <GLFW/glfw3.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 
 #define ASSERT(x, msg, ...)                 \
 {                                           \
@@ -19,7 +18,5 @@
 char* get_file_data(const char* filepath);
 
 int str_find_last_of(const char* str, char c);
-
-bool gl_extension_supported(const char* extension);
 
 #endif

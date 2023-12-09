@@ -1,14 +1,12 @@
 #ifndef BADGL_RENDERER_H
 #define BADGL_RENDERER_H
 
-#undef bool
-#define bool _Bool
-
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "cimgui.h"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+#include <stdbool.h>
 
 #include "shader.h"
 
@@ -53,8 +51,8 @@ bool rd_key_pressed(Renderer* self, int key);
 
 void rd_free(Renderer* self);
 
-void rd_toggle_vsync(bool on);
-
-void APIENTRY rd_debug_callback(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *user_param);
+void APIENTRY rd_debug_callback(GLenum source, GLenum type, unsigned int id,
+                                GLenum severity, GLsizei length,
+                                const char *message, const void *user_param);
 
 #endif
