@@ -22,7 +22,7 @@ bool platform_gl_extension_supported(const char* extension)
     return true;
 }
 
-bool platform_init_vsync()
+bool platform_init_vsync(void)
 {
     if(!platform_gl_extension_supported("GLX_EXT_swap_control")) return false;
 

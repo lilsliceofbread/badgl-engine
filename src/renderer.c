@@ -72,7 +72,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
         }
     #endif
 
-    if(platform_init_vsync(self))
+    if(platform_init_vsync())
     {
         self->vsync_enabled = true;
         platform_toggle_vsync(true);
@@ -88,6 +88,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 
     glEnable(GL_BLEND); // enable transparent textures
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // which blending function for transparency
+    //glEnable(GL_FRAMEBUFFER_SRGB) // this makes everything look oversaturated and garbage
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);

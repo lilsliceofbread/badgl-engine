@@ -48,3 +48,10 @@ int str_find_last_of(const char* str, char c)
 
     return latest_occurrence;
 }
+
+void transform_reset(Transform* transform)
+{
+    transform->pos = vec3_zero();
+    transform->euler = vec3_zero();
+    vec3_copy((vec3){1.0f, 1.0f, 1.0f}, &transform->scale);
+}

@@ -1,18 +1,26 @@
 #include "sphere.h"
-#include "util.h"
+
 #include <stdbool.h>
 #include <stdlib.h>
+#include "util.h"
 
-Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cubemap_path, uint32_t shader_index)
+void uv_sphere_gen(Model* self, float radius, uint32_t resolution, const char* cubemap_path, uint32_t shader_index)
 {
-    Sphere self;
-    self.pos = pos;
-    self.radius = radius;
-    self.shader_index = shader_index;
+    self->meshes = malloc(sizeof(Mesh));
+    self->mesh_count = 1;
+
+    bool using_texture = cubemap_path != NULL; // only 1 if cubemap path has been given
+    self->tex_count = using_texture;
+    self->textures = NULL;
+    if(using_texture) self->textures = malloc(sizeof(Texture));
+
+    self->shader_index = shader_index;
+    self->directory = NULL;
+    transform_reset(&self->transform);
+
     uint32_t* indices = NULL;
     uint32_t* tex_indexes = NULL;
     uint32_t vert_count = 0, ind_count = 0;
-    uint32_t tex_count = cubemap_path == NULL ? 0 : 1; // only 1 if cubemap path has been given
 
     const uint32_t horizontals = resolution, verticals = 2 * resolution;
     const size_t total_vertices = horizontals * verticals + 2;
@@ -32,7 +40,7 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
 
     if(cubemap_path != NULL) // for now
     {
-        texture_cubemap_create(&self.texture, cubemap_path);
+        texture_cubemap_create(&self->textures[0], cubemap_path);
         tex_indexes = (uint32_t*)malloc(sizeof(uint32_t));
         tex_indexes[0] = 0; // the only index
     }
@@ -154,27 +162,5 @@ Sphere uv_sphere_gen(vec3 pos, float radius, uint32_t resolution, const char* cu
         ind_count += 3;
     }
 
-    mesh_init(&self.mesh, arena, vertex_buffer, vert_count, indices, ind_count, tex_indexes, tex_count);
-
-    return self;
-}
-
-void sphere_draw(Sphere* self, Renderer* rd, mat4* vp)
-{
-    Shader* shader_ptr = &rd->shaders[self->shader_index];
-    shader_use(shader_ptr);
-
-    shader_uniform_mat4(shader_ptr, "vp", vp);
-
-    mat4 model = mat4_identity();
-    mat4_trans(&model, self->pos);
-    shader_uniform_mat4(shader_ptr, "model", &model);
-
-    mesh_draw(&self->mesh, shader_ptr, &self->texture);
-}
-
-void sphere_free(Sphere* self)
-{
-    mesh_free(&self->mesh);
-    texture_free(&self->texture);
+    mesh_init(&self->meshes[0], arena, vertex_buffer, vert_count, indices, ind_count, tex_indexes, self->tex_count);
 }

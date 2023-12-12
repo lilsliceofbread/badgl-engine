@@ -16,7 +16,6 @@ typedef struct GameState
 
     Model models[MAX_MODELS];
     uint32_t model_count;
-    Sphere sphere;
     Skybox skybox;
 } GameState;
 

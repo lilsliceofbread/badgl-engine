@@ -112,8 +112,8 @@ vec2 vec2_sub(vec2 v1, vec2 v2);
 void vec2_norm(vec2* out);
 
 // opengl is column major so in memory matrices are flipped from traditional matrices
-mat4 mat4_identity(void);
 mat4 mat4_zero(void);
+void mat4_identity(mat4* out);
 void mat4_mul(mat4* out, mat4 m1, mat4 m2);
 mat4 mat4_transpose(mat4 mat);
 void mat4_scale(mat4* out, vec3 s);

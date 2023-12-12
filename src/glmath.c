@@ -191,7 +191,7 @@ mat4 mat4_zero(void)
     return mat;
 }
 
-mat4 mat4_identity(void)
+void mat4_identity(mat4* out)
 {
     mat4 mat =  {
         1, 0, 0, 0,
@@ -199,8 +199,7 @@ mat4 mat4_identity(void)
         0, 0, 1, 0,
         0, 0, 0, 1 
     };
-
-    return mat;
+    memcpy(out, mat.data, sizeof(mat));
 }
 
 mat4 mat4_transpose(mat4 mat)

@@ -8,7 +8,8 @@ Arena arena_create(size_t size)
 {
     Arena self;
 
-    self.raw_memory = malloc(size);
+    //
+    self.raw_memory = malloc(size + 1);
     ASSERT(self.raw_memory != NULL, "ARENA: malloc(%lu) failed", size);
 
     self.cursor = self.raw_memory;
@@ -27,6 +28,9 @@ void *arena_alloc(Arena* self, size_t size)
     tmp += size;
     self->cursor = (void*)tmp; // arithmetic with void* is bad, do this
 
+    // if cursor is any more than 1 past the end of memory block, we have used unallocated memory
+    // e.g. A = allocated, U = unallocated, ^ = ptr
+    // yes: AAAAAA^ NOOO: AAAAAU^ 
     size_t cursor_distance = (size_t)self->cursor - (size_t)self->raw_memory; 
     if(cursor_distance > self->size)
     {

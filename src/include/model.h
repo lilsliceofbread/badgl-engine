@@ -10,6 +10,8 @@
 #include "shader.h"
 #include "renderer.h"
 #include "glmath.h"
+#include "util.h"
+
 
 typedef struct Model
 {
@@ -20,10 +22,13 @@ typedef struct Model
     uint32_t tex_count;
     uint32_t shader_index; // index into renderer's shader array
 
-    mat4 transform;
+    Transform transform;
+    mat4 model;
 } Model;
 
 void model_load(Model* self, const char* path, uint32_t shader_index);
+
+void model_update_transform(Model* self, Transform* transform);
 
 void model_draw(Model* self, Renderer* rd, mat4* vp);
 

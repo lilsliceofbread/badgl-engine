@@ -24,7 +24,8 @@ void model_load(Model* self, const char* path, uint32_t shader_index)
     self->textures = NULL; // not setting this to null before realloc creates undefined behaviour, if the uninitialised memory is not 0
     self->tex_count = 0;
     self->shader_index = shader_index;
-    self->transform = mat4_identity();
+    transform_reset(&self->transform);
+    mat4_identity(&self->model);
 
     // get directory of model and store
     {
@@ -45,13 +46,27 @@ void model_load(Model* self, const char* path, uint32_t shader_index)
     printf("MODEL: loading %s took %fs\n", path, rd_get_time() - start_time);
 }
 
+void model_update_transform(Model* self, Transform* transform)
+{
+    self->transform = *transform;
+    mat4_identity(&self->model);
+
+    mat4_rotate_x(&self->model, self->transform.euler.x); // pitch
+    mat4_rotate_y(&self->model, self->transform.euler.y); // yaw
+    mat4_rotate_z(&self->model, self->transform.euler.z); // roll
+
+    mat4_scale(&self->model, self->transform.scale);
+
+    mat4_trans(&self->model, self->transform.pos);
+}
+
 void model_draw(Model* self, Renderer* rd, mat4* vp)
 {
     Shader* shader_ptr = &rd->shaders[self->shader_index];
 
     shader_use(shader_ptr);
     shader_uniform_mat4(shader_ptr, "vp", vp);
-    shader_uniform_mat4(shader_ptr, "model", &self->transform);
+    shader_uniform_mat4(shader_ptr, "model", &self->model);
 
     for(uint32_t i = 0; i < self->mesh_count; i++)
     {
@@ -61,7 +76,7 @@ void model_draw(Model* self, Renderer* rd, mat4* vp)
 
 void model_add_mesh(Model* self, Mesh mesh, uint32_t total_meshes)
 {
-    ASSERT(self->mesh_count <= total_meshes, "MODEL: meshes exceeded allocated memory\n");
+    ASSERT(self->mesh_count <= total_meshes, "MODEL: meshes exceeded expected count\n");
     self->meshes[self->mesh_count] = mesh;
     self->mesh_count++;
 }
@@ -244,10 +259,16 @@ void model_free(Model* self)
         mesh_free(&self->meshes[i]);
     }
 
+    free(self->meshes);
+
+    if(self->textures == NULL && self->tex_count == 0) return; // if only 1 of these conditions occurs smth is wrong so continue and give error
+
     for(uint32_t i = 0; i < self->tex_count; i++)
     {
         texture_free(&self->textures[i]);
     }
+
+    free(self->textures);
 
     /*
     for(uint32_t i = 0; i < self->tex_count; i++)
@@ -258,6 +279,4 @@ void model_free(Model* self)
     printf("MODEL: mesh count %d\n", self->mesh_count);
     */
 
-    free(self->textures);
-    free(self->meshes);
 }

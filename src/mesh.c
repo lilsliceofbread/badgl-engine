@@ -70,16 +70,6 @@ void mesh_init(Mesh* self, Arena arena,
 
     // don't need this data anymore
     arena_free(&arena);
-    //free(vertex_buffer.pos);
-    //if(vertex_buffer.normal != NULL)
-    //{
-    //    free(vertex_buffer.normal);
-    //}
-    //if(vertex_buffer.uv != NULL)
-    //{
-    //    free(vertex_buffer.uv);
-    //}
-    //free(indices);
 }
 
 void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
@@ -91,6 +81,8 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
     for(uint32_t i = 0; i < self->tex_count; i++)
     {
         uint32_t curr_tex = self->tex_indexes[i];
+
+        memset(sampler_name, 0, 100); 
 
         switch(textures[curr_tex].type)
         {
@@ -127,7 +119,7 @@ void mesh_free(Mesh* self)
     }
     
     vao_free(self->vao);
-    bo_free(self->vbo);
-    bo_free(self->ebo);
+    vbo_free(self->vbo);
+    ebo_free(self->ebo);
     //printf("MESH: vertices: %d indices %d\n", self->vert_count, self->ind_count);
 }
