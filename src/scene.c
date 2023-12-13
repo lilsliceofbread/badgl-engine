@@ -47,7 +47,7 @@ void scene_draw(Scene* self, Renderer* rd)
         model_draw(&self->models[i], rd, &self->vp);
     }
 
-    skybox_draw(&self->skybox, &self->cam); // must be drawn last after everything else has filled the depth buffer
+    skybox_draw(&self->skybox, rd, &self->cam); // must be drawn last after everything else has filled the depth buffer
 }
 
 void scene_free(Scene* self)

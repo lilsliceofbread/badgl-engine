@@ -95,7 +95,8 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
     }
 
     self->stored_uniforms = realloc(self->stored_uniforms, (self->uniform_count + add_uniform_count) * sizeof(uniform_pair));
-    ASSERT(self->stored_uniforms != NULL, "SHADER: failed to reallocate uniforms array\n");
+    // self->stored_uniforms can be null if there are no uniforms at all, then realloc returns null
+    ASSERT(self->stored_uniforms != NULL || (self->uniform_count + add_uniform_count) == 0, "SHADER: failed to reallocate uniforms array\n");
 
     // get name of uniform from it 
     // (find ; and the space behind it)
@@ -106,7 +107,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
         char c;
         int line_idx = 0;
         uint32_t j = uniform_pos[i];
-        while((c = src_code[j]) != ';' && line_idx < 300) // while we haven't seen ; and less than 300 for sanity check (line shouldn't be that long)
+        while((c = src_code[j]) != ';' && line_idx < 500) // while we haven't seen ; and less than 500 for sanity check (line shouldn't be that long)
         {
             if(c == ' ') // if space reset line and continue
             {
@@ -120,7 +121,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
                 j++;
             }
         }
-        ASSERT(line_idx < 300, "SHADER: failed to find uniform name. Missing semicolon in shader?\n");
+        ASSERT(line_idx < 500, "SHADER: failed to find uniform name. Missing semicolon in shader?\n");
         line[line_idx] = '\0'; // have to manually null terminate string
 
         strncpy(self->stored_uniforms[self->uniform_count + i].name, line, MAX_UNIF_NAME); 

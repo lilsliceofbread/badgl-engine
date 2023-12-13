@@ -5,13 +5,8 @@
 Skybox skybox_init(const char* cubemap_path)
 {
     Skybox self;
-
-    // preset since all skyboxes should be the same
-    shader_init(&self.shader, "shaders/skybox.vert", "shaders/skybox.frag");
-
+    
     texture_cubemap_create(&self.texture, cubemap_path);
-
-    // skybox has predefined sizes
 
     const size_t vert_size = 8 * sizeof(vec3);
     const size_t ind_size = 6 * 6 * sizeof(uint32_t);
@@ -26,7 +21,6 @@ Skybox skybox_init(const char* cubemap_path)
     uint32_t* tex_indexes = (uint32_t*)malloc(sizeof(uint32_t));
     tex_indexes[0] = 0; // only 1 texture
 
-    // fix later, shouldn't need to do this (mesh specify normal/uv separately)
     {
         const vec3 vertex_positions[] = {
             {-1, -1,  1}, // 0
@@ -43,7 +37,7 @@ Skybox skybox_init(const char* cubemap_path)
     }
 
     {
-        // clockwise indices for inside of the cube (anticlockwise from outside perspective)
+        // counter-clockwise indices for inside of the cube (clockwise from outside perspective)
         const uint32_t indices_tmp[] = {
             // top
             2, 6, 7,
@@ -78,8 +72,10 @@ Skybox skybox_init(const char* cubemap_path)
     return self;
 }
 
-void skybox_draw(Skybox* self, Camera* cam)
+void skybox_draw(Skybox* self, Renderer* rd, Camera* cam)
 {
+    Shader* shader = &rd->skybox_shader;
+
     mat4 vp; // no translation allowed to keep skybox at consistent distance
     mat4 corrected_view = cam->view;
     corrected_view.m14 = corrected_view.m24 = corrected_view.m34 = 0.0f; // remove translation
@@ -87,9 +83,9 @@ void skybox_draw(Skybox* self, Camera* cam)
 
     glDepthFunc(GL_LEQUAL);
 
-    shader_use(&self->shader);
-    shader_uniform_mat4(&self->shader, "vp", &vp);
-    mesh_draw(&self->mesh, &self->shader, &self->texture);
+    shader_use(shader);
+    shader_uniform_mat4(shader, "vp", &vp);
+    mesh_draw(&self->mesh, shader, &self->texture);
 
     glDepthFunc(GL_LESS);
 }
@@ -97,6 +93,5 @@ void skybox_draw(Skybox* self, Camera* cam)
 void skybox_free(Skybox* self)
 {
     mesh_free(&self->mesh);
-    shader_free(&self->shader);
     texture_free(&self->texture);
 }

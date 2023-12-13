@@ -9,6 +9,7 @@
 #include "model.h"
 #include "platform.h"
 #include "sphere.h"
+#include "quad.h"
 
 #define GAME_WIDTH 1280
 #define GAME_HEIGHT 720
@@ -19,13 +20,23 @@ void game_init(GameState* s)
 {
     rd_init(&s->rd, GAME_WIDTH, GAME_HEIGHT, "cool stuff");
 
+    {
+        Quad loading_screen = quad_init((vec2){-1.0f, -1.0f}, (vec2){2.0f, 2.0f}, "res/loading.png");
+        rd_update_viewport(&s->rd); // glfw framebuffer size may not have updated yet so update renderer width/height
+        int size = (s->rd.width >= s->rd.height) ? s->rd.height >> 1: s->rd.width >> 1;
+        rd_set_viewport((s->rd.width >> 1) - (size >> 1), (s->rd.height >> 1) - (size >> 1), size, size); // place loading in middle of screen
+        quad_draw(&loading_screen, &s->rd);
+        rd_swap_buffers(&s->rd);
+        quad_free(&loading_screen);
+    }
+
     vec3 start_pos = {0.0f, 0.0f, 3.0f};
     vec2 start_euler = {0.0f, -90.0f};
     scene_init(&s->scenes[s->scene_count++], start_pos, start_euler, &s->rd, "res/kurt/space.png");
     scene_init(&s->scenes[s->scene_count++], start_pos, start_euler, &s->rd, "res/box/box.png");
 
     {
-        // we create these shader's ourselves and then pass the index to the structures so multiple can use the same shader
+        // we create these shaders ourselves and then pass the index to the structures so multiple can use the same shader
         uint32_t model_shader = rd_add_shader(&s->rd, "shaders/model_default.vert", "shaders/model_default.frag");
         uint32_t sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
 

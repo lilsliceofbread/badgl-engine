@@ -9,12 +9,11 @@ typedef struct Skybox
 {
     Texture texture;
     Mesh mesh;
-    Shader shader;
 } Skybox;
 
 Skybox skybox_init(const char* cubemap_path);
 
-void skybox_draw(Skybox* self, Camera* cam);
+void skybox_draw(Skybox* self, Renderer* rd, Camera* cam);
 
 void skybox_free(Skybox* self);
 

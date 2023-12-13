@@ -30,6 +30,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     self->framecount = 0;
     self->vsync_enabled = false;
 
+
     ASSERT(glfwInit(), "RENDERER: failed to init GLFW\n");
 
     #ifndef NO_DEBUG
@@ -84,6 +85,9 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 
     glViewport(0, 0, width, height);
 
+    shader_init(&self->skybox_shader, "shaders/skybox.vert", "shaders/skybox.frag");
+    shader_init(&self->quad_shader, "shaders/quad.vert", "shaders/quad.frag");
+
     rd_imgui_init(self, "#version 430 core");
 
     glEnable(GL_BLEND); // enable transparent textures
@@ -94,12 +98,31 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     glDepthFunc(GL_LEQUAL);
 
     glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CW); // front face has clockwise vertices
-    glCullFace(GL_FRONT);
+    glFrontFace(GL_CCW); // front face has counter-clockwise vertices
+    glCullFace(GL_BACK);
 
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // black
+
+}
+
+// annoying fix, sometimes resize callback is delayed
+void rd_update_viewport(Renderer* self)
+{
+    glfwGetFramebufferSize(self->win, &self->width, &self->height);
+    glViewport(0, 0, self->width, self->height);
+}
+
+void rd_set_viewport(int x, int y, int width, int height)
+{
+    glViewport(x, y, width, height);
+}
+
+// allow manual swapping of buffers
+void rd_swap_buffers(Renderer* self)
+{
+    glfwSwapBuffers(self->win);
 }
 
 void rd_imgui_init(Renderer* self, const char* glsl_version)

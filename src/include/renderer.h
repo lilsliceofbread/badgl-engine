@@ -13,6 +13,7 @@
 typedef struct Renderer 
 {
     Shader* shaders; // can have multiple shader programs
+    Shader skybox_shader, quad_shader; // required shaders; separate from other optional ones (loading and skybox required)
     uint32_t shader_count;
     int width, height;
     GLFWwindow* win;
@@ -30,6 +31,12 @@ typedef struct Renderer
 } Renderer;
 
 void rd_init(Renderer* rd, int width, int height, const char* win_title);
+
+void rd_update_viewport(Renderer* self); // annoying fix, sometimes resize callback is delayed
+
+void rd_set_viewport(int x, int y, int width, int height); // x and y of top left point
+
+void rd_swap_buffers(Renderer* self); // allow user to manually swap buffers
 
 void rd_imgui_init(Renderer* self, const char* glsl_version);
 

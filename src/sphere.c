@@ -112,7 +112,7 @@ Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path,
         uint32_t p2 = ((i + 1) % verticals) + 1; // i + 2 but remember to wrap around back to 0 instead of going above verticals
 
         indices[ind_count] = 0; // first vertex is top vertex
-        indices[ind_count + 1] = p2; // p2 first in clockwise order
+        indices[ind_count + 1] = p2; // p2 first in counter-clockwise order
         indices[ind_count + 2] = p1;
 
         ind_count += 3;
@@ -130,20 +130,19 @@ Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path,
         
         for(uint32_t j = 0; j < verticals; j++)
         {
-            // top right and clockwise
-            uint32_t tl = layer1 + j; // j: from 0 to verticals - 1
-            uint32_t tr = layer1 + (j + 1) % verticals; // j + 1 but remembering to wrap back to 0
-            uint32_t bl = layer2 + j;
-            uint32_t br = layer2 + (j + 1) % verticals;
+            uint32_t tr = layer1 + j; // j: from 0 to verticals - 1
+            uint32_t tl = layer1 + (j + 1) % verticals; // j + 1 but remembering to wrap back to 0
+            uint32_t br = layer2 + j;
+            uint32_t bl = layer2 + (j + 1) % verticals;
 
-            // clockwise quad indices
-            indices[ind_count] = tl; // tri 1
-            indices[ind_count + 1] = tr;
-            indices[ind_count + 2] = br;
+            // counter-clockwise quad indices
+            indices[ind_count] = tr;
+            indices[ind_count + 1] = tl;
+            indices[ind_count + 2] = bl;
 
-            indices[ind_count + 3] = tl; // tri 2
-            indices[ind_count + 4] = br;
-            indices[ind_count + 5] = bl;
+            indices[ind_count + 3] = tr;
+            indices[ind_count + 4] = bl;
+            indices[ind_count + 5] = br;
 
             ind_count += 6;
         }
