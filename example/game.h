@@ -2,21 +2,16 @@
 #define BADGL_GAME_H
 
 #include "renderer.h"
-#include "model.h"
-#include "camera.h"
-#include "skybox.h"
-#include "sphere.h"
+#include "scene.h"
 
-#define MAX_MODELS 5
+#define MAX_SCENES 5
 
 typedef struct GameState
 {
     Renderer rd;
-    Camera cam;
-
-    Model models[MAX_MODELS];
-    uint32_t model_count;
-    Skybox skybox;
+    Scene scenes[MAX_SCENES];
+    uint32_t current_scene;
+    uint32_t scene_count;
 } GameState;
 
 void game_init(GameState* s);

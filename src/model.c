@@ -11,21 +11,23 @@
 #include "texture.h"
 #include "renderer.h"
 
-void model_load(Model* self, const char* path, uint32_t shader_index)
+Model model_load(const char* path, uint32_t shader_index)
 {
     float start_time = rd_get_time();
+
+    Model self;
 
     // import scene object (entire model)
     const struct aiScene* scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
     ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "MODEL: loading %s failed\n%s\n", path, aiGetErrorString());
 
-    self->mesh_count = 0;
-    self->meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
-    self->textures = NULL; // not setting this to null before realloc creates undefined behaviour, if the uninitialised memory is not 0
-    self->tex_count = 0;
-    self->shader_index = shader_index;
-    transform_reset(&self->transform);
-    mat4_identity(&self->model);
+    self.mesh_count = 0;
+    self.meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
+    self.textures = NULL; // not setting this to null before realloc creates undefined behaviour, if the uninitialised memory is not 0
+    self.tex_count = 0;
+    self.shader_index = shader_index;
+    transform_reset(&self.transform);
+    mat4_identity(&self.model);
 
     // get directory of model and store
     {
@@ -35,15 +37,17 @@ void model_load(Model* self, const char* path, uint32_t shader_index)
         ASSERT(offset != -1, "MODEL: invalid path for model %s\n", path);
         strncpy(temp, path, (size_t)offset); // copy up to final / into directory
         temp[offset] = '\0'; // strncpy does not null terminate strings
-        self->directory = temp;
+        self.directory = temp;
         //printf("offset: %d dir: %s", offset, self->directory);
     }
 
-    model_process_node(self, scene->mRootNode, scene);
+    model_process_node(&self, scene->mRootNode, scene);
 
     aiReleaseImport(scene); // need to free scene ourselves in c
 
     printf("MODEL: loading %s took %fs\n", path, rd_get_time() - start_time);
+
+    return self;
 }
 
 void model_update_transform(Model* self, Transform* transform)

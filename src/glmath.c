@@ -155,7 +155,7 @@ void vec2_norm(vec2* out)
     *out = vec2_scale(tmp, 1.0f / denom);
 }
 
-// bad, has to copy 2 whole matrices
+// inefficient lol, has to copy 2 whole matrices + no SIMD stuff
 void mat4_mul(mat4* out, mat4 m1, mat4 m2)
 {
     out->m11 = m1.m11 * m2.m11 + m1.m12 * m2.m21 + m1.m13 * m2.m31 + m1.m14 * m2.m41;

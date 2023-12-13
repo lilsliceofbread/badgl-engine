@@ -4,19 +4,21 @@
 #include <stdlib.h>
 #include "util.h"
 
-void uv_sphere_gen(Model* self, float radius, uint32_t resolution, const char* cubemap_path, uint32_t shader_index)
+Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path, uint32_t shader_index)
 {
-    self->meshes = malloc(sizeof(Mesh));
-    self->mesh_count = 1;
+    Model self;
+
+    self.meshes = (Mesh*)malloc(sizeof(Mesh));
+    self.mesh_count = 1;
 
     bool using_texture = cubemap_path != NULL; // only 1 if cubemap path has been given
-    self->tex_count = using_texture;
-    self->textures = NULL;
-    if(using_texture) self->textures = malloc(sizeof(Texture));
+    self.tex_count = using_texture;
+    self.textures = NULL;
+    if(using_texture) self.textures = (Texture*)malloc(sizeof(Texture));
 
-    self->shader_index = shader_index;
-    self->directory = NULL;
-    transform_reset(&self->transform);
+    self.shader_index = shader_index;
+    self.directory = NULL;
+    transform_reset(&self.transform);
 
     uint32_t* indices = NULL;
     uint32_t* tex_indexes = NULL;
@@ -26,21 +28,21 @@ void uv_sphere_gen(Model* self, float radius, uint32_t resolution, const char* c
     const size_t total_vertices = horizontals * verticals + 2;
     const size_t total_indices = 6 * verticals * (horizontals - 1); // 6 indices per square, but top and bottom rings are triangles (3 per), so h - 2 + 1
 
-    Arena arena = arena_create((total_vertices * 2 * sizeof(vec3)) + (total_indices * sizeof(uint32_t)));
+    Arena mesh_arena = arena_create((total_vertices * 2 * sizeof(vec3)) + (total_indices * sizeof(uint32_t)));
 
     VertexBuffer vertex_buffer = {
-        .pos = (vec3*)arena_alloc(&arena, total_vertices * sizeof(vec3)),
-        .normal = (vec3*)arena_alloc(&arena, total_vertices * sizeof(vec3)),
+        .pos = (vec3*)arena_alloc(&mesh_arena, total_vertices * sizeof(vec3)),
+        .normal = (vec3*)arena_alloc(&mesh_arena, total_vertices * sizeof(vec3)),
         .uv = NULL
     };
     ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices\n");
 
-    indices = (uint32_t*)arena_alloc(&arena, total_indices * sizeof(uint32_t));
+    indices = (uint32_t*)arena_alloc(&mesh_arena, total_indices * sizeof(uint32_t));
     ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");
 
     if(cubemap_path != NULL) // for now
     {
-        texture_cubemap_create(&self->textures[0], cubemap_path);
+        texture_cubemap_create(&self.textures[0], cubemap_path);
         tex_indexes = (uint32_t*)malloc(sizeof(uint32_t));
         tex_indexes[0] = 0; // the only index
     }
@@ -162,5 +164,7 @@ void uv_sphere_gen(Model* self, float radius, uint32_t resolution, const char* c
         ind_count += 3;
     }
 
-    mesh_init(&self->meshes[0], arena, vertex_buffer, vert_count, indices, ind_count, tex_indexes, self->tex_count);
+    mesh_init(&self.meshes[0], mesh_arena, vertex_buffer, vert_count, indices, ind_count, tex_indexes, self.tex_count);
+
+    return self;
 }

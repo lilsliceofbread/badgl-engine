@@ -9,6 +9,6 @@
 
 // sphere just uses Model struct
 
-void uv_sphere_gen(Model* self, float radius, uint32_t resolution, const char* cubemap_path, uint32_t shader_index);
+Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path, uint32_t shader_index);
 
 #endif

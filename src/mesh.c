@@ -74,32 +74,16 @@ void mesh_init(Mesh* self, Arena arena,
 
 void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
 {
-    // current num of each texture type
-    uint32_t diffuse_num = 1, specular_num = 1;
-    char sampler_name[100];
-
     for(uint32_t i = 0; i < self->tex_count; i++)
     {
         uint32_t curr_tex = self->tex_indexes[i];
-
-        memset(sampler_name, 0, 100); 
-
-        switch(textures[curr_tex].type)
+        if(textures[curr_tex].type != TEXTURE_CUBEMAP)
         {
-            case TEXTURE_CUBEMAP:
-                break;
-            case TEXTURE_DIFFUSE: case TEXTURE_SPECULAR: case TEXTURE_NORMAL:
-                // activate next tex unit
-                texture_unit_active(i);
-                // FIX FOR TEXTURE TYPES OTHER THAN DIFFUSE/SPEC LATER
-                uint32_t* num = textures[curr_tex].type == TEXTURE_DIFFUSE ? &diffuse_num : &specular_num;
-                snprintf(sampler_name, 100, "%s%d", texture_type_get_str(textures[curr_tex].type), *num);
-                shader_uniform_1i(shader, sampler_name, (int)i);
-                ++(*num);
-                break;
+            texture_unit_active(i); // activate next tex unit
+            shader_uniform_1i(shader, texture_type_get_str(textures[curr_tex].type), (int)i); // tell sampler which unit is associated with it
         }
-        // tell sampler which texture unit to use
-        //printf("LOG: texture name %s\n", sampler_name);
+
+        //associate texture with current bound unit
         texture_bind(&textures[curr_tex]);
     }
 

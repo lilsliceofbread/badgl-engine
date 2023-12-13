@@ -12,7 +12,6 @@
 #include "glmath.h"
 #include "util.h"
 
-
 typedef struct Model
 {
     Mesh* meshes;
@@ -26,7 +25,7 @@ typedef struct Model
     mat4 model;
 } Model;
 
-void model_load(Model* self, const char* path, uint32_t shader_index);
+Model model_load(const char* path, uint32_t shader_index);
 
 void model_update_transform(Model* self, Transform* transform);
 

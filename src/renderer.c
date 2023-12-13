@@ -116,9 +116,8 @@ uint32_t rd_add_shader(Renderer* self, const char* vert_src, const char* frag_sr
 {
     self->shaders = (Shader*)realloc(self->shaders, (self->shader_count + 1) * sizeof(Shader));
     ASSERT(self->shaders != NULL, "RENDERER: failed to reallocate shader array\n");
-    shader_init(&self->shaders[self->shader_count], vert_src, frag_src);
+    shader_init(&self->shaders[self->shader_count++], vert_src, frag_src);
 
-    self->shader_count++;
     return self->shader_count - 1; // returns index to shader in array
 }
 
