@@ -18,6 +18,9 @@ static bool is_vsync_on = true;
 
 void game_init(GameState* s)
 {
+    s->scene_count = 0;
+    s->current_scene = 0;
+
     rd_init(&s->rd, GAME_WIDTH, GAME_HEIGHT, "cool stuff");
 
     {
@@ -52,6 +55,8 @@ void game_init(GameState* s)
         .scale = (vec3){1.0f, 1.0f, 1.0f}
     };
     model_update_transform(&s->scenes[1].models[0], &backpack);
+
+    rd_update_viewport(&s->rd); // reset back after loading screen (begin/end load func?)
 }
 
 void game_update(GameState* s)

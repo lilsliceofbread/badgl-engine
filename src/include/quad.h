@@ -7,6 +7,7 @@
 #include "texture.h"
 #include "renderer.h"
 
+// flat 2d quads
 typedef struct Quad {
     VAO vao;
     VBO vbo;
