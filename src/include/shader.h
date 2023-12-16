@@ -5,10 +5,11 @@
 #include <GLFW/glfw3.h>
 #include "glmath.h"
 
-#define MAX_UNIF_NAME 50
+#define MAX_UNIF_NAME 64
+#define MAX_UNIFORMS 64
 
 typedef struct uniform_pair {
-    char name[MAX_UNIF_NAME]; // if you make a uniform name longer than 50 characters you suck
+    char name[MAX_UNIF_NAME]; // if you make a uniform name longer than 64 characters i don't like you
     GLint location;
 } uniform_pair;
 
@@ -16,7 +17,7 @@ typedef struct uniform_pair {
 typedef struct Shader
 {
     GLuint id;
-    uniform_pair* stored_uniforms;
+    uniform_pair stored_uniforms[MAX_UNIFORMS];
     uint32_t uniform_count; // found during shader comp
 } Shader;
 

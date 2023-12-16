@@ -10,7 +10,6 @@
 void shader_init(Shader* self, const char* vert_shader_src, const char* frag_shader_src)
 {
     self->uniform_count = 0;
-    self->stored_uniforms = NULL;
     GLuint vert_shader, frag_shader, shader_program;
     int success;
     char info_log[512];
@@ -23,7 +22,6 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
     ASSERT(success, "SHADER: fragment shader comp failed. info log:\n%s\n", info_log);
 
     shader_program = glCreateProgram();
-
     self->id = shader_program;
 
     glAttachShader(shader_program, vert_shader);
@@ -37,9 +35,7 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
     // here because needs to be done after linking program
     for(uint32_t i = 0; i < self->uniform_count; i++)
     {
-        // glGetUniformLocation returns -1 if no uniform
         self->stored_uniforms[i].location = glGetUniformLocation(self->id, self->stored_uniforms[i].name);
-        //printf("LOG: uniform %d: %s\n", self->stored_uniforms[i].location, self->stored_uniforms[i].name);
     }
 
     // can detach shaders as we don't need them anymore once program is linked
@@ -83,49 +79,38 @@ GLuint shader_compile(Shader* self, const char* shader_filepath, GLenum shader_t
 void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 {
     uint32_t add_uniform_count = 0;
-    uint32_t uniform_pos[100]; // 100 is probably enough
     const char* temp = src_code;
+    uniform_pair new_uniforms[MAX_UNIFORMS] = {0};
 
-    // find location of word uniform in shader code
+    char name[MAX_UNIF_NAME];
     while((temp = strstr(temp, "uniform"))) // strstr returns NULL when no match, ending loop
     {
-        uniform_pos[add_uniform_count] = (uint32_t)(temp - src_code); // byte distance to uniform beginning
-        temp++; // to prevent strstr from finding the same match again
-        add_uniform_count++;
-    }
-
-    self->stored_uniforms = realloc(self->stored_uniforms, (self->uniform_count + add_uniform_count) * sizeof(uniform_pair));
-    // self->stored_uniforms can be null if there are no uniforms at all, then realloc returns null
-    ASSERT(self->stored_uniforms != NULL || (self->uniform_count + add_uniform_count) == 0, "SHADER: failed to reallocate uniforms array\n");
-
-    // get name of uniform from it 
-    // (find ; and the space behind it)
-    for(uint32_t i = 0; i < add_uniform_count; i++)
-    {
-        char line[100]; // 100 should be fine
-
         char c;
-        int line_idx = 0;
-        uint32_t j = uniform_pos[i];
-        while((c = src_code[j]) != ';' && line_idx < 500) // while we haven't seen ; and less than 500 for sanity check (line shouldn't be that long)
+        int name_idx = 0;
+        for(int j = 0; (c = temp[j]) != ';'; j++) // while we haven't seen ;
         {
-            if(c == ' ') // if space reset line and continue
+            if(c == ' ') // reset name and continue (this is not the name)
             {
-                line_idx = 0;
-                j++;
+                name_idx = 0; // don't need to memset name since it will be null terminated later
+                continue;
             }
-            else // else continue adding to line
-            {
-                line[line_idx] = c;
-                line_idx++;
-                j++;
-            }
-        }
-        ASSERT(line_idx < 500, "SHADER: failed to find uniform name. Missing semicolon in shader?\n");
-        line[line_idx] = '\0'; // have to manually null terminate string
 
-        strncpy(self->stored_uniforms[self->uniform_count + i].name, line, MAX_UNIF_NAME); 
+            name[name_idx++] = c;
+        }
+        name[name_idx] = '\0';
+
+        strncpy(new_uniforms[add_uniform_count++].name, name, MAX_UNIF_NAME); 
+
+        temp++; // stop strstr finding the same match again
     }
+
+    if(self->uniform_count + add_uniform_count > MAX_UNIFORMS)
+    {
+        ASSERT(false, "SHADER: too many uniforms for 1 shader object");
+        return;
+    }
+
+    memcpy(&self->stored_uniforms[self->uniform_count], new_uniforms, add_uniform_count * sizeof(uniform_pair));
 
     self->uniform_count += add_uniform_count;
 }
@@ -137,15 +122,15 @@ void shader_use(Shader* self)
 
 GLint shader_find_uniform(Shader* self, const char* name)
 {
-    // find uniforms that have been pre stored by analysing shader src
     uniform_pair curr;
     for(uint32_t i = 0; i < self->uniform_count; i++)
     {
         curr = self->stored_uniforms[i];
         if(strcmp(name, curr.name) == 0)
         {
-            /*if(curr.location == -1)
-                fprintf(stderr, "SHADER: uniform %s does not exist. forgot to use in shader?\n", curr.name);*/
+            if(curr.location == -1)
+                fprintf(stderr, "SHADER: uniform %s does not exist. forgot to use in shader?\n", curr.name);
+
             return curr.location;  
         }
     }
@@ -175,6 +160,5 @@ void shader_uniform_1i(Shader* self, const char* name, int i)
 void shader_free(Shader* self)
 {
     glDeleteProgram(self->id);
-    free(self->stored_uniforms);
     self->uniform_count = 0;
 }

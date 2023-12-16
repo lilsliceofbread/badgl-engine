@@ -16,6 +16,9 @@
 
 static bool is_vsync_on = true;
 
+void loading_begin(Renderer* rd);
+void loading_end(Renderer* rd);
+
 void game_init(GameState* s)
 {
     s->scene_count = 0;
@@ -23,15 +26,7 @@ void game_init(GameState* s)
 
     rd_init(&s->rd, GAME_WIDTH, GAME_HEIGHT, "cool stuff");
 
-    {
-        Quad loading_screen = quad_init((vec2){-1.0f, -1.0f}, (vec2){2.0f, 2.0f}, "res/loading.png");
-        rd_update_viewport(&s->rd); // glfw framebuffer size may not have updated yet so update renderer width/height
-        int size = (s->rd.width >= s->rd.height) ? s->rd.height >> 1: s->rd.width >> 1;
-        rd_set_viewport((s->rd.width >> 1) - (size >> 1), (s->rd.height >> 1) - (size >> 1), size, size); // place loading in middle of screen
-        quad_draw(&loading_screen, &s->rd);
-        rd_swap_buffers(&s->rd);
-        quad_free(&loading_screen);
-    }
+    loading_begin(&s->rd);
 
     vec3 start_pos = {0.0f, 0.0f, 3.0f};
     vec2 start_euler = {0.0f, -90.0f};
@@ -56,7 +51,7 @@ void game_init(GameState* s)
     };
     model_update_transform(&s->scenes[1].models[0], &backpack);
 
-    rd_update_viewport(&s->rd); // reset back after loading screen (begin/end load func?)
+    loading_end(&s->rd);
 }
 
 void game_update(GameState* s)
@@ -78,7 +73,6 @@ void game_update(GameState* s)
 
     scene_update(&s->scenes[s->current_scene], &s->rd);
 
-    // bit scuffed
     if(s->current_scene == 0)
     {
         Transform sphere = {
@@ -99,4 +93,20 @@ void game_end(GameState* s)
         scene_free(&s->scenes[i]);
     }
     rd_free(&s->rd);
+}
+
+void loading_begin(Renderer* rd)
+{
+    Quad loading_screen = quad_init((vec2){-1.0f, -1.0f}, (vec2){2.0f, 2.0f}, "res/loading.png");
+    rd_update_viewport(rd); // glfw framebuffer size may not have updated yet so update renderer width/height
+    int size = (rd->width >= rd->height) ? rd->height >> 1: rd->width >> 1;
+    rd_set_viewport((rd->width >> 1) - (size >> 1), (rd->height >> 1) - (size >> 1), size, size); // place loading in middle of screen
+    quad_draw(&loading_screen, rd);
+    rd_swap_buffers(rd);
+    quad_free(&loading_screen);
+}
+
+void loading_end(Renderer* rd)
+{
+    rd_update_viewport(rd); // reset back after loading screen
 }
