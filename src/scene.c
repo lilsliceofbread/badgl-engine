@@ -13,7 +13,15 @@ void scene_init(Scene* self, vec3 start_pos, vec2 euler, Renderer* rd, const cha
 
     self->models = NULL;
     self->model_count = 0;
+
+    if(skybox_cubemap_path == NULL)
+    {
+        self->has_skybox = false;
+        return;
+    }
+
     self->skybox = skybox_init(skybox_cubemap_path);
+    self->has_skybox = true;
 }
 
 // add string associated with models instead of using indexes?
@@ -47,7 +55,7 @@ void scene_draw(Scene* self, Renderer* rd)
         model_draw(&self->models[i], rd, &self->vp);
     }
 
-    skybox_draw(&self->skybox, rd, &self->cam); // must be drawn last after everything else has filled the depth buffer
+    if(self->has_skybox) skybox_draw(&self->skybox, rd, &self->cam); // must be drawn last after everything else has filled the depth buffer
 }
 
 void scene_free(Scene* self)

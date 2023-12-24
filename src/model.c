@@ -105,7 +105,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     Mesh mesh;
 
     uint32_t* indices = NULL;
-    uint32_t* tex_indexes = NULL; // indexes into model textures array
+    uint32_t* tex_indices = NULL; // indexes into model textures array
     const uint32_t total_vertices = model_mesh->mNumVertices;
     uint32_t total_indices = 0;
     uint32_t total_textures = 0;
@@ -192,18 +192,18 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
 
     if(total_textures) // if no textures, don't allocate/memcpy/free
     {
-        tex_indexes = (uint32_t*)calloc(total_textures, sizeof(uint32_t));
+        tex_indices = (uint32_t*)calloc(total_textures, sizeof(uint32_t));
 
-        // copy separate indexes into tex_indexes
-        memcpy(tex_indexes, diff_indexes, diffuse_count * sizeof(uint32_t));
-        memcpy(tex_indexes + diffuse_count, spec_indexes, specular_count * sizeof(uint32_t));
+        // copy separate indexes into tex_indices
+        memcpy(tex_indices, diff_indexes, diffuse_count * sizeof(uint32_t));
+        memcpy(tex_indices + diffuse_count, spec_indexes, specular_count * sizeof(uint32_t));
 
         free(diff_indexes);
         free(spec_indexes);
     } // if no textures then skip
     //}
 
-    mesh_init(&mesh, arena, vertex_buffer, total_vertices, indices, total_indices, tex_indexes, total_textures);
+    mesh_init(&mesh, arena, vertex_buffer, total_vertices, indices, total_indices, tex_indices, total_textures);
     return mesh;
 }
 
@@ -211,7 +211,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
 {
     uint32_t add_tex_count = aiGetMaterialTextureCount(mat, ai_type); // textures of given type
     *tex_count_out = add_tex_count;
-    uint32_t* tex_indexes = (uint32_t*)calloc(add_tex_count, sizeof(uint32_t)); // user of function must free themselves
+    uint32_t* tex_indices = (uint32_t*)calloc(add_tex_count, sizeof(uint32_t)); // user of function must free themselves
 
     char img_path[1025]; // for safety / to suppress warnings for snprintf
     uint32_t new_add_tex_count = 0; // since we only resize if texture doesn't already exist
@@ -227,7 +227,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
         {
             if(strcmp(img_path, self->textures[j].path) == 0) // if texture already exists
             {
-                tex_indexes[i] = j;
+                tex_indices[i] = j;
                 skip = true;
                 break;
             }
@@ -247,13 +247,13 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
 
             // set next texture in array to current texture
             self->textures[self->tex_count + i] = texture; // first iter is tex_count + 0
-            tex_indexes[i] = self->tex_count + i; // store index into textures array for mesh to access
+            tex_indices[i] = self->tex_count + i; // store index into textures array for mesh to access
         }
     }
 
     // increase tex_count to correct size
     self->tex_count += new_add_tex_count;
-    return tex_indexes;
+    return tex_indices;
 }
 
 void model_free(Model* self)

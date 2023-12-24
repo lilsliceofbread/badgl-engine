@@ -87,18 +87,33 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
     {
         char c;
         int name_idx = 0;
+        bool is_array_uniform = false;
+
         for(int j = 0; (c = temp[j]) != ';'; j++) // while we haven't seen ;
         {
+            // can't use switch because break keyword applies to it, requiring another if anyway
             if(c == ' ') // reset name and continue (this is not the name)
             {
                 name_idx = 0; // don't need to memset name since it will be null terminated later
                 continue;
             }
+            else if(c == '[') // because array uniform names don't fit the pattern, must deal with them in another way
+            {
+                is_array_uniform = true;
+                break;
+            }
 
             name[name_idx++] = c;
         }
-        name[name_idx] = '\0';
 
+        if(is_array_uniform) 
+        {
+            // should call another function to deal with this
+            // and user will have to use shader_find_uniform_array
+            continue;
+        }
+
+        name[name_idx] = '\0';
         strncpy(new_uniforms[add_uniform_count++].name, name, MAX_UNIF_NAME); 
 
         temp++; // stop strstr finding the same match again
@@ -142,7 +157,7 @@ GLint shader_find_uniform(Shader* self, const char* name)
 void shader_uniform_mat4(Shader* self, const char* name, mat4* mat)
 {
     GLint location = shader_find_uniform(self, name);
-    glUniformMatrix4fv(location, 1, GL_FALSE, (float*)mat->data); // false to transpose matrix
+    glUniformMatrix4fv(location, 1, GL_FALSE, (float*)mat->data); // transposing matrix is false
 }
 
 void shader_uniform_1f(Shader* self, const char* name, float f)

@@ -1,78 +1,16 @@
 #include "skybox.h"
+#include "shapes.h"
 #include <stdlib.h>
 #include <string.h>
 
-Skybox skybox_init(const char* cubemap_path)
+Model skybox_init(const char* cubemap_path)
 {
-    Skybox self;
-    
-    texture_cubemap_create(&self.texture, cubemap_path);
-
-    const size_t vert_size = 8 * sizeof(vec3);
-    const size_t ind_size = 6 * 6 * sizeof(uint32_t);
-    Arena arena = arena_create(vert_size + ind_size);
-
-    VertexBuffer vertex_buffer;
-    vertex_buffer.pos = (vec3*)arena_alloc(&arena, vert_size);
-    vertex_buffer.normal = NULL;
-    vertex_buffer.uv = NULL;
-
-    uint32_t* indices = (uint32_t*)arena_alloc(&arena, ind_size);
-    uint32_t* tex_indexes = (uint32_t*)malloc(sizeof(uint32_t));
-    tex_indexes[0] = 0; // only 1 texture
-
-    {
-        const vec3 vertex_positions[] = {
-            {-1, -1,  1}, // 0
-            { 1, -1,  1}, // 1
-            {-1,  1,  1}, // 2
-            { 1,  1,  1}, // 3
-            {-1, -1, -1}, // 4
-            { 1, -1, -1}, // 5
-            {-1,  1, -1}, // 6
-            { 1,  1, -1}  // 7
-        };
-
-        memcpy(vertex_buffer.pos, vertex_positions, vert_size);
-    }
-
-    {
-        // counter-clockwise indices for inside of the cube (clockwise from outside perspective)
-        const uint32_t indices_tmp[] = {
-            // top
-            2, 6, 7,
-            2, 7, 3,
-
-            // bottom
-            0, 5, 4,
-            0, 1, 5,
-
-            // left
-            0, 6, 2,
-            0, 4, 6,
-
-            // right
-            1, 3, 7,
-            1, 7, 5,
-
-            // front
-            0, 2, 3,
-            0, 3, 1,
-
-            // back
-            4, 7, 6,
-            4, 5, 7
-        };
-
-        memcpy(indices, indices_tmp, ind_size);
-    }
-
-    mesh_init(&self.mesh, arena, vertex_buffer, 8, indices, 6 * 6, tex_indexes, 1);
+    Model self = rectangular_prism_gen(1.0f, 1.0f, 1.0f, cubemap_path, 0); // since not using shader_index, put any value
 
     return self;
 }
 
-void skybox_draw(Skybox* self, Renderer* rd, Camera* cam)
+void skybox_draw(Model* self, Renderer* rd, Camera* cam)
 {
     Shader* shader = &rd->skybox_shader;
 
@@ -81,17 +19,12 @@ void skybox_draw(Skybox* self, Renderer* rd, Camera* cam)
     corrected_view.m14 = corrected_view.m24 = corrected_view.m34 = 0.0f; // remove translation
     mat4_mul(&vp, cam->proj, corrected_view);
 
-    glDepthFunc(GL_LEQUAL);
-
     shader_use(shader);
     shader_uniform_mat4(shader, "vp", &vp);
-    mesh_draw(&self->mesh, shader, &self->texture);
-
-    glDepthFunc(GL_LESS);
+    mesh_draw(&self->meshes[0], shader, self->textures);
 }
 
-void skybox_free(Skybox* self)
+void skybox_free(Model* self)
 {
-    mesh_free(&self->mesh);
-    texture_free(&self->texture);
+    model_free(self);
 }

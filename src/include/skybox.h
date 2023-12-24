@@ -4,17 +4,12 @@
 #include "texture.h"
 #include "mesh.h"
 #include "camera.h"
+#include "model.h"
 
-typedef struct Skybox
-{
-    Texture texture;
-    Mesh mesh;
-} Skybox;
+Model skybox_init(const char* cubemap_path);
 
-Skybox skybox_init(const char* cubemap_path);
+void skybox_draw(Model* self, Renderer* rd, Camera* cam);
 
-void skybox_draw(Skybox* self, Renderer* rd, Camera* cam);
-
-void skybox_free(Skybox* self);
+void skybox_free(Model* self);
 
 #endif

@@ -7,6 +7,8 @@
 #include "texture.h"
 #include "renderer.h"
 
+// QuadDrawer instead of Quad, takes multiple quads?
+
 // flat 2d quads
 typedef struct Quad {
     VAO vao;

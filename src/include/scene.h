@@ -2,6 +2,7 @@
 #define BADGL_SCENE_H
 
 #include <inttypes.h>
+#include <stdbool.h>
 #include "camera.h"
 #include "model.h"
 #include "skybox.h"
@@ -11,7 +12,9 @@
 typedef struct Scene {
     Camera cam;
     mat4 vp;
-    Skybox skybox;
+
+    Model skybox;
+    bool has_skybox;
 
     Model* models;
     uint32_t model_count;

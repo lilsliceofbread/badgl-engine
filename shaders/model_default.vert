@@ -12,7 +12,7 @@ uniform mat4 vp;
 void main()
 {
     gl_Position = vp * model * vec4(v_pos, 1.0f);
-    //gl_Position = vec4(v_pos, 1.0f);
+
     f_uv = v_uv;
     f_normal = v_normal;
 } // all vertices are divided by w after vertex shader

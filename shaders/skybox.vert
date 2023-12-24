@@ -11,4 +11,4 @@ void main()
 
     vec4 corrected_pos = vp * vec4(v_pos, 1.0f);
     gl_Position = corrected_pos.xyww; // ensure all NDC z values are 1.0
-} // all vertices are divided by w after vertex shader
+}

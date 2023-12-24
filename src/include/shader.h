@@ -6,7 +6,7 @@
 #include "glmath.h"
 
 #define MAX_UNIF_NAME 64
-#define MAX_UNIFORMS 64
+#define MAX_UNIFORMS 16
 
 typedef struct uniform_pair {
     char name[MAX_UNIF_NAME]; // if you make a uniform name longer than 64 characters i don't like you

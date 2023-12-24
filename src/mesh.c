@@ -11,10 +11,10 @@
 void mesh_init(Mesh* self, Arena arena,
                VertexBuffer vertex_buffer, uint32_t vert_count,
                uint32_t* indices, uint32_t ind_count,
-               uint32_t* tex_indexes, uint32_t tex_count)
+               uint32_t* tex_indices, uint32_t tex_count)
 {
     // preallocated
-    self->tex_indexes = tex_indexes;
+    self->tex_indices = tex_indices;
     self->vert_count = vert_count;
     self->ind_count = ind_count;
     self->tex_count = tex_count;
@@ -76,7 +76,7 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
 {
     for(uint32_t i = 0; i < self->tex_count; i++)
     {
-        uint32_t curr_tex = self->tex_indexes[i];
+        uint32_t curr_tex = self->tex_indices[i];
         if(textures[curr_tex].type != TEXTURE_CUBEMAP)
         {
             texture_unit_active(i); // activate next tex unit
@@ -97,9 +97,9 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
 
 void mesh_free(Mesh* self)
 {
-    if(self->tex_count > 0 && self->tex_indexes != NULL)
+    if(self->tex_count > 0 && self->tex_indices != NULL)
     {
-        free(self->tex_indexes);
+        free(self->tex_indices);
     }
     
     vao_free(self->vao);

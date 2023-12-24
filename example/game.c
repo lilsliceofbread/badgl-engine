@@ -8,7 +8,7 @@
 #include "util.h"
 #include "model.h"
 #include "platform.h"
-#include "sphere.h"
+#include "shapes.h"
 #include "quad.h"
 
 #define GAME_WIDTH 1280
@@ -29,7 +29,7 @@ void game_init(GameState* s)
     loading_begin(&s->rd);
 
     vec3 start_pos = {0.0f, 0.0f, 3.0f};
-    vec2 start_euler = {0.0f, -90.0f};
+    vec2 start_euler = {0.0f, -90.0f}; // pitch then yaw
     scene_init(&s->scenes[s->scene_count++], start_pos, start_euler, &s->rd, "res/kurt/space.png");
     scene_init(&s->scenes[s->scene_count++], start_pos, start_euler, &s->rd, "res/box/box.png");
 
@@ -37,10 +37,14 @@ void game_init(GameState* s)
         // we create these shaders ourselves and then pass the index to the structures so multiple can use the same shader
         uint32_t model_shader = rd_add_shader(&s->rd, "shaders/model_default.vert", "shaders/model_default.frag");
         uint32_t sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
+        uint32_t light_shader = rd_add_shader(&s->rd, "shaders/light.vert", "shaders/light.frag");
 
         Model tmp = uv_sphere_gen(2.0f, 15, "res/earth/e.png", sphere_shader);
         scene_add_model(&s->scenes[0], &tmp);
         tmp = model_load("res/backpack/backpack.obj", model_shader);
+
+        scene_add_model(&s->scenes[1], &tmp);
+        tmp = rectangular_prism_gen(1.5f, 2.0f, 3.0f, NULL, light_shader);
         scene_add_model(&s->scenes[1], &tmp);
     }
     

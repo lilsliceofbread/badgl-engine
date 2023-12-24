@@ -30,7 +30,7 @@ void *arena_alloc(Arena* self, size_t size)
 
     // if cursor is any more than 1 past the end of memory block, we have used unallocated memory
     // e.g. A = allocated, U = unallocated, ^ = ptr
-    // yes: AAAAAA^ NOOO: AAAAAU^ 
+    // good: AAAAAA^ bad: AAAAAU^ 
     size_t cursor_distance = (size_t)self->cursor - (size_t)self->raw_memory; 
     if(cursor_distance > self->size)
     {
