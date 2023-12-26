@@ -5,7 +5,8 @@
 
 Model skybox_init(const char* cubemap_path)
 {
-    Model self = rectangular_prism_gen(1.0f, 1.0f, 1.0f, cubemap_path, 0); // since not using shader_index, put any value
+    Model self = rectangular_prism_gen(2.0f, 2.0f, 2.0f, cubemap_path, (vec3){1.0f, 1.0f, 1.0f}, 0); // since not using shader_index, put any value
+    self.material.flags |= NO_LIGHTING;
 
     return self;
 }
@@ -19,9 +20,11 @@ void skybox_draw(Model* self, Renderer* rd, Camera* cam)
     corrected_view.m14 = corrected_view.m24 = corrected_view.m34 = 0.0f; // remove translation
     mat4_mul(&vp, cam->proj, corrected_view);
 
+    glCullFace(GL_FRONT); // since we are inside the box
     shader_use(shader);
-    shader_uniform_mat4(shader, "vp", &vp);
-    mesh_draw(&self->meshes[0], shader, self->textures);
+    shader_uniform_mat4(shader, "mvp", &vp);
+    mesh_draw(&self->meshes[0], shader, self->material.textures);
+    glCullFace(GL_BACK);
 }
 
 void skybox_free(Model* self)

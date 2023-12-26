@@ -14,8 +14,6 @@
 #define GAME_WIDTH 1280
 #define GAME_HEIGHT 720
 
-static bool is_vsync_on = true;
-
 void loading_begin(Renderer* rd);
 void loading_end(Renderer* rd);
 
@@ -23,6 +21,7 @@ void game_init(GameState* s)
 {
     s->scene_count = 0;
     s->current_scene = 0;
+    s->is_vsync_on = true;
 
     rd_init(&s->rd, GAME_WIDTH, GAME_HEIGHT, "cool stuff");
 
@@ -35,16 +34,15 @@ void game_init(GameState* s)
 
     {
         // we create these shaders ourselves and then pass the index to the structures so multiple can use the same shader
-        uint32_t model_shader = rd_add_shader(&s->rd, "shaders/model_default.vert", "shaders/model_default.frag");
+        uint32_t model_tex_shader = rd_add_shader(&s->rd, "shaders/model_tex.vert", "shaders/model_tex.frag");
+        uint32_t default_shader = rd_add_shader(&s->rd, "shaders/default.vert", "shaders/default.frag");
         uint32_t sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
-        uint32_t light_shader = rd_add_shader(&s->rd, "shaders/light.vert", "shaders/light.frag");
 
-        Model tmp = uv_sphere_gen(2.0f, 15, "res/earth/e.png", sphere_shader);
+        Model tmp = uv_sphere_gen(2.0f, 15, "res/earth/e.png", (vec3){1.0f, 1.0f, 1.0f}, sphere_shader);
         scene_add_model(&s->scenes[0], &tmp);
-        tmp = model_load("res/backpack/backpack.obj", model_shader);
-
+        tmp = model_load("res/backpack/backpack.obj", model_tex_shader);
         scene_add_model(&s->scenes[1], &tmp);
-        tmp = rectangular_prism_gen(1.5f, 2.0f, 3.0f, NULL, light_shader);
+        tmp = rectangular_prism_gen(1.5f, 2.0f, 3.0f, NULL, (vec3){0.7f, 0.2f, 0.8f}, default_shader);
         scene_add_model(&s->scenes[1], &tmp);
     }
     
@@ -63,10 +61,11 @@ void game_update(GameState* s)
     igSetNextWindowPos((ImVec2){0,0}, ImGuiCond_FirstUseEver, (ImVec2){0,0});
     igBegin("Settings", NULL, 0);
         igText("FPS: %f", 1.0f / s->rd.delta_time);
+
         if(igButton("Toggle V-Sync",(struct ImVec2){0,0}))
         {
-            platform_toggle_vsync(!is_vsync_on);
-            is_vsync_on = !is_vsync_on; 
+            platform_toggle_vsync(!s->is_vsync_on);
+            s->is_vsync_on = !s->is_vsync_on; 
         }
 
         if(igButton("Next Scene",(struct ImVec2){0,0}))
@@ -102,9 +101,12 @@ void game_end(GameState* s)
 void loading_begin(Renderer* rd)
 {
     Quad loading_screen = quad_init((vec2){-1.0f, -1.0f}, (vec2){2.0f, 2.0f}, "res/loading.png");
+
     rd_update_viewport(rd); // glfw framebuffer size may not have updated yet so update renderer width/height
+
     int size = (rd->width >= rd->height) ? rd->height >> 1: rd->width >> 1;
     rd_set_viewport((rd->width >> 1) - (size >> 1), (rd->height >> 1) - (size >> 1), size, size); // place loading in middle of screen
+
     quad_draw(&loading_screen, rd);
     rd_swap_buffers(rd);
     quad_free(&loading_screen);

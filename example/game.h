@@ -12,6 +12,7 @@ typedef struct GameState
     Scene scenes[MAX_SCENES];
     uint32_t current_scene;
     uint32_t scene_count;
+    bool is_vsync_on;
 } GameState;
 
 void game_init(GameState* s);

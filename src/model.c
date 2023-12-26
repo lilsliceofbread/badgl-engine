@@ -23,8 +23,9 @@ Model model_load(const char* path, uint32_t shader_index)
 
     self.mesh_count = 0;
     self.meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
-    self.textures = NULL; // not setting this to null before realloc creates undefined behaviour, if the uninitialised memory is not 0
-    self.tex_count = 0;
+    self.material.textures = NULL; // not setting this to null before realloc creates undefined behaviour, if the uninitialised memory is not 0
+    self.material.tex_count = 0;
+    self.material.flags = 0;
     self.shader_index = shader_index;
     transform_reset(&self.transform);
     mat4_identity(&self.model);
@@ -64,17 +65,40 @@ void model_update_transform(Model* self, Transform* transform)
     mat4_trans(&self->model, self->transform.pos);
 }
 
-void model_draw(Model* self, Renderer* rd, mat4* vp)
+void model_draw(Model* self, Renderer* rd, Camera* cam)
 {
-    Shader* shader_ptr = &rd->shaders[self->shader_index];
+    Shader* shader = &rd->shaders[self->shader_index];
 
-    shader_use(shader_ptr);
-    shader_uniform_mat4(shader_ptr, "vp", vp);
-    shader_uniform_mat4(shader_ptr, "model", &self->model);
+    mat4 mvp, model_view;
+    mat4_mul(&model_view, cam->view, self->model);
+    mat4_mul(&mvp, cam->proj, model_view);
+
+    shader_use(shader);
+    shader_uniform_mat4(shader, "mvp", &mvp);
+    
+    // TEMP
+    float dist = 10.0f;
+    float time = 2.0f * rd_get_time();
+    vec3 light_colour = {1.0f, 1.0f, 1.0f};
+    vec3 light_pos = {dist * cosf(time), dist * cosf(time), dist * sinf(time)};
+
+    // use light array of structs/ubos
+    MaterialFlags flags = self->material.flags;
+    if(!(flags & NO_LIGHTING))
+    {
+        shader_uniform_vec3(shader, "light_colour", &light_colour);
+        shader_uniform_vec3(shader, "light_pos", &light_pos);
+        shader_uniform_mat4(shader, "model_view", &model_view);
+        shader_uniform_mat4(shader, "view", &cam->view);
+    }
+    if(!(flags & HAS_DIFFUSE_TEXTURE))
+    {
+        shader_uniform_vec3(shader, "object_colour", &self->material.colour);
+    }
 
     for(uint32_t i = 0; i < self->mesh_count; i++)
     {
-        mesh_draw(&self->meshes[i], shader_ptr, self->textures);
+        mesh_draw(&self->meshes[i], shader, self->material.textures);
     }
 }
 
@@ -187,8 +211,12 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
 
     // not the best since allocs multiple temp variables, but it works
     uint32_t* diff_indexes = model_load_textures(self, mat, aiTextureType_DIFFUSE, TEXTURE_DIFFUSE, &diffuse_count);
+    if(diffuse_count && !(self->material.flags & HAS_DIFFUSE_TEXTURE)) self->material.flags |= HAS_DIFFUSE_TEXTURE; // doing this here is cringe but i can't be bothered 
     uint32_t* spec_indexes = model_load_textures(self, mat, aiTextureType_SPECULAR, TEXTURE_SPECULAR, &specular_count);
+    if(specular_count && !(self->material.flags & HAS_SPECULAR_TEXTURE)) self->material.flags |= HAS_SPECULAR_TEXTURE;  
+
     total_textures = diffuse_count + specular_count;
+
 
     if(total_textures) // if no textures, don't allocate/memcpy/free
     {
@@ -200,7 +228,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
 
         free(diff_indexes);
         free(spec_indexes);
-    } // if no textures then skip
+    }
     //}
 
     mesh_init(&mesh, arena, vertex_buffer, total_vertices, indices, total_indices, tex_indices, total_textures);
@@ -211,6 +239,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
 {
     uint32_t add_tex_count = aiGetMaterialTextureCount(mat, ai_type); // textures of given type
     *tex_count_out = add_tex_count;
+    if(add_tex_count == 0) return NULL;
     uint32_t* tex_indices = (uint32_t*)calloc(add_tex_count, sizeof(uint32_t)); // user of function must free themselves
 
     char img_path[1025]; // for safety / to suppress warnings for snprintf
@@ -223,9 +252,9 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
         snprintf(img_path, 1025, "%s/%s", self->directory, str.data); // append texture string to directory
 
         bool skip = false; // can't use continue since 2 for loops
-        for(uint32_t j = 0; j < self->tex_count; j++) // loop through model's textures
+        for(uint32_t j = 0; j < self->material.tex_count; j++) // loop through model's textures
         {
-            if(strcmp(img_path, self->textures[j].path) == 0) // if texture already exists
+            if(strcmp(img_path, self->material.textures[j].path) == 0) // if texture already exists
             {
                 tex_indices[i] = j;
                 skip = true;
@@ -237,8 +266,8 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
         {
             // increase amount to add to tex_count and reallocate textures
             new_add_tex_count++;
-            self->textures = (Texture*)realloc(self->textures, (self->tex_count + new_add_tex_count) * sizeof(Texture));
-            ASSERT(self->textures != NULL, "MODEL: failed to realloc texture array\n");
+            self->material.textures = (Texture*)realloc(self->material.textures, (self->material.tex_count + new_add_tex_count) * sizeof(Texture));
+            ASSERT(self->material.textures != NULL, "MODEL: failed to realloc texture array\n");
 
             // create new texture
             Texture texture;
@@ -246,13 +275,13 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
             texture.type = type;
 
             // set next texture in array to current texture
-            self->textures[self->tex_count + i] = texture; // first iter is tex_count + 0
-            tex_indices[i] = self->tex_count + i; // store index into textures array for mesh to access
+            self->material.textures[self->material.tex_count + i] = texture; // first iter is tex_count + 0
+            tex_indices[i] = self->material.tex_count + i; // store index into textures array for mesh to access
         }
     }
 
     // increase tex_count to correct size
-    self->tex_count += new_add_tex_count;
+    self->material.tex_count += new_add_tex_count;
     return tex_indices;
 }
 
@@ -265,21 +294,21 @@ void model_free(Model* self)
 
     free(self->meshes);
 
-    if(self->textures == NULL && self->tex_count == 0) return; // if only 1 of these conditions occurs smth is wrong so continue and give error
+    if(self->material.textures == NULL && self->material.tex_count == 0) return; // if only 1 of these conditions occurs smth is wrong so continue and give error
 
-    for(uint32_t i = 0; i < self->tex_count; i++)
+    for(uint32_t i = 0; i < self->material.tex_count; i++)
     {
-        texture_free(&self->textures[i]);
+        texture_free(&self->material.textures[i]);
     }
 
-    free(self->textures);
+    free(self->material.textures);
 
     /*
-    for(uint32_t i = 0; i < self->tex_count; i++)
+    for(uint32_t i = 0; i < self->material.tex_count; i++)
     {
-        printf("MODEL: Texture ID: %d %s\n", self->textures[i].id, self->textures[i].path);
+        printf("MODEL: Texture ID: %d %s\n", self->material.textures[i].id, self->material.textures[i].path);
     }
-    printf("MODEL: tex count %d\n", self->tex_count);
+    printf("MODEL: tex count %d\n", self->material.tex_count);
     printf("MODEL: mesh count %d\n", self->mesh_count);
     */
 

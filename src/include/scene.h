@@ -11,7 +11,6 @@
 
 typedef struct Scene {
     Camera cam;
-    mat4 vp;
 
     Model skybox;
     bool has_skybox;

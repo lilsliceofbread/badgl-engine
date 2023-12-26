@@ -6,7 +6,7 @@
 
 // TODO: move allocation into separate function?
 
-Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path, uint32_t shader_index)
+Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path, vec3 colour, uint32_t shader_index)
 {
     Model self;
 
@@ -21,12 +21,15 @@ Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path,
     uint32_t* tex_indices = NULL;
 
     const bool using_texture = cubemap_path != NULL; // only 1 if cubemap path has been given
-    self.tex_count = using_texture;
-    self.textures = NULL; // if not using texture
+    self.material.tex_count = using_texture;
+    self.material.textures = NULL; // if not using texture
+    self.material.flags = 0;
+    self.material.colour = colour;
     if(using_texture) // for now
     {
-        self.textures = (Texture*)malloc(sizeof(Texture));
-        texture_cubemap_create(&self.textures[0], cubemap_path);
+        self.material.textures = (Texture*)malloc(sizeof(Texture));
+        texture_cubemap_create(&self.material.textures[0], cubemap_path);
+        self.material.flags |= HAS_DIFFUSE_TEXTURE;
 
         tex_indices = (uint32_t*)malloc(sizeof(uint32_t));
         tex_indices[0] = 0; // the only index
@@ -42,10 +45,10 @@ Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path,
 
     VertexBuffer vertex_buffer = {
         .pos = (vec3*)arena_alloc(&mesh_arena, total_vertices * sizeof(vec3)),
-        .normal = (vec3*)arena_alloc(&mesh_arena, total_vertices * sizeof(vec3)),
+        .normal = NULL,
         .uv = NULL
     };
-    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices\n");
+    ASSERT(vertex_buffer.pos != NULL, "SPHERE: failed to allocate vertices\n");
 
     indices = (uint32_t*)arena_alloc(&mesh_arena, total_indices * sizeof(uint32_t));
     ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");
@@ -56,15 +59,10 @@ Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path,
     vertex_buffer.pos[0].y = radius;
     vertex_buffer.pos[0].z = 0.0f;
 
-    vertex_buffer.normal[0].x = 0.0f;
-    vertex_buffer.normal[0].y = 1.0f;
-    vertex_buffer.normal[0].z = 0.0f;
-
     vert_count++;
 
     const float inv_hori = 1.0f / (float)horizontals;
     const float inv_vert = 1.0f / (float)verticals;
-    const float inv_radius = 1.0f / radius;
     const float pi2 = 2.0f * GL_PI; // multiply 2 * PI before hand
     for(uint32_t i = 0; i < horizontals; i++) // latitudes (start after top vertex (i+1) and stop before bottom vertex (< not <=))
     {
@@ -81,18 +79,13 @@ Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path,
                as the unit circle is reversed with +z going "down" */
             float vertical_angle = (float)j * pi2 * inv_vert;
 
-            vec3 pos, normal;
+            vec3 pos;
             // calculate cartesian coords from spherical
             pos.x = radius * sh * cosf(vertical_angle);
             pos.y = y;
             pos.z = radius * sh * sinf(vertical_angle);
 
-            normal.x = pos.x * inv_radius;
-            normal.y = pos.y * inv_radius;
-            normal.z = pos.z * inv_radius;
-
             vertex_buffer.pos[vert_count] = pos;
-            vertex_buffer.normal[vert_count] = normal;
             vert_count++;
         }
     }
@@ -102,10 +95,6 @@ Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path,
     vertex_buffer.pos[vert_count].x = 0.0f;
     vertex_buffer.pos[vert_count].y = -radius;
     vertex_buffer.pos[vert_count].z = 0.0f;
-
-    vertex_buffer.normal[vert_count].x = 0.0f;
-    vertex_buffer.normal[vert_count].y = -1.0f;
-    vertex_buffer.normal[vert_count].z = 0.0f;
 
     vert_count++;
 
@@ -167,12 +156,12 @@ Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path,
         ind_count += 3;
     }
 
-    mesh_init(&self.meshes[0], mesh_arena, vertex_buffer, vert_count, indices, ind_count, tex_indices, self.tex_count);
+    mesh_init(&self.meshes[0], mesh_arena, vertex_buffer, vert_count, indices, ind_count, tex_indices, self.material.tex_count);
 
     return self;
 }
 
-Model rectangular_prism_gen(float width, float height, float depth, const char* cubemap_path, uint32_t shader_index)
+Model rectangular_prism_gen(float width, float height, float depth, const char* cubemap_path, vec3 colour, uint32_t shader_index)
 {
     Model self;
 
@@ -187,24 +176,27 @@ Model rectangular_prism_gen(float width, float height, float depth, const char* 
     uint32_t* tex_indices = NULL;
 
     const bool using_texture = cubemap_path != NULL;
-    self.tex_count = using_texture;
-    self.textures = NULL;
+    self.material.tex_count = using_texture;
+    self.material.textures = NULL;
+    self.material.flags = 0;
+    self.material.colour = colour;
     if(using_texture)
     {
-        self.textures = (Texture*)malloc(sizeof(Texture));
-        texture_cubemap_create(&self.textures[0], cubemap_path);
+        self.material.textures = (Texture*)malloc(sizeof(Texture));
+        texture_cubemap_create(&self.material.textures[0], cubemap_path);
+        self.material.flags |= HAS_DIFFUSE_TEXTURE;
 
         tex_indices = (uint32_t*)malloc(sizeof(uint32_t));
         tex_indices[0] = 0; // only 1 texture
     }
     
-    const size_t vert_size = 8 * sizeof(vec3);
+    const size_t vert_size = 24 * sizeof(vec3);
     const size_t ind_size = 6 * 6 * sizeof(uint32_t);
-    Arena arena = arena_create(vert_size + ind_size);
+    Arena arena = arena_create((2 * vert_size) + ind_size);
 
     VertexBuffer vertex_buffer;
     vertex_buffer.pos = (vec3*)arena_alloc(&arena, vert_size);
-    vertex_buffer.normal = NULL;
+    vertex_buffer.normal = (vec3*)arena_alloc(&arena, vert_size);
     vertex_buffer.uv = NULL;
     indices = (uint32_t*)arena_alloc(&arena, ind_size);
 
@@ -214,52 +206,100 @@ Model rectangular_prism_gen(float width, float height, float depth, const char* 
         const float hh = 0.5f * height;
         const float hd = 0.5f * depth;
 
+        // need to specify 24 vertices to allow normals to be flat
         const vec3 vertex_positions[] = {
-            {-hw, -hh,  hd}, // 0
-            { hw, -hh,  hd}, // 1
-            {-hw,  hh,  hd}, // 2
-            { hw,  hh,  hd}, // 3
-            {-hw, -hh, -hd}, // 4
-            { hw, -hh, -hd}, // 5
-            {-hw,  hh, -hd}, // 6
-            { hw,  hh, -hd}  // 7
+            {-hw, -hh, hd}, // front
+            { hw, -hh, hd},
+            { hw,  hh, hd},
+            {-hw,  hh, hd},
+
+            {-hw, hh,  hd}, // top
+            { hw, hh,  hd},
+            { hw, hh, -hd},
+            {-hw, hh, -hd},
+
+            { hw, -hh, -hd}, // back
+            {-hw, -hh, -hd},
+            {-hw,  hh, -hd},
+            { hw,  hh, -hd},
+
+            {-hw, -hh, -hd}, // bottom
+            { hw, -hh, -hd},
+            { hw, -hh,  hd},
+            {-hw, -hh,  hd},
+
+            {hw, -hh,  hd}, // right
+            {hw, -hh, -hd},
+            {hw,  hh, -hd},
+            {hw,  hh,  hd},
+
+            {-hw, -hh, -hd}, // left
+            {-hw, -hh,  hd},
+            {-hw,  hh,  hd},
+            {-hw,  hh, -hd}
+        };
+
+        const vec3 vertex_normals[] = { // ideally shouldn't have to repeat these
+            {0.0f, 0.0f, 1.0f}, // front
+            {0.0f, 0.0f, 1.0f},
+            {0.0f, 0.0f, 1.0f},
+            {0.0f, 0.0f, 1.0f},
+
+            {0.0f, 1.0f, 0.0f}, // top
+            {0.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f},
+
+            {0.0f, 0.0f, -1.0f}, // back
+            {0.0f, 0.0f, -1.0f},
+            {0.0f, 0.0f, -1.0f},
+            {0.0f, 0.0f, -1.0f},
+
+            {0.0f, -1.0f, 0.0f}, // top
+            {0.0f, -1.0f, 0.0f},
+            {0.0f, -1.0f, 0.0f},
+            {0.0f, -1.0f, 0.0f},
+
+            {1.0f, 0.0f, 0.0f}, // right
+            {1.0f, 0.0f, 0.0f},
+            {1.0f, 0.0f, 0.0f},
+            {1.0f, 0.0f, 0.0f},
+
+            {-1.0f, 0.0f, 0.0f}, // left
+            {-1.0f, 0.0f, 0.0f},
+            {-1.0f, 0.0f, 0.0f},
+            {-1.0f, 0.0f, 0.0f},
         };
 
         memcpy(vertex_buffer.pos, vertex_positions, vert_size);
+        memcpy(vertex_buffer.normal, vertex_normals, vert_size);
     }
 
     {
-        // counter-clockwise indices for inside of the cube (clockwise from outside perspective)
         const uint32_t indices_tmp[] = {
-            // top
-            2, 6, 7,
-            2, 7, 3,
-
-            // bottom
-            0, 5, 4,
-            0, 1, 5,
-
-            // left
-            0, 6, 2,
-            0, 4, 6,
-
-            // right
-            1, 3, 7,
-            1, 7, 5,
-
-            // front
+            0, 1, 2, // front
             0, 2, 3,
-            0, 3, 1,
 
-            // back
-            4, 7, 6,
-            4, 5, 7
+            4, 5, 6, // top
+            4, 6, 7,
+
+            8, 9, 10, // back
+            8, 10, 11,
+
+            12, 13, 14, // bottom
+            12, 14, 15,
+
+            16, 17, 18, // right
+            16, 18, 19,
+            
+            20, 21, 22, // left
+            20, 22, 23
         };
 
         memcpy(indices, indices_tmp, ind_size);
     }
 
-    mesh_init(&self.meshes[0], arena, vertex_buffer, 8, indices, 6 * 6, tex_indices, self.tex_count);
+    mesh_init(&self.meshes[0], arena, vertex_buffer, 24, indices, 6 * 6, tex_indices, self.material.tex_count);
 
     return self;
 }

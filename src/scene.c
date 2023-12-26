@@ -9,7 +9,6 @@ void scene_init(Scene* self, vec3 start_pos, vec2 euler, Renderer* rd, const cha
     const float aspect_ratio = (float)(rd->width) / (float)(rd->height); // not casting these to float causes the aspect ratio to be rounded
     self->cam = camera_init(start_pos, euler.y, euler.x); // yaw then pitch
     camera_update_proj(&self->cam, DEFAULT_FOV, aspect_ratio, DEFAULT_ZNEAR, DEFAULT_ZFAR);
-    mat4_identity(&self->vp);
 
     self->models = NULL;
     self->model_count = 0;
@@ -44,15 +43,13 @@ void scene_add_model(Scene* self, Model* model)
 void scene_update(Scene* self, Renderer* rd)
 {
     camera_update(&self->cam, rd);
-
-    mat4_mul(&self->vp, self->cam.proj, self->cam.view);
 }
 
 void scene_draw(Scene* self, Renderer* rd)
 {
     for(uint32_t i = 0; i < self->model_count; i++)
     {
-        model_draw(&self->models[i], rd, &self->vp);
+        model_draw(&self->models[i], rd, &self->cam);
     }
 
     if(self->has_skybox) skybox_draw(&self->skybox, rd, &self->cam); // must be drawn last after everything else has filled the depth buffer

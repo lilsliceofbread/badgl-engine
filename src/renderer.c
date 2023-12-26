@@ -203,6 +203,8 @@ void rd_free(Renderer* self)
         }
         free(self->shaders);
     }
+    shader_free(&self->skybox_shader);
+    shader_free(&self->quad_shader);
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

@@ -11,25 +11,39 @@
 #include "renderer.h"
 #include "glmath.h"
 #include "util.h"
+#include "camera.h"
+
+typedef enum MaterialFlags {
+    HAS_DIFFUSE_TEXTURE = 1 << 0, 
+    HAS_SPECULAR_TEXTURE = 1 << 1, 
+    NO_LIGHTING = 1 << 2
+} MaterialFlags;
 
 typedef struct Model
 {
     Mesh* meshes;
     uint32_t mesh_count;
-    const char* directory;
-    Texture* textures;
-    uint32_t tex_count;
     uint32_t shader_index; // index into renderer's shader array
+
+    const char* directory;
 
     Transform transform;
     mat4 model;
+
+    struct {
+        MaterialFlags flags;
+        vec3 colour;
+
+        Texture* textures;
+        uint32_t tex_count;
+    } material;
 } Model;
 
 Model model_load(const char* path, uint32_t shader_index);
 
 void model_update_transform(Model* self, Transform* transform);
 
-void model_draw(Model* self, Renderer* rd, mat4* vp);
+void model_draw(Model* self, Renderer* rd, Camera* cam);
 
 void model_add_mesh(Model* self, Mesh mesh, uint32_t total_meshes);
 

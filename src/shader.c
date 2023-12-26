@@ -35,7 +35,9 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
     // here because needs to be done after linking program
     for(uint32_t i = 0; i < self->uniform_count; i++)
     {
-        self->stored_uniforms[i].location = glGetUniformLocation(self->id, self->stored_uniforms[i].name);
+        int location = glGetUniformLocation(self->id, self->stored_uniforms[i].name);
+        if(location == -1) fprintf(stderr, "SHADER: uniform %s was not given a location\n", self->stored_uniforms[i].name);
+        self->stored_uniforms[i].location = location;
     }
 
     // can detach shaders as we don't need them anymore once program is linked
@@ -45,7 +47,7 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
     glDeleteShader(frag_shader);
 }
 
-GLuint shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type, char* info_log_out, int log_size, int* success_out)
+uint32_t shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type, char* info_log_out, int log_size, int* success_out)
 {
     char* shader_src;
     GLuint shader;
@@ -105,12 +107,10 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 
             name[name_idx++] = c;
         }
-
+        
         if(is_array_uniform) 
         {
-            // should call another function to deal with this
-            // and user will have to use shader_find_uniform_array
-            continue;
+            continue; // user will have to use shader_find_uniform_array
         }
 
         name[name_idx] = '\0';
@@ -119,11 +119,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
         temp++; // stop strstr finding the same match again
     }
 
-    if(self->uniform_count + add_uniform_count > MAX_UNIFORMS)
-    {
-        ASSERT(false, "SHADER: too many uniforms for 1 shader object");
-        return;
-    }
+    ASSERT(self->uniform_count + add_uniform_count <= MAX_UNIFORMS, "SHADER: too many uniforms for 1 shader object");
 
     memcpy(&self->stored_uniforms[self->uniform_count], new_uniforms, add_uniform_count * sizeof(uniform_pair));
 
@@ -135,29 +131,45 @@ void shader_use(Shader* self)
     glUseProgram(self->id);
 }
 
-GLint shader_find_uniform(Shader* self, const char* name)
+int shader_find_uniform(Shader* self, const char* name)
 {
     uniform_pair curr;
     for(uint32_t i = 0; i < self->uniform_count; i++)
     {
         curr = self->stored_uniforms[i];
-        if(strcmp(name, curr.name) == 0)
-        {
-            if(curr.location == -1)
-                fprintf(stderr, "SHADER: uniform %s does not exist. forgot to use in shader?\n", curr.name);
-
-            return curr.location;  
-        }
+        if(strcmp(name, curr.name) == 0) return curr.location;
     }
 
-    fprintf(stderr, "SHADER: uniform %s has not been stored\n", name);
+    fprintf(stderr, "SHADER: uniform %s does not exist\n", name);
     return -1;
+}
+
+int shader_find_uniform_array(Shader* self, const char* name, uint32_t index)
+{
+    size_t max_len = MAX_UNIF_NAME + 5; // allow for square brackets and 3 digits appended
+    char indexed_name[max_len];
+
+    snprintf(indexed_name, max_len, "%s[%u]", name, index);
+
+    return glGetUniformLocation(self->id, indexed_name);
 }
 
 void shader_uniform_mat4(Shader* self, const char* name, mat4* mat)
 {
     GLint location = shader_find_uniform(self, name);
     glUniformMatrix4fv(location, 1, GL_FALSE, (float*)mat->data); // transposing matrix is false
+}
+
+void shader_uniform_vec4(Shader* self, const char* name, vec4* vec)
+{
+    GLint location = shader_find_uniform(self, name);
+    glUniform4fv(location, 1, (float*)vec->data);
+}
+
+void shader_uniform_vec3(Shader* self, const char* name, vec3* vec)
+{
+    GLint location = shader_find_uniform(self, name);
+    glUniform3fv(location, 1, (float*)vec->data);
 }
 
 void shader_uniform_1f(Shader* self, const char* name, float f)

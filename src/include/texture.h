@@ -9,10 +9,10 @@
 
 typedef enum TextureType
 {
-    TEXTURE_DIFFUSE, // colour texture
-    TEXTURE_SPECULAR,
-    TEXTURE_NORMAL, // normal map
-    TEXTURE_CUBEMAP
+    TEXTURE_DIFFUSE = 1 << 0, // colour texture
+    TEXTURE_SPECULAR = 1 << 1,
+    TEXTURE_NORMAL = 1 << 2, // normal map
+    TEXTURE_CUBEMAP = 1 << 3 
 } TextureType;
 
 typedef struct Texture
