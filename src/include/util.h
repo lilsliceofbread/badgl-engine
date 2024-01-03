@@ -7,20 +7,24 @@
 #include <stdio.h>
 #include "glmath.h"
 
+#ifdef BADGL_NO_DEBUG
+    #define ASSERT(x) 
+#else
+    #define ASSERT(x, msg, ...)                 \
+    {                                           \
+        if(!(x))                                \
+        {                                       \
+            fprintf(stderr, msg, ##__VA_ARGS__);\
+            exit(1);                            \
+        }                                       \
+    }
+#endif
+
 typedef struct Transform {
     vec3 pos;
     vec3 euler;
     vec3 scale;
 } Transform;
-
-#define ASSERT(x, msg, ...)                 \
-{                                           \
-    if(!(x))                                \
-    {                                       \
-        fprintf(stderr, msg, ##__VA_ARGS__);\
-        exit(1);                            \
-    }                                       \
-}
 
 char* get_file_data(const char* filepath);
 

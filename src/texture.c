@@ -80,6 +80,11 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
     printf("TEXTURE: loading texture %s took %fs\n", img_path, rd_get_time() - start_time);
 }
 
+void texture_default_create(Texture* self)
+{
+
+}
+
 void texture_cubemap_create(Texture* self, const char* generic_path)
 {
     float start_time = rd_get_time();

@@ -4,7 +4,7 @@
 #define DEFAULT_ZNEAR 0.01f
 #define DEFAULT_ZFAR 100.0f
 
-void scene_init(Scene* self, vec3 start_pos, vec2 euler, Renderer* rd, const char* skybox_cubemap_path)
+void scene_init(Scene* self, vec3 start_pos, vec2 euler, Renderer* rd, const char* skybox_cubemap_path, SceneUpdateFunc func)
 {
     const float aspect_ratio = (float)(rd->width) / (float)(rd->height); // not casting these to float causes the aspect ratio to be rounded
     self->cam = camera_init(start_pos, euler.y, euler.x); // yaw then pitch
@@ -12,6 +12,7 @@ void scene_init(Scene* self, vec3 start_pos, vec2 euler, Renderer* rd, const cha
 
     self->models = NULL;
     self->model_count = 0;
+    self->user_update_func = func;
 
     if(skybox_cubemap_path == NULL)
     {
@@ -42,6 +43,9 @@ void scene_add_model(Scene* self, Model* model)
 
 void scene_update(Scene* self, Renderer* rd)
 {
+    // update own delta time, stuff
+    if(self->user_update_func != NULL) self->user_update_func(self);
+
     camera_update(&self->cam, rd);
 }
 

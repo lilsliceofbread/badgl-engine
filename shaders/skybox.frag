@@ -1,8 +1,7 @@
 #version 430 core
+out vec4 frag_colour;
 
 in vec3 f_pos; // this value becomes interpolated between vertices
-
-out vec4 frag_colour;
 
 uniform samplerCube cubemap;
 

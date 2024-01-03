@@ -82,7 +82,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 {
     uint32_t add_uniform_count = 0;
     const char* temp = src_code;
-    uniform_pair new_uniforms[MAX_UNIFORMS] = {0};
+    Uniform new_uniforms[MAX_UNIFORMS] = {0};
 
     char name[MAX_UNIF_NAME];
     while((temp = strstr(temp, "uniform"))) // strstr returns NULL when no match, ending loop
@@ -91,7 +91,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
         int name_idx = 0;
         bool is_array_uniform = false;
 
-        for(int j = 0; (c = temp[j]) != ';'; j++) // while we haven't seen ;
+        for(int i = 0; (c = temp[i]) != ';'; i++) // while we haven't seen ;
         {
             // can't use switch because break keyword applies to it, requiring another if anyway
             if(c == ' ') // reset name and continue (this is not the name)
@@ -121,7 +121,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 
     ASSERT(self->uniform_count + add_uniform_count <= MAX_UNIFORMS, "SHADER: too many uniforms for 1 shader object");
 
-    memcpy(&self->stored_uniforms[self->uniform_count], new_uniforms, add_uniform_count * sizeof(uniform_pair));
+    memcpy(&self->stored_uniforms[self->uniform_count], new_uniforms, add_uniform_count * sizeof(Uniform));
 
     self->uniform_count += add_uniform_count;
 }
@@ -131,9 +131,17 @@ void shader_use(Shader* self)
     glUseProgram(self->id);
 }
 
-int shader_find_uniform(Shader* self, const char* name)
+int shader_find_uniform(Shader* self, const char* name, FindUniformFunc func, void* arg)
 {
-    uniform_pair curr;
+    // not the best
+    if(func != NULL)
+    {
+        if(arg != NULL) return func(self, name, arg);
+
+        return func(self, name); // if arg is null then the function does not take an extra argument
+    }
+
+    Uniform curr;
     for(uint32_t i = 0; i < self->uniform_count; i++)
     {
         curr = self->stored_uniforms[i];
@@ -144,8 +152,10 @@ int shader_find_uniform(Shader* self, const char* name)
     return -1;
 }
 
-int shader_find_uniform_array(Shader* self, const char* name, uint32_t index)
+int shader_find_uniform_array(Shader* self, const char* name, void* arg)
 {
+    uint32_t index = *(uint32_t*)arg;
+
     size_t max_len = MAX_UNIF_NAME + 5; // allow for square brackets and 3 digits appended
     char indexed_name[max_len];
 
@@ -154,33 +164,45 @@ int shader_find_uniform_array(Shader* self, const char* name, uint32_t index)
     return glGetUniformLocation(self->id, indexed_name);
 }
 
-void shader_uniform_mat4(Shader* self, const char* name, mat4* mat)
+int shader_find_uniform_struct(Shader* self, const char* name, void* arg)
 {
-    GLint location = shader_find_uniform(self, name);
+    const char* member = (const char*)arg;
+
+    size_t max_len = 2 * MAX_UNIF_NAME + 1; // name + . + member
+    char concat_name[max_len];
+
+    snprintf(concat_name, max_len, "%s.%s", name, member);
+
+    return glGetUniformLocation(self->id, concat_name);
+}
+
+void shader_uniform_mat4(Shader* self, const char* name, mat4* mat, FindUniformFunc func, void* arg)
+{
+    GLint location = shader_find_uniform(self, name, func, arg);
     glUniformMatrix4fv(location, 1, GL_FALSE, (float*)mat->data); // transposing matrix is false
 }
 
-void shader_uniform_vec4(Shader* self, const char* name, vec4* vec)
+void shader_uniform_vec4(Shader* self, const char* name, vec4* vec, FindUniformFunc func, void* arg)
 {
-    GLint location = shader_find_uniform(self, name);
+    GLint location = shader_find_uniform(self, name, func, arg);
     glUniform4fv(location, 1, (float*)vec->data);
 }
 
-void shader_uniform_vec3(Shader* self, const char* name, vec3* vec)
+void shader_uniform_vec3(Shader* self, const char* name, vec3* vec, FindUniformFunc func, void* arg)
 {
-    GLint location = shader_find_uniform(self, name);
+    GLint location = shader_find_uniform(self, name, func, arg);
     glUniform3fv(location, 1, (float*)vec->data);
 }
 
-void shader_uniform_1f(Shader* self, const char* name, float f)
+void shader_uniform_1f(Shader* self, const char* name, float f, FindUniformFunc func, void* arg)
 {
-    GLint location = shader_find_uniform(self, name);
+    GLint location = shader_find_uniform(self, name, func, arg);
     glUniform1f(location, f);
 }
 
-void shader_uniform_1i(Shader* self, const char* name, int i)
+void shader_uniform_1i(Shader* self, const char* name, int i, FindUniformFunc func, void* arg)
 {
-    GLint location = shader_find_uniform(self, name);
+    GLint location = shader_find_uniform(self, name, func, arg);
     glUniform1i(location, i);
 }
 

@@ -1,8 +1,7 @@
 #version 430 core
+out vec4 frag_colour;
 
 in vec2 f_uv;
-
-out vec4 frag_colour;
 
 uniform sampler2D quad_texture;
 

@@ -4,40 +4,19 @@
 #include <stdlib.h>
 #include "util.h"
 
-// TODO: move allocation into separate function?
+extern inline uint32_t* shape_setup(Model* model, const char* texture_path, Material* material,
+                                    uint32_t shader_index, bool is_cubemap);
 
-Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path, vec3 colour, uint32_t shader_index)
+Model uv_sphere_gen(float radius, uint32_t res,
+                    const char* cubemap_path, Material* material, uint32_t shader_index)
 {
     Model self;
 
-    self.meshes = (Mesh*)malloc(sizeof(Mesh));
-    self.mesh_count = 1;
-    self.shader_index = shader_index;
-    self.directory = NULL;
-    transform_reset(&self.transform);
-    mat4_identity(&self.model);
-
-    uint32_t* indices = NULL;
-    uint32_t* tex_indices = NULL;
-
-    const bool using_texture = cubemap_path != NULL; // only 1 if cubemap path has been given
-    self.material.tex_count = using_texture;
-    self.material.textures = NULL; // if not using texture
-    self.material.flags = 0;
-    self.material.colour = colour;
-    if(using_texture) // for now
-    {
-        self.material.textures = (Texture*)malloc(sizeof(Texture));
-        texture_cubemap_create(&self.material.textures[0], cubemap_path);
-        self.material.flags |= HAS_DIFFUSE_TEXTURE;
-
-        tex_indices = (uint32_t*)malloc(sizeof(uint32_t));
-        tex_indices[0] = 0; // the only index
-    }
+    uint32_t* tex_indices = shape_setup(&self, cubemap_path, material, shader_index, true);
 
     uint32_t vert_count = 0, ind_count = 0;
 
-    const uint32_t horizontals = resolution, verticals = 2 * resolution;
+    const uint32_t horizontals = res, verticals = 2 * res;
     const size_t total_vertices = horizontals * verticals + 2;
     const size_t total_indices = 6 * verticals * (horizontals - 1); // 6 indices per square, but top and bottom rings are triangles (3 per), so h - 2 + 1
 
@@ -50,7 +29,7 @@ Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path,
     };
     ASSERT(vertex_buffer.pos != NULL, "SPHERE: failed to allocate vertices\n");
 
-    indices = (uint32_t*)arena_alloc(&mesh_arena, total_indices * sizeof(uint32_t));
+    uint32_t* indices = (uint32_t*)arena_alloc(&mesh_arena, total_indices * sizeof(uint32_t));
     ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");
 
 
@@ -161,44 +140,26 @@ Model uv_sphere_gen(float radius, uint32_t resolution, const char* cubemap_path,
     return self;
 }
 
-Model rectangular_prism_gen(float width, float height, float depth, const char* cubemap_path, vec3 colour, uint32_t shader_index)
+Model rectangular_prism_gen(float width, float height, float depth,
+                            const char* cubemap_path, Material* material, uint32_t shader_index)
 {
     Model self;
 
-    self.meshes = (Mesh*)malloc(sizeof(Mesh));
-    self.mesh_count = 1;
-    self.shader_index = shader_index;
-    self.directory = NULL;
-    transform_reset(&self.transform);
-    mat4_identity(&self.model);
-
-    uint32_t* indices = NULL;
-    uint32_t* tex_indices = NULL;
-
-    const bool using_texture = cubemap_path != NULL;
-    self.material.tex_count = using_texture;
-    self.material.textures = NULL;
-    self.material.flags = 0;
-    self.material.colour = colour;
-    if(using_texture)
-    {
-        self.material.textures = (Texture*)malloc(sizeof(Texture));
-        texture_cubemap_create(&self.material.textures[0], cubemap_path);
-        self.material.flags |= HAS_DIFFUSE_TEXTURE;
-
-        tex_indices = (uint32_t*)malloc(sizeof(uint32_t));
-        tex_indices[0] = 0; // only 1 texture
-    }
+    uint32_t* tex_indices = shape_setup(&self, cubemap_path, material, shader_index, true);
     
     const size_t vert_size = 24 * sizeof(vec3);
     const size_t ind_size = 6 * 6 * sizeof(uint32_t);
-    Arena arena = arena_create((2 * vert_size) + ind_size);
+    Arena arena = arena_create((2 * vert_size) + ind_size); // 2 vertex attributes
 
-    VertexBuffer vertex_buffer;
-    vertex_buffer.pos = (vec3*)arena_alloc(&arena, vert_size);
-    vertex_buffer.normal = (vec3*)arena_alloc(&arena, vert_size);
-    vertex_buffer.uv = NULL;
-    indices = (uint32_t*)arena_alloc(&arena, ind_size);
+    VertexBuffer vertex_buffer = {
+        .pos = (vec3*)arena_alloc(&arena, vert_size),
+        .normal = (vec3*)arena_alloc(&arena, vert_size),
+        .uv = NULL
+    };
+    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices\n");
+
+    uint32_t* indices = (uint32_t*)arena_alloc(&arena, ind_size);
+    ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");
 
     {
         // half width, height, depth
@@ -239,7 +200,7 @@ Model rectangular_prism_gen(float width, float height, float depth, const char* 
             {-hw,  hh, -hd}
         };
 
-        const vec3 vertex_normals[] = { // ideally shouldn't have to repeat these
+        const vec3 vertex_normals[] = {
             {0.0f, 0.0f, 1.0f}, // front
             {0.0f, 0.0f, 1.0f},
             {0.0f, 0.0f, 1.0f},
@@ -302,4 +263,118 @@ Model rectangular_prism_gen(float width, float height, float depth, const char* 
     mesh_init(&self.meshes[0], arena, vertex_buffer, 24, indices, 6 * 6, tex_indices, self.material.tex_count);
 
     return self;
+}
+
+Model rectangular_plane_gen(float width, float height, uint32_t res,
+                            const char* texture_path, Material* material, uint32_t shader_index)
+{
+    Model self;
+
+    uint32_t* tex_indices = shape_setup(&self, texture_path, material, shader_index, false);
+
+    const size_t vert_size = res * res * sizeof(vec3);
+    const size_t ind_size = 6 * (res - 1) * (res - 1) * sizeof(uint32_t);
+    Arena arena = arena_create((2 * vert_size) + ind_size); // 2 vertex attributes
+
+    VertexBuffer vertex_buffer = {
+        .pos = (vec3*)arena_alloc(&arena, vert_size),
+        .normal = (vec3*)arena_alloc(&arena, vert_size),
+        .uv = NULL
+    };
+    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices\n");
+
+    uint32_t* indices = (uint32_t*)arena_alloc(&arena, ind_size);
+    ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");
+
+    vec3 normal;
+    normal.x = normal.z = 0.0f;
+    normal.y = 1.0f;
+
+    float inv_res = 1.0f / (float)(res - 1);
+    float step_x = width * inv_res;
+    float step_z = height * inv_res;
+
+    float top_left_x = -0.5f * width;
+    float top_left_z = -0.5f * height;
+    for(uint32_t z = 0; z < res; z++)
+    {
+        float curr_z = top_left_z + ((float)z * step_z);
+
+        for(uint32_t x = 0; x < res; x++)
+        {
+            uint32_t idx = z * res + x;
+
+            vec3 curr;
+            curr.x = top_left_x + ((float)x * step_x);
+            curr.y = 0.0f;
+            curr.z = curr_z;
+            vertex_buffer.pos[idx] = curr;
+
+            vertex_buffer.normal[idx] = normal;
+        }
+    }
+
+    uint32_t idx = 0;
+    for(uint32_t y = 0; y < res - 1; y++) // y as in the distance down
+    {
+        for(uint32_t x = 0; x < res - 1; x++)
+        {
+            // anti-clockwise indices
+            indices[idx]     = (res * y)       + x + 1; // top right
+            indices[idx + 1] = (res * y)       + x;     // top left
+            indices[idx + 2] = (res * (y + 1)) + x;     // bottom left
+            indices[idx + 3] = (res * y)       + x + 1; // top right
+            indices[idx + 4] = (res * (y + 1)) + x;     // bottom left
+            indices[idx + 5] = (res * (y + 1)) + x + 1; // bottom right
+
+            idx += 6;
+        }
+    }
+
+    mesh_init(&self.meshes[0], arena, vertex_buffer, res * res, indices, 6 * (res - 1) * (res - 1), tex_indices, self.material.tex_count);
+
+    return self;
+}
+
+inline uint32_t* shape_setup(Model* model, const char* texture_path, Material* material,
+                             uint32_t shader_index, bool is_cubemap)
+{
+    model->meshes = (Mesh*)malloc(sizeof(Mesh));
+    model->mesh_count = 1;
+    model->shader_index = shader_index;
+    model->directory = NULL;
+
+    transform_reset(&model->transform);
+    mat4_identity(&model->model);
+
+    bool using_texture = texture_path != NULL;
+    model->material = *material;
+    model->material.tex_count = using_texture;
+    model->material.textures = NULL; // if not using texture
+    model->material.flags = 0;
+
+    uint32_t* tex_indices = NULL;
+    if(using_texture)
+    {
+        model->material.textures = (Texture*)malloc(sizeof(Texture));
+
+        // don't mess up lighting calculations if a texture is being used
+        model->material.ambient = (vec3){1.0f, 1.0f, 1.0f};
+        model->material.diffuse = (vec3){1.0f, 1.0f, 1.0f};
+        if(is_cubemap)
+        {
+            texture_cubemap_create(&model->material.textures[0], texture_path);
+        }
+        else
+        {
+            texture_create(&model->material.textures[0], texture_path, false);
+        }
+
+        model->material.flags |= HAS_DIFFUSE_TEXTURE;
+
+        tex_indices = (uint32_t*)malloc(sizeof(uint32_t));
+        tex_indices[0] = 0; // only 1 texture
+    }
+
+    return tex_indices;
 }

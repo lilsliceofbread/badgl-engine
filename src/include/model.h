@@ -5,6 +5,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/mesh.h>
+
 #include "mesh.h"
 #include "texture.h"
 #include "shader.h"
@@ -12,12 +13,7 @@
 #include "glmath.h"
 #include "util.h"
 #include "camera.h"
-
-typedef enum MaterialFlags {
-    HAS_DIFFUSE_TEXTURE = 1 << 0, 
-    HAS_SPECULAR_TEXTURE = 1 << 1, 
-    NO_LIGHTING = 1 << 2
-} MaterialFlags;
+#include "material.h"
 
 typedef struct Model
 {
@@ -30,13 +26,7 @@ typedef struct Model
     Transform transform;
     mat4 model;
 
-    struct {
-        MaterialFlags flags;
-        vec3 colour;
-
-        Texture* textures;
-        uint32_t tex_count;
-    } material;
+    Material material;
 } Model;
 
 Model model_load(const char* path, uint32_t shader_index);

@@ -9,6 +9,8 @@
 #include "arena_alloc.h"
 #include "glmath.h"
 
+typedef void (*SceneUpdateFunc)();
+
 typedef struct Scene {
     Camera cam;
 
@@ -17,9 +19,12 @@ typedef struct Scene {
 
     Model* models;
     uint32_t model_count;
+
+    SceneUpdateFunc user_update_func; // user func must take 1 param, a Scene*
 } Scene;
 
-void scene_init(Scene* self, vec3 start_pos, vec2 euler, Renderer* rd, const char* skybox_cubemap_path);
+// user func must take 1 param, a Scene*
+void scene_init(Scene* self, vec3 start_pos, vec2 euler, Renderer* rd, const char* skybox_cubemap_path, SceneUpdateFunc func);
 
 void scene_add_model(Scene* self, Model* model);
 

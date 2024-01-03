@@ -16,6 +16,7 @@
 
 void loading_begin(Renderer* rd);
 void loading_end(Renderer* rd);
+void sphere_scene_update(Scene* scene);
 
 void game_init(GameState* s)
 {
@@ -27,38 +28,63 @@ void game_init(GameState* s)
 
     loading_begin(&s->rd);
 
-    vec3 start_pos = {0.0f, 0.0f, 3.0f};
+    vec3 start_pos = {0.0f, 1.0f, 3.0f};
     vec2 start_euler = {0.0f, -90.0f}; // pitch then yaw
-    scene_init(&s->scenes[s->scene_count++], start_pos, start_euler, &s->rd, "res/kurt/space.png");
-    scene_init(&s->scenes[s->scene_count++], start_pos, start_euler, &s->rd, "res/box/box.png");
+    scene_init(&s->scenes[s->scene_count++], start_pos, start_euler,
+               &s->rd, "res/kurt/space.png", (SceneUpdateFunc)sphere_scene_update);
+    scene_init(&s->scenes[s->scene_count++], start_pos, start_euler,
+               &s->rd, "res/box/box.png", NULL);
 
     {
-        // we create these shaders ourselves and then pass the index to the structures so multiple can use the same shader
+        // create shaders ourselves then pass index to structures so multiple use same shader
         uint32_t model_tex_shader = rd_add_shader(&s->rd, "shaders/model_tex.vert", "shaders/model_tex.frag");
         uint32_t default_shader = rd_add_shader(&s->rd, "shaders/default.vert", "shaders/default.frag");
         uint32_t sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
 
-        Model tmp = uv_sphere_gen(2.0f, 15, "res/earth/e.png", (vec3){1.0f, 1.0f, 1.0f}, sphere_shader);
-        scene_add_model(&s->scenes[0], &tmp);
-        tmp = model_load("res/backpack/backpack.obj", model_tex_shader);
-        scene_add_model(&s->scenes[1], &tmp);
-        tmp = rectangular_prism_gen(1.5f, 2.0f, 3.0f, NULL, (vec3){0.7f, 0.2f, 0.8f}, default_shader);
-        scene_add_model(&s->scenes[1], &tmp);
+        Material mat_tmp = {
+            .ambient = (vec3){0.3f, 0.2f, 0.8f}, // reset by shape_setup
+            .diffuse = (vec3){0.3f, 0.2f, 0.8f}, //
+            .specular = (vec3){0.6f, 0.6f, 0.6f},
+            .shininess = 32.0f
+        };
+        Model model_tmp = uv_sphere_gen(2.0f, 15, "res/earth/e.png", &mat_tmp, sphere_shader);
+        scene_add_model(&s->scenes[0], &model_tmp);
+
+        mat_tmp.ambient = (vec3){0.3f, 0.2f, 0.8f};
+        mat_tmp.diffuse = (vec3){0.3f, 0.2f, 0.8f};
+        mat_tmp.specular = (vec3){0.6f, 0.6f, 0.6f};
+        mat_tmp.shininess = 32.0f;
+        model_tmp = rectangular_plane_gen(100.0f, 100.0f, 10, NULL, &mat_tmp, default_shader);
+        scene_add_model(&s->scenes[1], &model_tmp);
+
+        model_tmp = model_load("res/backpack/backpack.obj", model_tex_shader);
+        scene_add_model(&s->scenes[1], &model_tmp);
+
+        mat_tmp.ambient = (vec3){0.8f, 0.2f, 0.3f};
+        mat_tmp.diffuse = (vec3){0.8f, 0.2f, 0.3f};
+        mat_tmp.specular = (vec3){0.5f, 0.5f, 0.5f};
+        mat_tmp.shininess = 32.0f;
+        model_tmp = rectangular_prism_gen(1.5f, 2.0f, 3.0f, NULL, &mat_tmp, default_shader);
+        scene_add_model(&s->scenes[1], &model_tmp);
     }
     
-    Transform backpack = {
-        .pos = (vec3){5.0f, 0.0f, 2.0f},
-        .euler = (vec3){0.0f, 0.0f, 0.0f},
-        .scale = (vec3){1.0f, 1.0f, 1.0f}
-    };
-    model_update_transform(&s->scenes[1].models[0], &backpack);
+    {
+        Transform tr_tmp = {
+            .pos = (vec3){3.0f, 3.0f, 0.0f},
+            .euler = (vec3){0.0f, 0.0f, 0.0f},
+            .scale = (vec3){1.0f, 1.0f, 1.0f}
+        };
+        model_update_transform(&s->scenes[1].models[1], &tr_tmp); // use some identifier for models e.g. strings?
+
+        tr_tmp.pos = (vec3){-2.0f, 2.0f, 0.0f},
+        model_update_transform(&s->scenes[1].models[2], &tr_tmp);
+    }
 
     loading_end(&s->rd);
 }
 
 void game_update(GameState* s)
 {
-    igSetNextWindowPos((ImVec2){0,0}, ImGuiCond_FirstUseEver, (ImVec2){0,0});
     igBegin("Settings", NULL, 0);
         igText("FPS: %f", 1.0f / s->rd.delta_time);
 
@@ -75,16 +101,6 @@ void game_update(GameState* s)
     igEnd();
 
     scene_update(&s->scenes[s->current_scene], &s->rd);
-
-    if(s->current_scene == 0)
-    {
-        Transform sphere = {
-            .pos = (vec3){0.0f, 0.0f, 0.0f},
-            .euler = (vec3){0.0f, rd_get_time(), 0.0f},
-            .scale = (vec3){1.0f, 1.0f, 1.0f}
-        };
-        model_update_transform(&s->scenes[0].models[0], &sphere);
-    }
 
     scene_draw(&s->scenes[s->current_scene], &s->rd);
 }
@@ -115,4 +131,14 @@ void loading_begin(Renderer* rd)
 void loading_end(Renderer* rd)
 {
     rd_update_viewport(rd); // reset back after loading screen
+}
+
+void sphere_scene_update(Scene* scene)
+{
+    Transform sphere = {
+        .pos = (vec3){0.0f, 0.0f, 0.0f},
+        .euler = (vec3){0.0f, rd_get_time(), 0.0f},
+        .scale = (vec3){1.0f, 1.0f, 1.0f}
+    };
+    model_update_transform(&scene->models[0], &sphere);
 }

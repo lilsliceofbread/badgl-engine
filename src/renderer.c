@@ -33,7 +33,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 
     ASSERT(glfwInit(), "RENDERER: failed to init GLFW\n");
 
-    #ifndef NO_DEBUG
+    #ifndef BADGL_NO_DEBUG
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  
     #endif
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -61,7 +61,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     glfwSetFramebufferSizeCallback(win, rd_resize_callback);
     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    #ifndef NO_DEBUG
+    #ifndef BADGL_NO_DEBUG
         int flags;
         glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
         if(flags & GL_CONTEXT_FLAG_DEBUG_BIT)
@@ -146,8 +146,16 @@ uint32_t rd_add_shader(Renderer* self, const char* vert_src, const char* frag_sr
 
 void rd_set_wireframe(bool useWireframe)
 {
-    GLenum mode = useWireframe ? GL_LINE : GL_FILL;
-    glPolygonMode(GL_FRONT_AND_BACK, mode);
+    if(useWireframe)
+    {
+        glDisable(GL_CULL_FACE);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
+    else
+    {
+        glEnable(GL_CULL_FACE);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
 }
 
 void rd_begin_frame(Renderer* self)

@@ -10,6 +10,7 @@
 #include "util.h"
 #include "texture.h"
 #include "renderer.h"
+#include "light.h"
 
 Model model_load(const char* path, uint32_t shader_index)
 {
@@ -23,6 +24,13 @@ Model model_load(const char* path, uint32_t shader_index)
 
     self.mesh_count = 0;
     self.meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
+
+    // use aiMat to set?
+    self.material.ambient = (vec3){1.0f, 1.0f, 1.0f};
+    self.material.diffuse = (vec3){1.0f, 1.0f, 1.0f};
+    self.material.specular = (vec3){1.0f, 1.0f, 1.0f};
+    self.material.shininess = 32.0f;
+
     self.material.textures = NULL; // not setting this to null before realloc creates undefined behaviour, if the uninitialised memory is not 0
     self.material.tex_count = 0;
     self.material.flags = 0;
@@ -74,26 +82,55 @@ void model_draw(Model* self, Renderer* rd, Camera* cam)
     mat4_mul(&mvp, cam->proj, model_view);
 
     shader_use(shader);
-    shader_uniform_mat4(shader, "mvp", &mvp);
+    shader_uniform_mat4(shader, "mvp", &mvp, NULL, NULL);
     
     // TEMP
     float dist = 10.0f;
     float time = 2.0f * rd_get_time();
-    vec3 light_colour = {1.0f, 1.0f, 1.0f};
-    vec3 light_pos = {dist * cosf(time), dist * cosf(time), dist * sinf(time)};
+    Light light = {
+        .pos = {dist * cosf(time), 10.0f, dist * sinf(time)},
+        .ambient = (vec3){0.2f, 0.2f, 0.2f},
+        .diffuse = (vec3){0.5f, 0.5f, 0.5f},
+        .specular = (vec3){1.0f, 1.0f, 1.0f},
+        .attenuation = (vec3){0.007f, 0.014f, 1.0f}
+    };
 
-    // use light array of structs/ubos
+    const char* members[6] = { // TEMP
+        "ambient",
+        "diffuse",
+        "specular",
+        "shininess",
+        "pos",
+        "attenuation"
+    };
     MaterialFlags flags = self->material.flags;
     if(!(flags & NO_LIGHTING))
     {
-        shader_uniform_vec3(shader, "light_colour", &light_colour);
-        shader_uniform_vec3(shader, "light_pos", &light_pos);
-        shader_uniform_mat4(shader, "model_view", &model_view);
-        shader_uniform_mat4(shader, "view", &cam->view);
-    }
-    if(!(flags & HAS_DIFFUSE_TEXTURE))
-    {
-        shader_uniform_vec3(shader, "object_colour", &self->material.colour);
+        shader_uniform_mat4(shader, "model_view", &model_view, NULL, NULL);
+        shader_uniform_mat4(shader, "model", &self->model, NULL, NULL);
+        shader_uniform_mat4(shader, "view", &cam->view, NULL, NULL);
+
+        // light should have function which does this
+        shader_uniform_vec3(shader, "light", &light.pos,
+                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[4]);
+        shader_uniform_vec3(shader, "light", &light.ambient,
+                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[0]);
+        shader_uniform_vec3(shader, "light", &light.diffuse,
+                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[1]);
+        shader_uniform_vec3(shader, "light", &light.specular,
+                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[2]);
+        shader_uniform_vec3(shader, "light", &light.attenuation,
+                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[5]);
+
+        // material should have function which does this
+        shader_uniform_vec3(shader, "material", &self->material.ambient,
+                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[0]);
+        shader_uniform_vec3(shader, "material", &self->material.diffuse,
+                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[1]);
+        shader_uniform_vec3(shader, "material", &self->material.specular,
+                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[2]);
+        shader_uniform_1f(shader, "material", self->material.shininess,
+                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[3]);
     }
 
     for(uint32_t i = 0; i < self->mesh_count; i++)
@@ -249,7 +286,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
         memset(img_path, 0, sizeof(img_path)); // ensure previous string doesn't cause problems
         struct aiString str;
         aiGetMaterialTexture(mat, ai_type, i, &str, NULL, NULL, NULL, NULL, NULL, NULL); // get material texture string
-        snprintf(img_path, 1025, "%s/%s", self->directory, str.data); // append texture string to directory
+        snprintf(img_path, sizeof(img_path), "%s/%s", self->directory, str.data); // append texture string to directory
 
         bool skip = false; // can't use continue since 2 for loops
         for(uint32_t j = 0; j < self->material.tex_count; j++) // loop through model's textures

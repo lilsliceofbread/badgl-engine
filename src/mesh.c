@@ -66,7 +66,9 @@ void mesh_init(Mesh* self, Arena arena,
         vao_attribute(index, 2, GL_FLOAT, 2 * sizeof(float), offset);
     }
 
-    vao_unbind();
+    #ifndef BADGL_NO_DEBUG
+        vao_unbind(); // shouldn't need this if code works properly lol
+    #endif
 
     // don't need this data anymore
     arena_free(&arena);
@@ -80,10 +82,12 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
         if(textures[curr_tex].type != TEXTURE_CUBEMAP)
         {
             texture_unit_active(i); // activate next tex unit
-            shader_uniform_1i(shader, texture_type_get_str(textures[curr_tex].type), (int)i); // tell sampler which unit is associated with it
+
+            // tell sampler which unit is associated with it
+            shader_uniform_1i(shader, texture_type_get_str(textures[curr_tex].type), (int)i, NULL, NULL);
         }
 
-        //associate texture with current bound unit
+        // associate texture with current bound unit
         texture_bind(&textures[curr_tex]);
     }
 
@@ -91,8 +95,9 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
     glDrawElements(GL_TRIANGLES, (GLsizei)self->ind_count, GL_UNSIGNED_INT, 0);
     vao_unbind();
 
-    // good practice to reset
-    texture_unit_active(0);
+    #ifndef BADGL_NO_DEBUG
+        texture_unit_active(0);
+    #endif
 }
 
 void mesh_free(Mesh* self)
