@@ -5,9 +5,11 @@
 
 Model skybox_init(const char* cubemap_path)
 {
-    Material material = {0}; // doesn't matter since not using lighting
-    Model self = rectangular_prism_gen(2.0f, 2.0f, 2.0f, cubemap_path, &material, 0); // since not using shader_index, put any value
-    self.material.flags |= NO_LIGHTING;
+    Material material;
+    material_texture_diffuse(&material, true, cubemap_path, (vec3){1.0f, 1.0f, 1.0f}, 1.0f); // dummy values
+    material.flags |= NO_LIGHTING;
+
+    Model self = rectangular_prism_gen(2.0f, 2.0f, 2.0f, &material, 0); // since not using shader_index, put any value
 
     return self;
 }

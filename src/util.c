@@ -49,6 +49,15 @@ int str_find_last_of(const char* str, char c)
     return latest_occurrence;
 }
 
+void find_directory_from_path(char* dest, const char* path)
+{
+    int offset = str_find_last_of(path, '/');
+    ASSERT(offset != -1, "MODEL: invalid path for model %s\n", path);
+
+    strncpy(dest, path, (size_t)offset); // copy up to final / into directory
+    dest[offset] = '\0';
+}
+
 void transform_reset(Transform* transform)
 {
     transform->pos = vec3_zero();

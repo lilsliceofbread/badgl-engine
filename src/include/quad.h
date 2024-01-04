@@ -7,7 +7,7 @@
 #include "texture.h"
 #include "renderer.h"
 
-// QuadDrawer instead of Quad, takes multiple quads?
+// UIRenderer instead of Quad, takes multiple quads?
 
 // flat 2d quads
 typedef struct Quad {

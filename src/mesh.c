@@ -78,31 +78,26 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
 {
     for(uint32_t i = 0; i < self->tex_count; i++)
     {
-        uint32_t curr_tex = self->tex_indices[i];
-        if(textures[curr_tex].type != TEXTURE_CUBEMAP)
-        {
-            texture_unit_active(i); // activate next tex unit
+        Texture curr_tex = textures[self->tex_indices[i]];
 
-            // tell sampler which unit is associated with it
-            shader_uniform_1i(shader, texture_type_get_str(textures[curr_tex].type), (int)i, NULL, NULL);
-        }
+        texture_unit_active(i); // activate next tex unit
 
-        // associate texture with current bound unit
-        texture_bind(&textures[curr_tex]);
+        // tell sampler which unit is associated with it
+        shader_uniform_1i(shader, texture_type_get_str(curr_tex.type), (int)i, NULL, NULL);
+
+        texture_bind(&curr_tex); // associate texture with current bound unit
     }
 
     vao_bind(self->vao);
     glDrawElements(GL_TRIANGLES, (GLsizei)self->ind_count, GL_UNSIGNED_INT, 0);
     vao_unbind();
 
-    #ifndef BADGL_NO_DEBUG
-        texture_unit_active(0);
-    #endif
+    texture_unit_active(0);
 }
 
 void mesh_free(Mesh* self)
 {
-    if(self->tex_count > 0 && self->tex_indices != NULL)
+    if(self->tex_indices != NULL)
     {
         free(self->tex_indices);
     }

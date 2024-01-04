@@ -12,47 +12,55 @@
 #include "renderer.h"
 #include "light.h"
 
-Model model_load(const char* path, uint32_t shader_index)
+Model model_load(const char* path, uint32_t shader_index, Material* material)
 {
     float start_time = rd_get_time();
 
     Model self;
 
-    // import scene object (entire model)
     const struct aiScene* scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
     ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "MODEL: loading %s failed\n%s\n", path, aiGetErrorString());
 
     self.mesh_count = 0;
     self.meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
 
-    // use aiMat to set?
-    self.material.ambient = (vec3){1.0f, 1.0f, 1.0f};
-    self.material.diffuse = (vec3){1.0f, 1.0f, 1.0f};
-    self.material.specular = (vec3){1.0f, 1.0f, 1.0f};
-    self.material.shininess = 32.0f;
-
-    self.material.textures = NULL; // not setting this to null before realloc creates undefined behaviour, if the uninitialised memory is not 0
+    self.material = *material; // use aiMat to set?
+    // not setting this to null before realloc creates undefined behaviour, if uninitialised memory is not 0
+    self.material.textures = NULL;
     self.material.tex_count = 0;
     self.material.flags = 0;
+
     self.shader_index = shader_index;
     transform_reset(&self.transform);
     mat4_identity(&self.model);
-
-    // get directory of model and store
-    {
-        char temp[500]; // for safety
-        // hacky way of getting offset from start of string
-        int offset = str_find_last_of(path, '/');
-        ASSERT(offset != -1, "MODEL: invalid path for model %s\n", path);
-        strncpy(temp, path, (size_t)offset); // copy up to final / into directory
-        temp[offset] = '\0'; // strncpy does not null terminate strings
-        self.directory = temp;
-        //printf("offset: %d dir: %s", offset, self->directory);
-    }
+    find_directory_from_path(self.directory, path);
 
     model_process_node(&self, scene->mRootNode, scene);
 
-    aiReleaseImport(scene); // need to free scene ourselves in c
+    aiReleaseImport(scene);
+
+    for(uint32_t i = 0; i < self.material.tex_count; i++)
+    {
+        Texture curr_tex = self.material.textures[i];
+
+        if(curr_tex.type & TEXTURE_DIFFUSE)
+        {
+            self.material.flags |= HAS_DIFFUSE_TEXTURE;
+
+            self.material.ambient = (vec3){1.0f, 1.0f, 1.0f};
+            self.material.diffuse = (vec3){1.0f, 1.0f, 1.0f};
+        }
+        else if(curr_tex.type & TEXTURE_SPECULAR)
+        {
+            self.material.flags |= HAS_SPECULAR_TEXTURE;
+
+            self.material.specular = (vec3){1.0f, 1.0f, 1.0f};
+        }
+        else if(curr_tex.type & TEXTURE_NORMAL)
+        {
+            self.material.flags |= HAS_NORMAL_TEXTURE;
+        }
+    }
 
     printf("MODEL: loading %s took %fs\n", path, rd_get_time() - start_time);
 
@@ -91,7 +99,7 @@ void model_draw(Model* self, Renderer* rd, Camera* cam)
         .pos = {dist * cosf(time), 10.0f, dist * sinf(time)},
         .ambient = (vec3){0.2f, 0.2f, 0.2f},
         .diffuse = (vec3){0.5f, 0.5f, 0.5f},
-        .specular = (vec3){1.0f, 1.0f, 1.0f},
+        .specular = (vec3){0.7f, 0.7f, 0.7f},
         .attenuation = (vec3){0.007f, 0.014f, 1.0f}
     };
 
@@ -148,13 +156,12 @@ void model_add_mesh(Model* self, Mesh mesh, uint32_t total_meshes)
 
 void model_process_node(Model* self, struct aiNode* node, const struct aiScene* scene)
 {
-    // process each mesh in current node
     for(uint32_t i = 0; i < node->mNumMeshes; i++)
     {
         struct aiMesh* mesh = scene->mMeshes[node->mMeshes[i]]; // node meshes are indexes into scene's meshes
         model_add_mesh(self, model_process_mesh(self, mesh, scene), scene->mNumMeshes);
     }
-    // recurse for child nodes
+
     for(uint32_t i = 0; i < node->mNumChildren; i++)
     {
         model_process_node(self, node->mChildren[i], scene);
@@ -166,7 +173,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     Mesh mesh;
 
     uint32_t* indices = NULL;
-    uint32_t* tex_indices = NULL; // indexes into model textures array
+    uint32_t* tex_indices = NULL; // indexes into model's textures array
     const uint32_t total_vertices = model_mesh->mNumVertices;
     uint32_t total_indices = 0;
     uint32_t total_textures = 0;
@@ -178,7 +185,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     {
         struct aiFace face = model_mesh->mFaces[i];
 
-        // prevent lines or single vertices from being added if triangulation didn't work
+        // prevent lines or single vertices from being added
         if(face.mNumIndices < 3) continue;
         total_indices += face.mNumIndices;
     }
@@ -239,18 +246,13 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         }
     }
 
-    // mMaterialIndex is unsigned so can't be below zero. I don't know why LearnOpenGL has this check?
-    //if(model_mesh->mMaterialIndex >= 0) // if mesh has materials
-    //{
     // aiMesh's material index indexes into scene's pool of materials
     struct aiMaterial* mat = scene->mMaterials[model_mesh->mMaterialIndex];
     uint32_t diffuse_count, specular_count;
 
     // not the best since allocs multiple temp variables, but it works
     uint32_t* diff_indexes = model_load_textures(self, mat, aiTextureType_DIFFUSE, TEXTURE_DIFFUSE, &diffuse_count);
-    if(diffuse_count && !(self->material.flags & HAS_DIFFUSE_TEXTURE)) self->material.flags |= HAS_DIFFUSE_TEXTURE; // doing this here is cringe but i can't be bothered 
     uint32_t* spec_indexes = model_load_textures(self, mat, aiTextureType_SPECULAR, TEXTURE_SPECULAR, &specular_count);
-    if(specular_count && !(self->material.flags & HAS_SPECULAR_TEXTURE)) self->material.flags |= HAS_SPECULAR_TEXTURE;  
 
     total_textures = diffuse_count + specular_count;
 
@@ -266,7 +268,6 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         free(diff_indexes);
         free(spec_indexes);
     }
-    //}
 
     mesh_init(&mesh, arena, vertex_buffer, total_vertices, indices, total_indices, tex_indices, total_textures);
     return mesh;
@@ -279,7 +280,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
     if(add_tex_count == 0) return NULL;
     uint32_t* tex_indices = (uint32_t*)calloc(add_tex_count, sizeof(uint32_t)); // user of function must free themselves
 
-    char img_path[1025]; // for safety / to suppress warnings for snprintf
+    char img_path[1024 + MAX_PATH_LENGTH]; // suppress warnings for snprintf (dir + '/' + str.data)
     uint32_t new_add_tex_count = 0; // since we only resize if texture doesn't already exist
     for(uint32_t i = 0; i < add_tex_count; i++)
     {
@@ -288,7 +289,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
         aiGetMaterialTexture(mat, ai_type, i, &str, NULL, NULL, NULL, NULL, NULL, NULL); // get material texture string
         snprintf(img_path, sizeof(img_path), "%s/%s", self->directory, str.data); // append texture string to directory
 
-        bool skip = false; // can't use continue since 2 for loops
+        bool skip = false;
         for(uint32_t j = 0; j < self->material.tex_count; j++) // loop through model's textures
         {
             if(strcmp(img_path, self->material.textures[j].path) == 0) // if texture already exists
@@ -309,7 +310,8 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
             // create new texture
             Texture texture;
             texture_create(&texture, img_path, true);
-            texture.type = type;
+            texture.type = 0;
+            texture.type |= type;
 
             // set next texture in array to current texture
             self->material.textures[self->material.tex_count + i] = texture; // first iter is tex_count + 0
@@ -339,14 +341,4 @@ void model_free(Model* self)
     }
 
     free(self->material.textures);
-
-    /*
-    for(uint32_t i = 0; i < self->material.tex_count; i++)
-    {
-        printf("MODEL: Texture ID: %d %s\n", self->material.textures[i].id, self->material.textures[i].path);
-    }
-    printf("MODEL: tex count %d\n", self->material.tex_count);
-    printf("MODEL: mesh count %d\n", self->mesh_count);
-    */
-
 }

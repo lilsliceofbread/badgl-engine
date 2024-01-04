@@ -37,47 +37,55 @@ void game_init(GameState* s)
 
     {
         // create shaders ourselves then pass index to structures so multiple use same shader
-        uint32_t model_tex_shader = rd_add_shader(&s->rd, "shaders/model_tex.vert", "shaders/model_tex.frag");
-        uint32_t default_shader = rd_add_shader(&s->rd, "shaders/default.vert", "shaders/default.frag");
+        uint32_t model_shader = rd_add_shader(&s->rd, "shaders/model.vert", "shaders/model.frag");
+        //uint32_t default_shader = rd_add_shader(&s->rd, "shaders/default.vert", "shaders/default.frag");
         uint32_t sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
 
-        Material mat_tmp = {
-            .ambient = (vec3){0.3f, 0.2f, 0.8f}, // reset by shape_setup
-            .diffuse = (vec3){0.3f, 0.2f, 0.8f}, //
-            .specular = (vec3){0.6f, 0.6f, 0.6f},
-            .shininess = 32.0f
-        };
-        Model model_tmp = uv_sphere_gen(2.0f, 15, "res/earth/e.png", &mat_tmp, sphere_shader);
+        Material mat_tmp; 
+        material_texture_diffuse(&mat_tmp, true, "res/earth/e.png",
+                                 (vec3){1.0f, 1.0f, 1.0f}, 32.0f);
+        Model model_tmp = uv_sphere_gen(2.0f, 15, &mat_tmp, sphere_shader);
         scene_add_model(&s->scenes[0], &model_tmp);
 
-        mat_tmp.ambient = (vec3){0.3f, 0.2f, 0.8f};
-        mat_tmp.diffuse = (vec3){0.3f, 0.2f, 0.8f};
-        mat_tmp.specular = (vec3){0.6f, 0.6f, 0.6f};
-        mat_tmp.shininess = 32.0f;
-        model_tmp = rectangular_plane_gen(100.0f, 100.0f, 10, NULL, &mat_tmp, default_shader);
+        material_textureless(&mat_tmp, true,
+                             (vec3){0.8f, 0.1f, 0.2f},
+                             (vec3){0.8f, 0.1f, 0.2f},
+                             (vec3){1.0f, 1.0f, 1.0f}, 32.0f);
+        model_tmp = uv_sphere_gen(2.0f, 15, &mat_tmp, sphere_shader);
+        scene_add_model(&s->scenes[0], &model_tmp);
+
+        material_textureless(&mat_tmp, false,
+                             (vec3){0.3f, 0.2f, 0.8f},
+                             (vec3){0.3f, 0.2f, 0.8f},
+                             (vec3){1.0f, 1.0f, 1.0f}, 32.0f);
+        model_tmp = rectangular_plane_gen(100.0f, 100.0f, 10, &mat_tmp, model_shader);
         scene_add_model(&s->scenes[1], &model_tmp);
 
-        model_tmp = model_load("res/backpack/backpack.obj", model_tex_shader);
+        model_tmp = model_load("res/backpack/backpack.obj", model_shader, &mat_tmp);
         scene_add_model(&s->scenes[1], &model_tmp);
 
-        mat_tmp.ambient = (vec3){0.8f, 0.2f, 0.3f};
-        mat_tmp.diffuse = (vec3){0.8f, 0.2f, 0.3f};
-        mat_tmp.specular = (vec3){0.5f, 0.5f, 0.5f};
-        mat_tmp.shininess = 32.0f;
-        model_tmp = rectangular_prism_gen(1.5f, 2.0f, 3.0f, NULL, &mat_tmp, default_shader);
+        material_textureless(&mat_tmp, false,
+                             (vec3){0.8f, 0.2f, 0.3f},
+                             (vec3){0.8f, 0.2f, 0.3f},
+                             (vec3){1.0f, 1.0f, 1.0f}, 32.0f);
+        model_tmp = rectangular_prism_gen(1.5f, 2.0f, 3.0f, &mat_tmp, model_shader);
         scene_add_model(&s->scenes[1], &model_tmp);
     }
     
     {
         Transform tr_tmp = {
-            .pos = (vec3){3.0f, 3.0f, 0.0f},
+            .pos   = (vec3){5.0f, 0.0f, -2.0f},
             .euler = (vec3){0.0f, 0.0f, 0.0f},
             .scale = (vec3){1.0f, 1.0f, 1.0f}
         };
-        model_update_transform(&s->scenes[1].models[1], &tr_tmp); // use some identifier for models e.g. strings?
+        // TODO: use some identifier for models e.g. strings?
+        model_update_transform(&s->scenes[0].models[1], &tr_tmp);
 
         tr_tmp.pos = (vec3){-2.0f, 2.0f, 0.0f},
         model_update_transform(&s->scenes[1].models[2], &tr_tmp);
+
+        tr_tmp.pos = (vec3){3.0f, 3.0f, 0.0f},
+        model_update_transform(&s->scenes[1].models[1], &tr_tmp);
     }
 
     loading_end(&s->rd);

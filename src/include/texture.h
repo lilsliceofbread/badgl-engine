@@ -5,14 +5,14 @@
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 
-#define MAX_STR_LENGTH 128
+#define MAX_PATH_LENGTH 128
 
 typedef enum TextureType
 {
-    TEXTURE_DIFFUSE = 1 << 0, // colour texture
+    TEXTURE_DIFFUSE  = 1 << 0, // colour texture
     TEXTURE_SPECULAR = 1 << 1,
-    TEXTURE_NORMAL = 1 << 2, // normal map
-    TEXTURE_CUBEMAP = 1 << 3 
+    TEXTURE_NORMAL   = 1 << 2, // normal map
+    TEXTURE_CUBEMAP  = 1 << 3 
 } TextureType;
 
 typedef struct Texture
@@ -20,13 +20,16 @@ typedef struct Texture
     GLuint id;
     TextureType type;
     int width, height;
-    char path[MAX_STR_LENGTH];
+    char path[MAX_PATH_LENGTH];
 } Texture;
 
+// type must be set by user
 void texture_create(Texture* self, const char* img_path, bool use_mipmap);
 
 // create white 1x1 texture
 void texture_default_create(Texture* self);
+
+void texture_default_cubemap_create(Texture* self);
 
 /* expects faces to have suffixes _px, _nx, etc for all sides
  * should all have the same extension and name

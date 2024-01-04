@@ -29,32 +29,13 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
 
     int width, height, num_channels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char* image_data = stbi_load(img_path, &width, &height, &num_channels, 4);
-    ASSERT(image_data, "TEXTURE: could not load image %s\n", img_path);
-
-    //GLint internal_format; // need to do this because they use separate values
-    //GLenum img_format;
-    //switch(num_channels)
-    //{
-    //    case 1:
-    //        img_format = GL_RED;
-    //        internal_format = GL_RED;
-    //        break;
-    //    case 3:
-    //        img_format = GL_RGB;
-    //        internal_format = GL_RGB;
-    //        break;
-    //    case 4:
-    //        img_format = GL_RGBA;
-    //        internal_format = GL_SRGB8_ALPHA8;
-    //        break;
-    //}
+    uint8_t* img_data = stbi_load(img_path, &width, &height, &num_channels, 4);
+    ASSERT(img_data, "TEXTURE: could not load image %s\n", img_path);
 
     glBindTexture(GL_TEXTURE_2D, texture_id);
-    //glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, img_format, GL_UNSIGNED_BYTE, image_data); // IF IMAGE TYPE IS COLORMAP THIS BREAKS
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);
 
-    stbi_image_free(image_data);
+    stbi_image_free(img_data);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -82,7 +63,48 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
 
 void texture_default_create(Texture* self)
 {
+    GLuint texture_id;
+    glGenTextures(1, &texture_id);
 
+    uint8_t img_data[] = {255, 255, 255, 255}; // 1 white pixel
+
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    self->id = texture_id;
+    self->width = 1;
+    self->height = 1;
+    memset(self->path, 0, MAX_PATH_LENGTH);
+}
+
+void texture_default_cubemap_create(Texture* self)
+{
+    GLuint texture_id;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); // since it can be sampled in 3 dimensions
+
+    uint8_t img_data[] = {255, 255, 255, 255}; // 1 white pixel
+    for(int i = 0; i < 6; i++)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + (GLenum)i, 0, GL_RGB, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);
+    }
+
+    self->id = texture_id;
+    self->width = 1; 
+    self->height = 1;
+    self->type |= TEXTURE_CUBEMAP;
+    memset(self->path, 0, MAX_PATH_LENGTH);
 }
 
 void texture_cubemap_create(Texture* self, const char* generic_path)
@@ -92,7 +114,7 @@ void texture_cubemap_create(Texture* self, const char* generic_path)
     GLuint texture_id;
     glGenTextures(1, &texture_id);
     self->id = texture_id;
-    self->type = TEXTURE_CUBEMAP;
+    self->type |= TEXTURE_CUBEMAP;
     const char* suffixes[6] = {
         "_px",
         "_nx",
@@ -106,8 +128,6 @@ void texture_cubemap_create(Texture* self, const char* generic_path)
     char curr;
     char path_no_ext[128];
 
-    // 100 is max length sanity check in case no null terminator
-    // (should really go from end of str to start and then strncpy as it would find ext far faster)
     while((curr = generic_path[path_idx]) != '.' && generic_path[path_idx] != '\0' && path_idx < 128)
     {
         path_no_ext[path_idx] = curr;
@@ -130,18 +150,17 @@ void texture_cubemap_create(Texture* self, const char* generic_path)
     for(int i = 0; i < 6; i++)
     {
         memset(img_path, 0, sizeof(img_path));
-        //snprintf(img_path, 100, "%s%s%s", path_no_ext, suffixes[i], extension);
         strncpy(img_path, path_no_ext, 256);
         strcat(img_path, suffixes[i]); // don't need to use strncat here, known sizes
         strncat(img_path, extension, 32); // no extension is longer than this... right?
 
         stbi_set_flip_vertically_on_load(false);
-        unsigned char* image_data = stbi_load(img_path, &width, &height, &num_channels, 4);
-        ASSERT(image_data, "TEXTURE: could not load image %s\n", img_path);
+        uint8_t* img_data = stbi_load(img_path, &width, &height, &num_channels, 4);
+        ASSERT(img_data, "TEXTURE: could not load image %s\n", img_path);
 
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + (GLenum)i, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + (GLenum)i, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);
 
-        stbi_image_free(image_data);
+        stbi_image_free(img_data);
     }
 
     self->width = width; // will be the size of 1 square
@@ -154,7 +173,7 @@ void texture_cubemap_create(Texture* self, const char* generic_path)
 
 void texture_bind(Texture* self)
 {
-    GLenum target = self->type == TEXTURE_CUBEMAP ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D; 
+    GLenum target = self->type & TEXTURE_CUBEMAP ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D; 
     glBindTexture(target, self->id);
 }
 
@@ -171,20 +190,8 @@ void texture_free(Texture* self)
 
 const char* texture_type_get_str(TextureType type)
 {
-    switch(type)
-    {
-        case TEXTURE_DIFFUSE:
-            return "texture_diffuse";
-            break; // unsure if necessary
-        case TEXTURE_SPECULAR:
-            return "texture_specular";
-            break;
-        case TEXTURE_NORMAL:
-            return "texture_normal";
-            break;
-        case TEXTURE_CUBEMAP:
-            return "cubemap";
-            break;
-    }
-    ASSERT(false, "TEXTURE: invalid texture type\n");
+    if(type & TEXTURE_DIFFUSE) return "texture_diffuse";
+    if(type & TEXTURE_SPECULAR) return "texture_specular";
+    if(type & TEXTURE_NORMAL) return "texture_normal";
+    ASSERT(false, "TEXTURE: invalid texture type %d\n", (int)type);
 }

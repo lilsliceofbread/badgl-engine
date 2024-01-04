@@ -15,13 +15,15 @@
 #include "camera.h"
 #include "material.h"
 
+#define MAX_PATH_LENGTH 128
+
 typedef struct Model
 {
     Mesh* meshes;
     uint32_t mesh_count;
     uint32_t shader_index; // index into renderer's shader array
 
-    const char* directory;
+    char directory[MAX_PATH_LENGTH];
 
     Transform transform;
     mat4 model;
@@ -29,7 +31,7 @@ typedef struct Model
     Material material;
 } Model;
 
-Model model_load(const char* path, uint32_t shader_index);
+Model model_load(const char* path, uint32_t shader_index, Material* material);
 
 void model_update_transform(Model* self, Transform* transform);
 

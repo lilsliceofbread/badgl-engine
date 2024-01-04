@@ -30,6 +30,9 @@ char* get_file_data(const char* filepath);
 
 int str_find_last_of(const char* str, char c);
 
+// assumes user provides a dest large enough
+void find_directory_from_path(char* dest, const char* path);
+
 void transform_reset(Transform* transform);
 
 #endif

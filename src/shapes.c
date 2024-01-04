@@ -4,15 +4,13 @@
 #include <stdlib.h>
 #include "util.h"
 
-extern inline uint32_t* shape_setup(Model* model, const char* texture_path, Material* material,
-                                    uint32_t shader_index, bool is_cubemap);
+extern inline uint32_t* shape_setup(Model* model, Material* material, uint32_t shader_index);
 
-Model uv_sphere_gen(float radius, uint32_t res,
-                    const char* cubemap_path, Material* material, uint32_t shader_index)
+Model uv_sphere_gen(float radius, uint32_t res, Material* material, uint32_t shader_index)
 {
     Model self;
 
-    uint32_t* tex_indices = shape_setup(&self, cubemap_path, material, shader_index, true);
+    uint32_t* tex_indices = shape_setup(&self, material, shader_index);
 
     uint32_t vert_count = 0, ind_count = 0;
 
@@ -140,12 +138,11 @@ Model uv_sphere_gen(float radius, uint32_t res,
     return self;
 }
 
-Model rectangular_prism_gen(float width, float height, float depth,
-                            const char* cubemap_path, Material* material, uint32_t shader_index)
+Model rectangular_prism_gen(float width, float height, float depth, Material* material, uint32_t shader_index)
 {
     Model self;
 
-    uint32_t* tex_indices = shape_setup(&self, cubemap_path, material, shader_index, true);
+    uint32_t* tex_indices = shape_setup(&self, material, shader_index);
     
     const size_t vert_size = 24 * sizeof(vec3);
     const size_t ind_size = 6 * 6 * sizeof(uint32_t);
@@ -265,12 +262,11 @@ Model rectangular_prism_gen(float width, float height, float depth,
     return self;
 }
 
-Model rectangular_plane_gen(float width, float height, uint32_t res,
-                            const char* texture_path, Material* material, uint32_t shader_index)
+Model rectangular_plane_gen(float width, float height, uint32_t res, Material* material, uint32_t shader_index)
 {
     Model self;
 
-    uint32_t* tex_indices = shape_setup(&self, texture_path, material, shader_index, false);
+    uint32_t* tex_indices = shape_setup(&self, material, shader_index);
 
     const size_t vert_size = res * res * sizeof(vec3);
     const size_t ind_size = 6 * (res - 1) * (res - 1) * sizeof(uint32_t);
@@ -336,44 +332,24 @@ Model rectangular_plane_gen(float width, float height, uint32_t res,
     return self;
 }
 
-inline uint32_t* shape_setup(Model* model, const char* texture_path, Material* material,
-                             uint32_t shader_index, bool is_cubemap)
+inline uint32_t* shape_setup(Model* model, Material* material,
+                             uint32_t shader_index)
 {
     model->meshes = (Mesh*)malloc(sizeof(Mesh));
     model->mesh_count = 1;
     model->shader_index = shader_index;
-    model->directory = NULL;
+    model->material = *material;
 
     transform_reset(&model->transform);
     mat4_identity(&model->model);
+    memset(model->directory, 0, MAX_PATH_LENGTH); // not necessary but feels good
 
-    bool using_texture = texture_path != NULL;
-    model->material = *material;
-    model->material.tex_count = using_texture;
-    model->material.textures = NULL; // if not using texture
-    model->material.flags = 0;
-
-    uint32_t* tex_indices = NULL;
-    if(using_texture)
+    // allow for variable amount of textures
+    // these will always be contiguous for shapes so can use loop
+    uint32_t* tex_indices = (uint32_t*)malloc(material->tex_count * sizeof(uint32_t));
+    for(uint32_t i = 0; i < material->tex_count; i++)
     {
-        model->material.textures = (Texture*)malloc(sizeof(Texture));
-
-        // don't mess up lighting calculations if a texture is being used
-        model->material.ambient = (vec3){1.0f, 1.0f, 1.0f};
-        model->material.diffuse = (vec3){1.0f, 1.0f, 1.0f};
-        if(is_cubemap)
-        {
-            texture_cubemap_create(&model->material.textures[0], texture_path);
-        }
-        else
-        {
-            texture_create(&model->material.textures[0], texture_path, false);
-        }
-
-        model->material.flags |= HAS_DIFFUSE_TEXTURE;
-
-        tex_indices = (uint32_t*)malloc(sizeof(uint32_t));
-        tex_indices[0] = 0; // only 1 texture
+        tex_indices[i] = i;
     }
 
     return tex_indices;
