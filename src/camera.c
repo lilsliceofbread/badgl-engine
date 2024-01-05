@@ -109,7 +109,7 @@ void camera_update(Camera* self, Renderer* rd)
     float cursor_x, cursor_y;
     rd_get_cursor_pos(rd, &cursor_x, &cursor_y);
 
-    if(!rd->cursor_disabled || rd->mouse_wait_update > 0) // don't update rotation
+    if(rd->cursor_disabled || rd->mouse_wait_update > 0) // don't update rotation
     {
         self->last_cursor_x = cursor_x;
         self->last_cursor_y = cursor_y;

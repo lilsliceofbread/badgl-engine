@@ -1,12 +1,14 @@
 #version 430 core
 layout (location = 0) in vec3 v_pos;
 
+#define MAX_LIGHTS 32
+
 struct Light {
-    vec3 pos;
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-    vec3 attenuation; // attenuation constants - quadratic, linear, constant
+    vec4 pos;
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+    vec4 attenuation; // attenuation constants - quadratic, linear, constant
 };
 
 out VsOut {
@@ -14,10 +16,13 @@ out VsOut {
     vec3 pos;
     vec3 normal;
     vec3 tex_coord;
-    vec3 light_pos;
 } vs_out;
 
-uniform Light light;
+layout(std140, binding = 0) uniform Lights
+{
+    Light light_buffer[MAX_LIGHTS];
+    int light_count;
+};
 uniform mat4 mvp;
 uniform mat4 model_view;
 uniform mat4 model;
@@ -34,5 +39,4 @@ void main()
     vs_out.pos = (model_view * vec4(v_pos, 1.0f)).xyz;
     vs_out.normal = normal_matrix * normalize(v_pos);
     vs_out.tex_coord = normalize(v_pos);
-    vs_out.light_pos = (view * vec4(light.pos, 1.0f)).xyz;
 }

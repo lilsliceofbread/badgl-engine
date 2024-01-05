@@ -1,6 +1,8 @@
 #version 430 core
 out vec4 frag_colour;
 
+#define MAX_LIGHTS 32
+
 struct Material {
     vec3 ambient;
     vec3 diffuse;
@@ -9,11 +11,11 @@ struct Material {
 };
 
 struct Light {
-    vec3 pos;
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-    vec3 attenuation; // attenuation constants - quadratic, linear, constant
+    vec4 pos;
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+    vec4 attenuation; // attenuation constants - quadratic, linear, constant
 };
 
 in VsOut {
@@ -21,11 +23,15 @@ in VsOut {
     vec3 pos;
     vec3 normal;
     vec3 tex_coord;
-    vec3 light_pos;
 } fs_in;
 
-uniform Light light;
+layout(std140, binding = 0) uniform Lights
+{
+    Light light_buffer[MAX_LIGHTS];
+    int light_count;
+};
 uniform Material material;
+uniform mat4 view;
 uniform samplerCube texture_diffuse;
 uniform samplerCube texture_specular;
 
@@ -35,31 +41,33 @@ float rand(vec2 co){
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
-vec3 compute_point_light(Light light, vec3 normal, vec3 frag_pos, vec3 light_pos)
+vec3 compute_point_light(Light light, vec3 normal, vec3 frag_pos, vec3 world_pos)
 {
+    vec3 view_light_pos = (view * light.pos).xyz;
+
     /* attenuation */
 
-    float dist = length(light.pos - fs_in.world_pos);
+    float dist = length(light.pos.xyz - world_pos);
     float attenuation = 1.0 / (light.attenuation.x * (dist * dist) +
                                light.attenuation.y * dist          +
                                light.attenuation.z);
 
     /* ambient */
 
-    vec3 ambient = (material.ambient * texture(texture_diffuse, fs_in.tex_coord).xyz) * light.ambient;
+    vec3 ambient = (material.ambient * texture(texture_diffuse, fs_in.tex_coord).xyz) * light.ambient.xyz;
 
     /* diffuse */
 
-    vec3 light_dir = normalize(light_pos - frag_pos);
+    vec3 light_dir = normalize(view_light_pos - frag_pos);
     float diffuse_strength = max(dot(normal, light_dir), 0.0);
-    vec3 diffuse = (diffuse_strength * material.diffuse * texture(texture_diffuse, fs_in.tex_coord).xyz) * light.diffuse;
+    vec3 diffuse = (diffuse_strength * material.diffuse * texture(texture_diffuse, fs_in.tex_coord).xyz) * light.diffuse.xyz;
 
     /* specular */
 
     vec3 view_dir = normalize(-frag_pos);
     vec3 reflect_dir = reflect(-light_dir, normal);
     float specular_strength = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
-    vec3 specular = (specular_strength * material.specular * texture(texture_specular, fs_in.tex_coord).xyz) * light.specular;
+    vec3 specular = (specular_strength * material.specular * texture(texture_specular, fs_in.tex_coord).xyz) * light.specular.xyz;
 
     return attenuation * (ambient + diffuse + specular);
 }
@@ -67,11 +75,12 @@ vec3 compute_point_light(Light light, vec3 normal, vec3 frag_pos, vec3 light_pos
 void main()
 {
     vec3 normal = normalize(fs_in.normal);
-    vec3 frag_pos = fs_in.pos;
-    vec3 light_pos = fs_in.light_pos;
     
     vec3 result = vec3(0.0);
-    result += compute_point_light(light, normal, frag_pos, light_pos);
+    for(int i = 0; i < light_count; i++)
+    {
+        result += compute_point_light(light_buffer[i], normal, fs_in.pos, fs_in.world_pos);
+    }
 
     result += mix(-BAND_RANGE, BAND_RANGE, rand(gl_FragCoord.xy)); // noise to fix banding
     frag_colour = vec4(result, 1.0);

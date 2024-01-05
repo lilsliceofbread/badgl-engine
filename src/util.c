@@ -58,6 +58,16 @@ void find_directory_from_path(char* dest, const char* path)
     dest[offset] = '\0';
 }
 
+bool array_contains(uint32_t* array, uint32_t length, uint32_t val)
+{
+    for(uint32_t i = 0; i < length; i++)
+    {
+        if(val == array[i]) return true;
+    }
+
+    return false;
+}
+
 void transform_reset(Transform* transform)
 {
     transform->pos = vec3_zero();

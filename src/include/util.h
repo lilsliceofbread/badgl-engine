@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "glmath.h"
 
 #ifdef BADGL_NO_DEBUG
@@ -34,5 +35,7 @@ int str_find_last_of(const char* str, char c);
 void find_directory_from_path(char* dest, const char* path);
 
 void transform_reset(Transform* transform);
+
+bool array_contains(uint32_t* array, uint32_t length, uint32_t val);
 
 #endif

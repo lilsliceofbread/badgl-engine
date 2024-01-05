@@ -77,7 +77,7 @@ uint32_t shader_compile(Shader* self, const char* shader_filepath, GLenum shader
 }
 
 // this will repeat uniforms if in both shaders
-// also doesn't allow use of uniform buffer objects
+// unable to use uniform structs, arrays, or uniform buffers
 void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 {
     uint32_t add_uniform_count = 0;
@@ -87,9 +87,10 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
     char name[MAX_UNIF_NAME];
     while((temp = strstr(temp, "uniform"))) // strstr returns NULL when no match, ending loop
     {
+        temp++; // stop strstr finding the same match again
         char c;
         int name_idx = 0;
-        bool is_array_uniform = false;
+        bool skip_uniform = false;
 
         for(int i = 0; (c = temp[i]) != ';'; i++) // while we haven't seen ;
         {
@@ -99,27 +100,25 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
                 name_idx = 0; // don't need to memset name since it will be null terminated later
                 continue;
             }
-            else if(c == '[') // because array uniform names don't fit the pattern, must deal with them in another way
+            else if(c == '[' || c == '\n' || c == '{') // ignore ubos or uniform arrays (hopefully)
             {
-                is_array_uniform = true;
+                skip_uniform = true;
                 break;
             }
 
             name[name_idx++] = c;
         }
         
-        if(is_array_uniform) 
+        if(skip_uniform) 
         {
-            continue; // user will have to use shader_find_uniform_array
+            continue;
         }
 
         name[name_idx] = '\0';
         strncpy(new_uniforms[add_uniform_count++].name, name, MAX_UNIF_NAME); 
-
-        temp++; // stop strstr finding the same match again
     }
 
-    ASSERT(self->uniform_count + add_uniform_count <= MAX_UNIFORMS, "SHADER: too many uniforms for 1 shader object");
+    ASSERT(self->uniform_count + add_uniform_count <= MAX_UNIFORMS, "SHADER: too many uniforms for 1 shader object\n");
 
     memcpy(&self->stored_uniforms[self->uniform_count], new_uniforms, add_uniform_count * sizeof(Uniform));
 
@@ -133,7 +132,7 @@ void shader_use(Shader* self)
 
 int shader_find_uniform(Shader* self, const char* name, FindUniformFunc func, void* arg)
 {
-    // not the best
+    // temp system until i create a better way to detect uniforms
     if(func != NULL)
     {
         if(arg != NULL) return func(self, name, arg);

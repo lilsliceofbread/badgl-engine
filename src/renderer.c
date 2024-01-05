@@ -21,7 +21,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 {
     self->width = width;
     self->height = height;
-    self->cursor_disabled = true;
+    self->cursor_disabled = false;
     self->mouse_wait_update = 1;
     self->shader_count = 0;
     self->shaders = NULL;
@@ -30,22 +30,15 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     self->framecount = 0;
     self->vsync_enabled = false;
 
-
     ASSERT(glfwInit(), "RENDERER: failed to init GLFW\n");
 
     #ifndef BADGL_NO_DEBUG
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  
     #endif
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // set to 1 if apple?
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-    /* Mac doesn't support OpenGL 4.3 anyway :/
-     * #ifdef __APPLE__
-     *    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-     * #endif
-     */
     
     GLFWwindow* win = glfwCreateWindow(width, height, win_title, NULL, NULL);
     self->win = win;
@@ -53,14 +46,23 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 
     glfwMakeContextCurrent(win);
     glfwSetCursorPos(win, width / 2, height / 2);
-
-    ASSERT(gladLoadGL((GLADloadfunc)glfwGetProcAddress), "RENDERER: failed to init GLAD\n");
-
     glfwSetWindowUserPointer(win, self);
     glfwSetKeyCallback(self->win, rd_key_callback);
     glfwSetFramebufferSizeCallback(win, rd_resize_callback);
     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+    ASSERT(gladLoadGL((GLADloadfunc)glfwGetProcAddress), "RENDERER: failed to init GLAD\n");
+
+    rd_configure_gl(self);
+
+    shader_init(&self->skybox_shader, "shaders/skybox.vert", "shaders/skybox.frag");
+    shader_init(&self->quad_shader, "shaders/quad.vert", "shaders/quad.frag");
+
+    rd_imgui_init(self, "#version 430 core");
+}
+
+void rd_configure_gl(Renderer* self)
+{
     #ifndef BADGL_NO_DEBUG
         int flags;
         glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
@@ -83,15 +85,10 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
         fprintf(stderr, "RENDERER: OpenGL vsync extension not enabled");
     }
 
-    glViewport(0, 0, width, height);
-
-    shader_init(&self->skybox_shader, "shaders/skybox.vert", "shaders/skybox.frag");
-    shader_init(&self->quad_shader, "shaders/quad.vert", "shaders/quad.frag");
-
-    rd_imgui_init(self, "#version 430 core");
+    glViewport(0, 0, self->width, self->height);
 
     glEnable(GL_BLEND); // enable transparent textures
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // which blending function for transparency
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     //glEnable(GL_FRAMEBUFFER_SRGB) // this makes everything look oversaturated and garbage
 
     glEnable(GL_DEPTH_TEST);
@@ -101,10 +98,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     glFrontFace(GL_CCW); // front face has counter-clockwise vertices
     glCullFace(GL_BACK);
 
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // black
-
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 // annoying fix, sometimes resize callback is delayed
@@ -168,8 +162,6 @@ void rd_begin_frame(Renderer* self)
     float curr_time = rd_get_time();
     self->delta_time = curr_time - self->last_time;
     self->last_time = curr_time; 
-    
-    //printf("FPS: %f\n", 1.0f / self->delta_time);
 }
 
 void rd_end_frame(Renderer* self)
@@ -219,7 +211,7 @@ void rd_free(Renderer* self)
     igDestroyContext(self->imgui_ctx);
 
     glfwDestroyWindow(self->win);
-    glfwTerminate(); // might remove if multiple renderers used
+    glfwTerminate();
 }
 
 void rd_resize_callback(GLFWwindow* win, int width, int height)
@@ -236,13 +228,13 @@ void rd_key_callback(GLFWwindow* win, int key, int scancode, int action, int mod
 
     if(key == GLFW_KEY_Q && action == GLFW_PRESS)
     {
-        glfwSetWindowShouldClose(win, 1); // true
+        glfwSetWindowShouldClose(win, true);
     }
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
         if(rd->cursor_disabled) // toggle between cursor locked vs usable
         {
-            glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
             rd->cursor_disabled = false;
             rd->mouse_wait_update = 2; // mouse updates should wait 2 frames to prevent flicking
@@ -250,19 +242,14 @@ void rd_key_callback(GLFWwindow* win, int key, int scancode, int action, int mod
         else
         {
             glfwFocusWindow(win);
-            glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
             rd->cursor_disabled = true;
-            rd->mouse_wait_update = 2;
         }
     }
-    if(key == GLFW_KEY_P && action == GLFW_PRESS)
+    if(key == GLFW_KEY_P)
     {
-        rd_set_wireframe(true);
-    }
-    if(key == GLFW_KEY_P && action == GLFW_RELEASE)
-    {
-        rd_set_wireframe(false);
+        rd_set_wireframe(action != GLFW_RELEASE);
     }
 }
 

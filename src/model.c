@@ -18,26 +18,26 @@ Model model_load(const char* path, uint32_t shader_index, Material* material)
 
     Model self;
 
+    self.material = *material; // use aiMat to set?
+    self.material.textures = NULL; // undefined behaviour if not set to NULL before realloc (uninit memory)
+    self.material.tex_count = 0;
+    self.material.flags = 0;
+    self.shader_index = shader_index;
+    transform_reset(&self.transform);
+    mat4_identity(&self.model);
+    find_directory_from_path(self.directory, path);
+
     const struct aiScene* scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
     ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "MODEL: loading %s failed\n%s\n", path, aiGetErrorString());
 
     self.mesh_count = 0;
     self.meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
 
-    self.material = *material; // use aiMat to set?
-    // not setting this to null before realloc creates undefined behaviour, if uninitialised memory is not 0
-    self.material.textures = NULL;
-    self.material.tex_count = 0;
-    self.material.flags = 0;
-
-    self.shader_index = shader_index;
-    transform_reset(&self.transform);
-    mat4_identity(&self.model);
-    find_directory_from_path(self.directory, path);
-
     model_process_node(&self, scene->mRootNode, scene);
 
     aiReleaseImport(scene);
+
+
 
     for(uint32_t i = 0; i < self.material.tex_count; i++)
     {
@@ -92,25 +92,6 @@ void model_draw(Model* self, Renderer* rd, Camera* cam)
     shader_use(shader);
     shader_uniform_mat4(shader, "mvp", &mvp, NULL, NULL);
     
-    // TEMP
-    float dist = 10.0f;
-    float time = 2.0f * rd_get_time();
-    Light light = {
-        .pos = {dist * cosf(time), 10.0f, dist * sinf(time)},
-        .ambient = (vec3){0.2f, 0.2f, 0.2f},
-        .diffuse = (vec3){0.5f, 0.5f, 0.5f},
-        .specular = (vec3){0.7f, 0.7f, 0.7f},
-        .attenuation = (vec3){0.007f, 0.014f, 1.0f}
-    };
-
-    const char* members[6] = { // TEMP
-        "ambient",
-        "diffuse",
-        "specular",
-        "shininess",
-        "pos",
-        "attenuation"
-    };
     MaterialFlags flags = self->material.flags;
     if(!(flags & NO_LIGHTING))
     {
@@ -118,27 +99,7 @@ void model_draw(Model* self, Renderer* rd, Camera* cam)
         shader_uniform_mat4(shader, "model", &self->model, NULL, NULL);
         shader_uniform_mat4(shader, "view", &cam->view, NULL, NULL);
 
-        // light should have function which does this
-        shader_uniform_vec3(shader, "light", &light.pos,
-                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[4]);
-        shader_uniform_vec3(shader, "light", &light.ambient,
-                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[0]);
-        shader_uniform_vec3(shader, "light", &light.diffuse,
-                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[1]);
-        shader_uniform_vec3(shader, "light", &light.specular,
-                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[2]);
-        shader_uniform_vec3(shader, "light", &light.attenuation,
-                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[5]);
-
-        // material should have function which does this
-        shader_uniform_vec3(shader, "material", &self->material.ambient,
-                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[0]);
-        shader_uniform_vec3(shader, "material", &self->material.diffuse,
-                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[1]);
-        shader_uniform_vec3(shader, "material", &self->material.specular,
-                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[2]);
-        shader_uniform_1f(shader, "material", self->material.shininess,
-                            (FindUniformFunc)shader_find_uniform_struct, (void*)members[3]);
+        material_set_uniforms(&self->material, shader);
     }
 
     for(uint32_t i = 0; i < self->mesh_count; i++)

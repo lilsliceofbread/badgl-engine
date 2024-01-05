@@ -3,13 +3,9 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+#include <stdbool.h>
 #include "glmath.h"
-
 #include "renderer.h"
-
-// forward declarations
-#undef bool
-#define bool _Bool
 
 typedef struct Camera
 {
