@@ -57,6 +57,7 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
 
     shader_init(&self->skybox_shader, "shaders/skybox.vert", "shaders/skybox.frag");
     shader_init(&self->quad_shader, "shaders/quad.vert", "shaders/quad.frag");
+    shader_init(&self->light_shader, "shaders/light.vert", "shaders/light.frag");
 
     rd_imgui_init(self, "#version 430 core");
 }
@@ -129,13 +130,13 @@ void rd_imgui_init(Renderer* self, const char* glsl_version)
     igStyleColorsDark(NULL);
 }
 
-uint32_t rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
+Shader* rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
 {
     self->shaders = (Shader*)realloc(self->shaders, (self->shader_count + 1) * sizeof(Shader));
     ASSERT(self->shaders != NULL, "RENDERER: failed to reallocate shader array\n");
     shader_init(&self->shaders[self->shader_count++], vert_src, frag_src);
 
-    return self->shader_count - 1; // returns index to shader in array
+    return &self->shaders[self->shader_count - 1];
 }
 
 void rd_set_wireframe(bool useWireframe)

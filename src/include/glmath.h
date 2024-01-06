@@ -8,6 +8,8 @@
 
 #define math_rad(deg) ((deg) * GL_DEG2RAD)
 
+#define VEC4TO3(vector) (vec3){vector.x, vector.y, vector.z}
+
 typedef union vec2
 {
     float data[2];

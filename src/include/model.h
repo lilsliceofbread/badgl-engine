@@ -21,7 +21,7 @@ typedef struct Model
 {
     Mesh* meshes;
     uint32_t mesh_count;
-    uint32_t shader_index; // index into renderer's shader array
+    Shader* shader; // pointer to renderer's shader
 
     char directory[MAX_PATH_LENGTH];
 
@@ -31,11 +31,11 @@ typedef struct Model
     Material material;
 } Model;
 
-Model model_load(const char* path, uint32_t shader_index, Material* material);
+Model model_load(const char* path, const Material* material, Shader* shader);
 
 void model_update_transform(Model* self, Transform* transform);
 
-void model_draw(Model* self, Renderer* rd, Camera* cam);
+void model_draw(Model* self, Camera* cam);
 
 void model_add_mesh(Model* self, Mesh mesh, uint32_t total_meshes);
 

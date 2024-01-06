@@ -12,17 +12,17 @@
 #include "renderer.h"
 #include "light.h"
 
-Model model_load(const char* path, uint32_t shader_index, Material* material)
+Model model_load(const char* path, const Material* material, Shader* shader)
 {
     float start_time = rd_get_time();
 
     Model self;
 
-    self.material = *material; // use aiMat to set?
+    if(material != NULL) self.material = *material; // use aiMat to set?
     self.material.textures = NULL; // undefined behaviour if not set to NULL before realloc (uninit memory)
     self.material.tex_count = 0;
     self.material.flags = 0;
-    self.shader_index = shader_index;
+    self.shader = shader;
     transform_reset(&self.transform);
     mat4_identity(&self.model);
     find_directory_from_path(self.directory, path);
@@ -81,30 +81,32 @@ void model_update_transform(Model* self, Transform* transform)
     mat4_trans(&self->model, self->transform.pos);
 }
 
-void model_draw(Model* self, Renderer* rd, Camera* cam)
+void model_draw(Model* self, Camera* cam)
 {
-    Shader* shader = &rd->shaders[self->shader_index];
-
     mat4 mvp, model_view;
     mat4_mul(&model_view, cam->view, self->model);
     mat4_mul(&mvp, cam->proj, model_view);
 
-    shader_use(shader);
-    shader_uniform_mat4(shader, "mvp", &mvp, NULL, NULL);
+    shader_use(self->shader);
+    shader_uniform_mat4(self->shader, "mvp", &mvp, NULL, NULL);
     
     MaterialFlags flags = self->material.flags;
-    if(!(flags & NO_LIGHTING))
+    if(!(flags & NO_LIGHTING) && !(flags & IS_LIGHT))
     {
-        shader_uniform_mat4(shader, "model_view", &model_view, NULL, NULL);
-        shader_uniform_mat4(shader, "model", &self->model, NULL, NULL);
-        shader_uniform_mat4(shader, "view", &cam->view, NULL, NULL);
+        shader_uniform_mat4(self->shader, "model_view", &model_view, NULL, NULL);
+        shader_uniform_mat4(self->shader, "model", &self->model, NULL, NULL);
+        shader_uniform_mat4(self->shader, "view", &cam->view, NULL, NULL);
 
-        material_set_uniforms(&self->material, shader);
+        material_set_uniforms(&self->material, self->shader);
+    }
+    if(flags & IS_LIGHT)
+    {
+        material_set_uniforms(&self->material, self->shader);
     }
 
     for(uint32_t i = 0; i < self->mesh_count; i++)
     {
-        mesh_draw(&self->meshes[i], shader, self->material.textures);
+        mesh_draw(&self->meshes[i], self->shader, self->material.textures);
     }
 }
 
@@ -300,6 +302,5 @@ void model_free(Model* self)
     {
         texture_free(&self->material.textures[i]);
     }
-
     free(self->material.textures);
 }

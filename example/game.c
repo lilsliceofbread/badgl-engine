@@ -32,15 +32,16 @@ void game_init(GameState* s)
 
     vec3 start_pos = {0.0f, 1.0f, 3.0f};
     vec2 start_euler = {0.0f, -90.0f}; // pitch then yaw
-    scene_init(&s->scenes[s->scene_count++], start_pos, start_euler,
+    scene_init(&s->scenes[s->scene_count++], start_pos, start_euler, NULL,
                &s->rd, "res/kurt/space.png", (SceneUpdateFunc)sphere_scene_update);
-    scene_init(&s->scenes[s->scene_count++], start_pos, start_euler,
+
+    scene_init(&s->scenes[s->scene_count++], start_pos, start_euler, NULL,
                &s->rd, "res/box/box.png", NULL);
 
     game_add_models(s);
     game_add_lights(s);
 
-    scene_switch(&s->scenes[s->current_scene]); // need to do this every time scene is changed
+    scene_update_lights(&s->scenes[s->current_scene]); // need to do this every time scene is changed
 
     loading_end(&s->rd);
 }
@@ -48,8 +49,8 @@ void game_init(GameState* s)
 void game_add_models(GameState* s)
 {
     // create shaders ourselves then pass index to structures so multiple use same shader
-    uint32_t model_shader = rd_add_shader(&s->rd, "shaders/model.vert", "shaders/model.frag");
-    uint32_t sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
+    Shader* model_shader = rd_add_shader(&s->rd, "shaders/model.vert", "shaders/model.frag");
+    Shader* sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
 
     /* scene 0 */
 
@@ -82,9 +83,9 @@ void game_add_models(GameState* s)
     model_tmp = rectangular_plane_gen(100.0f, 100.0f, 10, &material, model_shader);
     scene_add_model(&s->scenes[1], &model_tmp);
 
-    model_tmp = model_load("res/backpack/backpack.obj", model_shader, &material);
+    model_tmp = model_load("res/backpack/backpack.obj", &material, model_shader);
     scene_add_model(&s->scenes[1], &model_tmp);
-    transform.pos = (vec3){3.0f, 3.0f, 0.0f},
+    transform.pos = (vec3){3.0f, 3.0f, 0.0f};
     model_update_transform(&s->scenes[1].models[1], &transform);
 
     material = material_textureless(false,
@@ -93,58 +94,79 @@ void game_add_models(GameState* s)
                             (vec3){1.0f, 1.0f, 1.0f}, 32.0f);
     model_tmp = rectangular_prism_gen(1.5f, 2.0f, 3.0f, &material, model_shader);
     scene_add_model(&s->scenes[1], &model_tmp);
-    transform.pos = (vec3){-2.0f, 2.0f, 0.0f},
+    transform.pos = (vec3){-2.0f, 2.0f, 0.0f};
     model_update_transform(&s->scenes[1].models[2], &transform);
+
+    material = material_textureless(true,
+                            (vec3){0.8f, 0.1f, 0.2f},
+                            (vec3){0.8f, 0.1f, 0.2f},
+                            (vec3){1.0f, 1.0f, 1.0f}, 32.0f);
+    model_tmp = uv_sphere_gen(4.0f, 15, &material, sphere_shader);
+    scene_add_model(&s->scenes[1], &model_tmp);
+    transform.pos = (vec3){-8.0f, 5.0f, 3.0f};
+    model_update_transform(&s->scenes[1].models[3], &transform);
 }
 
 void game_add_lights(GameState* s)
 {
     /* scene 0 */
 
+    Shader* shader = &s->rd.light_shader;
+    Material material = {0}; // annoying that this temp material is needed
+    Model light_model = uv_sphere_gen(0.5f, 10, &material, shader); // don't need to worry about setting shader, scene will do that for us
     Light light = light_create((vec3){0.0f, 5.0f, 5.0f}, 
                                (vec3){0.2f, 0.2f, 0.2f},
                                (vec3){0.6f, 0.6f, 0.6f},
                                (vec3){0.8f, 0.8f, 0.8f},
                                (vec3){0.003f, 0.007f, 1.0f});
-    scene_add_light(&s->scenes[0], &light);
+    scene_add_light(&s->scenes[0], &s->rd, &light, &light_model);
 
     /* scene 1 */
 
+    light_model = uv_sphere_gen(0.5f, 10, &material, shader);
     light = light_create((vec3){10.0f, 5.0f, 5.0f},
                          (vec3){0.0f, 0.0f, 0.2f},
                          (vec3){0.0f, 0.0f, 0.6f},
                          (vec3){0.0f, 0.0f, 0.8f},
                          (vec3){0.007f, 0.014f, 1.0f});
-    scene_add_light(&s->scenes[1], &light);
+    scene_add_light(&s->scenes[1], &s->rd, &light, &light_model);
+
+    light_model = uv_sphere_gen(0.5f, 10, &material, shader);
     light = light_create((vec3){-5.0f, 5.0f, -5.0f},
                          (vec3){0.2f, 0.0f, 0.0f},
                          (vec3){0.5f, 0.0f, 0.0f},
                          (vec3){0.8f, 0.0f, 0.0f},
                          (vec3){0.007f, 0.014f, 1.0f});
-    scene_add_light(&s->scenes[1], &light);
+    scene_add_light(&s->scenes[1], &s->rd, &light, &light_model);
+
+    DirLight dir_light = dir_light_create((vec3){1.0f,-1.0f, 0.0f},
+                                          (vec3){0.2f, 0.2f, 0.2f},
+                                          (vec3){0.5f, 0.5f, 0.5f},
+                                          (vec3){0.8f, 0.8f, 0.8f});
+    scene_set_dir_light(&s->scenes[1], &dir_light);
 }
 
 void game_update(GameState* s)
 {
-    igBegin("Settings", NULL, 0);
-        igText("FPS: %f", 1.0f / s->rd.delta_time);
+    igBegin("settings", NULL, 0);
+        igText("fps: %f", 1.0f / s->rd.delta_time);
 
-        if(igButton("Toggle V-Sync",(struct ImVec2){0,0}))
+        if(igButton("toggle v-sync",(struct ImVec2){0,0}))
         {
             platform_toggle_vsync(!s->is_vsync_on);
             s->is_vsync_on = !s->is_vsync_on; 
         }
 
-        if(igButton("Next Scene",(struct ImVec2){0,0}))
+        if(igButton("next scene",(struct ImVec2){0,0}))
         {
             s->current_scene = (s->current_scene + 1) % s->scene_count;
-            scene_switch(&s->scenes[s->current_scene]);
+            scene_update_lights(&s->scenes[s->current_scene]);
         }
     igEnd();
 
     scene_update(&s->scenes[s->current_scene], &s->rd);
 
-    scene_draw(&s->scenes[s->current_scene], &s->rd);
+    scene_draw(&s->scenes[s->current_scene]);
 }
 
 void game_end(GameState* s)

@@ -13,7 +13,7 @@
 typedef struct Renderer 
 {
     Shader* shaders; // can have multiple shader programs
-    Shader skybox_shader, quad_shader; // required shaders; separate from other optional ones (loading and skybox required)
+    Shader skybox_shader, quad_shader, light_shader; // required shaders; separate from other optional ones
     uint32_t shader_count;
     int width, height;
     GLFWwindow* win;
@@ -42,7 +42,7 @@ void rd_swap_buffers(Renderer* self); // allow user to manually swap buffers
 
 void rd_imgui_init(Renderer* self, const char* glsl_version);
 
-uint32_t rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src); // returns index to shader in array
+Shader* rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src); // returns index to shader in array
 
 void rd_set_wireframe(bool useWireframe); // true for wireframe, false for filled polygons
 

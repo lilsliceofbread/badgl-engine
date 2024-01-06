@@ -18,6 +18,13 @@ struct Light {
     vec4 attenuation; // attenuation constants - quadratic, linear, constant
 };
 
+struct DirLight {
+    vec3 dir;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
 in VsOut {
     vec3 world_pos;
     vec3 pos;
@@ -30,6 +37,7 @@ layout(std140, binding = 0) uniform Lights
     Light light_buffer[MAX_LIGHTS];
     int light_count;
 };
+uniform DirLight dir_light;
 uniform Material material;
 uniform mat4 view;
 uniform samplerCube texture_diffuse;
@@ -39,6 +47,29 @@ uniform samplerCube texture_specular;
 
 float rand(vec2 co){
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+vec3 compute_dir_light(DirLight light, vec3 normal, vec3 frag_pos)
+{
+    vec3 view_light_dir = (mat3(view) * normalize(-light.dir));
+
+    /* ambient */
+
+    vec3 ambient = (material.ambient * texture(texture_diffuse, fs_in.tex_coord).xyz) * light.ambient.xyz;
+
+    /* diffuse */
+
+    float diffuse_strength = max(dot(normal, view_light_dir), 0.0);
+    vec3 diffuse = (diffuse_strength * material.diffuse * texture(texture_diffuse, fs_in.tex_coord).xyz) * light.diffuse.xyz;
+
+    /* specular */
+
+    vec3 view_dir = normalize(-frag_pos);
+    vec3 reflect_dir = reflect(-view_light_dir, normal);
+    float specular_strength = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
+    vec3 specular = (specular_strength * material.specular * texture(texture_specular, fs_in.tex_coord).xyz) * light.specular.xyz;
+
+    return (ambient + diffuse + specular);
 }
 
 vec3 compute_point_light(Light light, vec3 normal, vec3 frag_pos, vec3 world_pos)
@@ -76,7 +107,7 @@ void main()
 {
     vec3 normal = normalize(fs_in.normal);
     
-    vec3 result = vec3(0.0);
+    vec3 result = compute_dir_light(dir_light, normal, fs_in.pos);
     for(int i = 0; i < light_count; i++)
     {
         result += compute_point_light(light_buffer[i], normal, fs_in.pos, fs_in.world_pos);
