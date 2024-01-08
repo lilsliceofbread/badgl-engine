@@ -24,17 +24,17 @@ typedef struct Texture
 } Texture;
 
 // type must be set by user
-void texture_create(Texture* self, const char* img_path, bool use_mipmap);
+void texture_create(Texture* self, TextureType type, const char* img_path, bool use_mipmap);
 
 // create white 1x1 texture
-void texture_default_create(Texture* self);
+void texture_default_create(Texture* self, TextureType type);
 
-void texture_default_cubemap_create(Texture* self);
+void texture_default_cubemap_create(Texture* self, TextureType type);
 
 /* expects faces to have suffixes _px, _nx, etc for all sides
  * should all have the same extension and name
  * example file: res/img_px.png, res/img_nx.png - pass in ("res/img.png") */
-void texture_cubemap_create(Texture* self, const char* generic_path);
+void texture_cubemap_create(Texture* self, TextureType type, const char* generic_path);
 
 void texture_bind(Texture* self);
 

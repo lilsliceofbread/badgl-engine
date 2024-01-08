@@ -8,6 +8,7 @@
 
 #define MAX_UNIF_NAME 64
 #define MAX_UNIFORMS 16
+
 /* either takes arguments
    Shader* self, const char* name, void* arg
    Shader* self, const char* name (in this case pass NULL for void* arg) */
@@ -18,7 +19,6 @@ typedef struct Uniform {
     GLint location;
 } Uniform;
 
-// shader program
 typedef struct Shader
 {
     GLuint id;

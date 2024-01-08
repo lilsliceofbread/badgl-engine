@@ -34,14 +34,14 @@ Quad quad_init(vec2 pos, vec2 size, const char* texture_path)
 
     vao_unbind();
 
-    texture_create(&self.texture, texture_path, false);
+    if(texture_path != NULL) texture_create(&self.texture, TEXTURE_DIFFUSE, texture_path, false); // type not really necessary
 
     return self;
 }
 
 void quad_draw(Quad* self, Renderer* rd)
 {
-    shader_use(&rd->quad_shader);
+    shader_use(&rd->shaders[rd->quad_shader]);
 
     texture_bind(&self->texture);
 

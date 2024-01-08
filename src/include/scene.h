@@ -16,7 +16,6 @@ typedef void (*SceneUpdateFunc)();
 
 typedef enum SceneFlags {
     HAS_SKYBOX = 1 << 0,
-    HAS_DIR_LIGHT = 1 << 1
 } SceneFlags;
 
 typedef struct Scene {
@@ -27,7 +26,6 @@ typedef struct Scene {
     Model skybox;
 
     Light lights[MAX_LIGHTS];
-    //uint32_t light_model_indexes[MAX_LIGHTS]; // use the light's index to index into this to index into models array
     int32_t light_count;
     UBO light_ubo;
     DirLight dir_light;
@@ -47,12 +45,15 @@ void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model*
 
 void scene_set_dir_light(Scene* self, const DirLight* light);
 
-// this needs to be called when switching to a new scene or changing lights while rendering
-void scene_update_lights(Scene* self);
+// call this when changing lights
+void scene_update_lights(Scene* self, Renderer* rd);
+
+// this needs to be called when switching to a new scene
+void scene_switch(Scene* self, Renderer* rd);
 
 void scene_update(Scene* self, Renderer* rd);
 
-void scene_draw(Scene* self);
+void scene_draw(Scene* self, Renderer* rd);
 
 void scene_free(Scene* self);
 

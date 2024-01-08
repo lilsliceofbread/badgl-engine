@@ -22,19 +22,17 @@ Material material_textureless(bool is_cubemap_shader, vec3 ambient, vec3 diffuse
 
     mat.textures = (Texture*)malloc(2 * sizeof(Texture)); // diffuse and specular
     mat.tex_count = 2;
-    mat.textures[0].type = TEXTURE_DIFFUSE;
-    mat.textures[1].type = TEXTURE_SPECULAR;
 
     if(!is_cubemap_shader) // create default white texture
     {
 
-        texture_default_create(&mat.textures[0]);
-        texture_default_create(&mat.textures[1]);
+        texture_default_create(&mat.textures[0], TEXTURE_DIFFUSE);
+        texture_default_create(&mat.textures[1], TEXTURE_SPECULAR);
     }
     else
     {
-        texture_default_cubemap_create(&mat.textures[0]);
-        texture_default_cubemap_create(&mat.textures[1]);
+        texture_default_cubemap_create(&mat.textures[0], TEXTURE_DIFFUSE);
+        texture_default_cubemap_create(&mat.textures[1], TEXTURE_SPECULAR);
     }
 
     return mat;
@@ -54,18 +52,16 @@ Material material_texture_diffuse(bool is_cubemap, const char* texture_path, vec
 
     mat.textures = (Texture*)malloc(2 * sizeof(Texture));
     mat.tex_count = 2;
-    mat.textures[0].type = TEXTURE_DIFFUSE;
-    mat.textures[1].type = TEXTURE_SPECULAR;
 
     if(!is_cubemap)
     {
-        texture_create(&mat.textures[0], texture_path, false);
-        texture_default_create(&mat.textures[1]);
+        texture_create(&mat.textures[0], TEXTURE_DIFFUSE, texture_path, false);
+        texture_default_create(&mat.textures[1], TEXTURE_SPECULAR);
     }
     else
     {
-        texture_cubemap_create(&mat.textures[0], texture_path);
-        texture_default_cubemap_create(&mat.textures[1]);
+        texture_cubemap_create(&mat.textures[0], TEXTURE_DIFFUSE, texture_path);
+        texture_default_cubemap_create(&mat.textures[1], TEXTURE_SPECULAR);
     }
 
     return mat;

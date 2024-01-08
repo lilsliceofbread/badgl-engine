@@ -26,11 +26,7 @@ void scene_init(Scene* self, vec3 start_pos, vec2 euler, const DirLight* dir_lig
         self->flags |= HAS_SKYBOX;
     }
 
-    if(dir_light != NULL)
-    {
-        self->dir_light = *dir_light;
-        self->flags |= HAS_DIR_LIGHT;
-    }
+    if(dir_light != NULL) self->dir_light = *dir_light;
 
     ASSERT(sizeof(Light) == GLSL_LIGHT_SIZE, "SCENE: platform struct packing/padding does not match GLSL. wtf?\n");
 
@@ -38,7 +34,7 @@ void scene_init(Scene* self, vec3 start_pos, vec2 euler, const DirLight* dir_lig
 
     size_t light_ubo_size = MAX_LIGHTS * sizeof(Light) + GLSL_INT_SIZE;
     ubo_bind(self->light_ubo);
-    ubo_set_buffer(self->light_ubo, NULL, light_ubo_size, false); // configure buffer size
+    ubo_set_buffer(self->light_ubo, NULL, light_ubo_size, true); // configure buffer size
     ubo_unbind(self->light_ubo);
 }
 
@@ -65,7 +61,7 @@ void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model*
     if(model != NULL)
     {
         Model* curr_model = scene_add_model(self, model);
-        curr_model->shader = &rd->light_shader; // enforce shader as light shader
+        curr_model->shader_idx = rd->light_shader; // enforce shader as light shader
         
         curr_model->material.flags |= IS_LIGHT;                 // set material to match light
         curr_model->material.ambient = VEC4TO3(light->ambient); 
@@ -91,23 +87,20 @@ void scene_set_dir_light(Scene* self, const DirLight* light)
     if(light == NULL) return;
 
     self->dir_light = *light;
-    self->flags |= HAS_DIR_LIGHT;
 }
 
-void scene_update_lights(Scene* self)
+void scene_update_lights(Scene* self, Renderer* rd)
 {
     ubo_bind_buffer_range(self->light_ubo, 0, 0, MAX_LIGHTS * sizeof(Light) + GLSL_INT_SIZE); // hardcoded for now
 
-    if(!(self->flags & HAS_DIR_LIGHT)) return;
-
-    Shader* shaders[64]; // should be fine (hopefully)
+    uint32_t shaders[self->model_count]; // ensure enough space in worst case
     uint32_t shader_count = 0;
     for(uint32_t i = 0; i < self->model_count; i++)
     {
         const Model* curr_model = &self->models[i];
-        if(curr_model->material.flags & NO_LIGHTING || curr_model->material.flags & IS_LIGHT) continue;
+        if(curr_model->material.flags & (NO_LIGHTING | IS_LIGHT)) continue;
 
-        Shader* curr_shader = curr_model->shader;
+        uint32_t curr_shader = curr_model->shader_idx;
         for(uint32_t i = 0; i < shader_count; i++)
         {
             if(curr_shader == shaders[i]) continue;
@@ -118,11 +111,16 @@ void scene_update_lights(Scene* self)
 
     for(uint32_t i = 0; i < shader_count; i++)
     {
-        Shader* curr_shader = shaders[i];
+        Shader* curr_shader = &rd->shaders[shaders[i]];
 
         shader_use(curr_shader);
         dir_light_set_uniforms(&self->dir_light, curr_shader);
     }
+}
+
+void scene_switch(Scene* self, Renderer* rd)
+{
+    scene_update_lights(self, rd);
 }
 
 void scene_update(Scene* self, Renderer* rd)
@@ -132,14 +130,14 @@ void scene_update(Scene* self, Renderer* rd)
     camera_update(&self->cam, rd);
 }
 
-void scene_draw(Scene* self)
+void scene_draw(Scene* self, Renderer* rd)
 {
     for(uint32_t i = 0; i < self->model_count; i++)
     {
-        model_draw(&self->models[i], &self->cam);
+        model_draw(&self->models[i], rd, &self->cam);
     }
 
-    if(self->flags & HAS_SKYBOX) skybox_draw(&self->skybox, &self->cam); // drawn last after depth buffer filled
+    if(self->flags & HAS_SKYBOX) skybox_draw(&self->skybox, rd, &self->cam); // drawn last after depth buffer filled
 }
 
 void scene_free(Scene* self)

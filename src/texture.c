@@ -20,7 +20,7 @@
 #include "util.h"
 #include "renderer.h"
 
-void texture_create(Texture* self, const char* img_path, bool use_mipmap)
+void texture_create(Texture* self, TextureType type, const char* img_path, bool use_mipmap)
 {
     float start_time = rd_get_time();
 
@@ -55,13 +55,14 @@ void texture_create(Texture* self, const char* img_path, bool use_mipmap)
     self->id = texture_id;
     self->width = width;
     self->height = height;
+    self->type = type;
 
     strncpy(self->path, img_path, 128);
 
     printf("TEXTURE: loading texture %s took %fs\n", img_path, rd_get_time() - start_time);
 }
 
-void texture_default_create(Texture* self)
+void texture_default_create(Texture* self, TextureType type)
 {
     GLuint texture_id;
     glGenTextures(1, &texture_id);
@@ -79,10 +80,12 @@ void texture_default_create(Texture* self)
     self->id = texture_id;
     self->width = 1;
     self->height = 1;
+    self->type = type;
+
     memset(self->path, 0, MAX_PATH_LENGTH);
 }
 
-void texture_default_cubemap_create(Texture* self)
+void texture_default_cubemap_create(Texture* self, TextureType type)
 {
     GLuint texture_id;
     glGenTextures(1, &texture_id);
@@ -103,18 +106,18 @@ void texture_default_cubemap_create(Texture* self)
     self->id = texture_id;
     self->width = 1; 
     self->height = 1;
+    self->type = type;
     self->type |= TEXTURE_CUBEMAP;
+
     memset(self->path, 0, MAX_PATH_LENGTH);
 }
 
-void texture_cubemap_create(Texture* self, const char* generic_path)
+void texture_cubemap_create(Texture* self, TextureType type, const char* generic_path)
 {
     float start_time = rd_get_time();
 
     GLuint texture_id;
     glGenTextures(1, &texture_id);
-    self->id = texture_id;
-    self->type |= TEXTURE_CUBEMAP;
     const char* suffixes[6] = {
         "_px",
         "_nx",
@@ -163,8 +166,11 @@ void texture_cubemap_create(Texture* self, const char* generic_path)
         stbi_image_free(img_data);
     }
 
+    self->id = texture_id;
     self->width = width; // will be the size of 1 square
     self->height = height;
+    self->type = type;
+    self->type |= TEXTURE_CUBEMAP;
 
     strncpy(self->path, generic_path, 128);
 

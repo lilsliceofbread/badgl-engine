@@ -27,7 +27,8 @@ file(GLOB_RECURSE BADGL_SRCS CONFIGURE_DEPENDS
 if (MSVC)
     set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS "/W4")
 else()
-    set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS "-Wall -Wextra -Wconversion -pedantic -Wno-missing-braces")
+    set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS
+                                "-Wall -Wextra -Wconversion -pedantic -Wno-missing-braces")
 endif()
 
 # get git package if exists

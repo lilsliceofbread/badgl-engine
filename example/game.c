@@ -41,7 +41,7 @@ void game_init(GameState* s)
     game_add_models(s);
     game_add_lights(s);
 
-    scene_update_lights(&s->scenes[s->current_scene]); // need to do this every time scene is changed
+    scene_update_lights(&s->scenes[s->current_scene], &s->rd);
 
     loading_end(&s->rd);
 }
@@ -49,12 +49,12 @@ void game_init(GameState* s)
 void game_add_models(GameState* s)
 {
     // create shaders ourselves then pass index to structures so multiple use same shader
-    Shader* model_shader = rd_add_shader(&s->rd, "shaders/model.vert", "shaders/model.frag");
-    Shader* sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
+    uint32_t model_shader = rd_add_shader(&s->rd, "shaders/model.vert", "shaders/model.frag");
+    uint32_t sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
 
     /* scene 0 */
 
-    Material material; 
+    Material material = {0}; 
     Transform transform = {
         .pos   = (vec3){5.0f, 0.0f, -2.0f},
         .euler = (vec3){0.0f, 0.0f, 0.0f},
@@ -111,9 +111,8 @@ void game_add_lights(GameState* s)
 {
     /* scene 0 */
 
-    Shader* shader = &s->rd.light_shader;
     Material material = {0}; // annoying that this temp material is needed
-    Model light_model = uv_sphere_gen(0.5f, 10, &material, shader); // don't need to worry about setting shader, scene will do that for us
+    Model light_model = uv_sphere_gen(0.5f, 10, &material, 0); // don't need to worry about setting shader, scene will do that for us
     Light light = light_create((vec3){0.0f, 5.0f, 5.0f}, 
                                (vec3){0.2f, 0.2f, 0.2f},
                                (vec3){0.6f, 0.6f, 0.6f},
@@ -123,7 +122,7 @@ void game_add_lights(GameState* s)
 
     /* scene 1 */
 
-    light_model = uv_sphere_gen(0.5f, 10, &material, shader);
+    light_model = uv_sphere_gen(0.5f, 10, &material, 0);
     light = light_create((vec3){10.0f, 5.0f, 5.0f},
                          (vec3){0.0f, 0.0f, 0.2f},
                          (vec3){0.0f, 0.0f, 0.6f},
@@ -131,7 +130,7 @@ void game_add_lights(GameState* s)
                          (vec3){0.007f, 0.014f, 1.0f});
     scene_add_light(&s->scenes[1], &s->rd, &light, &light_model);
 
-    light_model = uv_sphere_gen(0.5f, 10, &material, shader);
+    light_model = uv_sphere_gen(0.5f, 10, &material, 0);
     light = light_create((vec3){-5.0f, 5.0f, -5.0f},
                          (vec3){0.2f, 0.0f, 0.0f},
                          (vec3){0.5f, 0.0f, 0.0f},
@@ -160,13 +159,13 @@ void game_update(GameState* s)
         if(igButton("next scene",(struct ImVec2){0,0}))
         {
             s->current_scene = (s->current_scene + 1) % s->scene_count;
-            scene_update_lights(&s->scenes[s->current_scene]);
+            scene_switch(&s->scenes[s->current_scene], &s->rd);
         }
     igEnd();
 
     scene_update(&s->scenes[s->current_scene], &s->rd);
 
-    scene_draw(&s->scenes[s->current_scene]);
+    scene_draw(&s->scenes[s->current_scene], &s->rd);
 }
 
 void game_end(GameState* s)
@@ -184,7 +183,7 @@ void loading_begin(Renderer* rd)
 
     rd_update_viewport(rd); // glfw framebuffer size may not have updated yet so update renderer width/height
 
-    int size = (rd->width >= rd->height) ? rd->height >> 1: rd->width >> 1;
+    int size = (rd->width >= rd->height) ? rd->height >> 1 : rd->width >> 1;
     rd_set_viewport((rd->width >> 1) - (size >> 1), (rd->height >> 1) - (size >> 1), size, size); // place loading in middle of screen
 
     quad_draw(&loading_screen, rd);

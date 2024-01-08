@@ -1,5 +1,6 @@
 #include "bo.h"
 #include <stdbool.h>
+#include <stdio.h>
 
 BO bo_create(GLenum type)
 {

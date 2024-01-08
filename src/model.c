@@ -12,7 +12,7 @@
 #include "renderer.h"
 #include "light.h"
 
-Model model_load(const char* path, const Material* material, Shader* shader)
+Model model_load(const char* path, const Material* material, uint32_t shader_idx)
 {
     float start_time = rd_get_time();
 
@@ -22,7 +22,7 @@ Model model_load(const char* path, const Material* material, Shader* shader)
     self.material.textures = NULL; // undefined behaviour if not set to NULL before realloc (uninit memory)
     self.material.tex_count = 0;
     self.material.flags = 0;
-    self.shader = shader;
+    self.shader_idx = shader_idx;
     transform_reset(&self.transform);
     mat4_identity(&self.model);
     find_directory_from_path(self.directory, path);
@@ -81,32 +81,32 @@ void model_update_transform(Model* self, Transform* transform)
     mat4_trans(&self->model, self->transform.pos);
 }
 
-void model_draw(Model* self, Camera* cam)
+void model_draw(Model* self, Renderer* rd, Camera* cam)
 {
+    Shader* shader = &rd->shaders[self->shader_idx];
+
     mat4 mvp, model_view;
     mat4_mul(&model_view, cam->view, self->model);
     mat4_mul(&mvp, cam->proj, model_view);
 
-    shader_use(self->shader);
-    shader_uniform_mat4(self->shader, "mvp", &mvp, NULL, NULL);
+    shader_use(shader);
+    shader_uniform_mat4(shader, "mvp", &mvp, NULL, NULL);
     
     MaterialFlags flags = self->material.flags;
-    if(!(flags & NO_LIGHTING) && !(flags & IS_LIGHT))
+    if(!(flags & NO_LIGHTING))
     {
-        shader_uniform_mat4(self->shader, "model_view", &model_view, NULL, NULL);
-        shader_uniform_mat4(self->shader, "model", &self->model, NULL, NULL);
-        shader_uniform_mat4(self->shader, "view", &cam->view, NULL, NULL);
-
-        material_set_uniforms(&self->material, self->shader);
+        material_set_uniforms(&self->material, shader);
     }
-    if(flags & IS_LIGHT)
+    if(!(flags & (NO_LIGHTING | IS_LIGHT)))
     {
-        material_set_uniforms(&self->material, self->shader);
+        shader_uniform_mat4(shader, "model_view", &model_view, NULL, NULL);
+        shader_uniform_mat4(shader, "model", &self->model, NULL, NULL);
+        shader_uniform_mat4(shader, "view", &cam->view, NULL, NULL);
     }
 
     for(uint32_t i = 0; i < self->mesh_count; i++)
     {
-        mesh_draw(&self->meshes[i], self->shader, self->material.textures);
+        mesh_draw(&self->meshes[i], shader, self->material.textures);
     }
 }
 
@@ -218,8 +218,6 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     uint32_t* spec_indexes = model_load_textures(self, mat, aiTextureType_SPECULAR, TEXTURE_SPECULAR, &specular_count);
 
     total_textures = diffuse_count + specular_count;
-
-
     if(total_textures) // if no textures, don't allocate/memcpy/free
     {
         tex_indices = (uint32_t*)calloc(total_textures, sizeof(uint32_t));
@@ -272,9 +270,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
 
             // create new texture
             Texture texture;
-            texture_create(&texture, img_path, true);
-            texture.type = 0;
-            texture.type |= type;
+            texture_create(&texture, type, img_path, true);
 
             // set next texture in array to current texture
             self->material.textures[self->material.tex_count + i] = texture; // first iter is tex_count + 0

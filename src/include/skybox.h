@@ -9,7 +9,7 @@
 
 Model skybox_init(Renderer* rd, const char* cubemap_path);
 
-void skybox_draw(Model* self, Camera* cam);
+void skybox_draw(Model* self, Renderer* rd, Camera* cam);
 
 void skybox_free(Model* self);
 

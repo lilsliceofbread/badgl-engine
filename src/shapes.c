@@ -4,13 +4,13 @@
 #include <stdlib.h>
 #include "util.h"
 
-extern inline uint32_t* shape_setup(Model* model, const Material* material, Shader* shader);
+extern inline uint32_t* shape_setup(Model* model, const Material* material, uint32_t shader_idx);
 
-Model uv_sphere_gen(float radius, uint32_t res, const Material* material, Shader* shader)
+Model uv_sphere_gen(float radius, uint32_t res, const Material* material, uint32_t shader_idx)
 {
     Model self;
 
-    uint32_t* tex_indices = shape_setup(&self, material, shader);
+    uint32_t* tex_indices = shape_setup(&self, material, shader_idx);
 
     uint32_t vert_count = 0, ind_count = 0;
 
@@ -138,11 +138,11 @@ Model uv_sphere_gen(float radius, uint32_t res, const Material* material, Shader
     return self;
 }
 
-Model rectangular_prism_gen(float width, float height, float depth, const Material* material, Shader* shader)
+Model rectangular_prism_gen(float width, float height, float depth, const Material* material, uint32_t shader_idx)
 {
     Model self;
 
-    uint32_t* tex_indices = shape_setup(&self, material, shader);
+    uint32_t* tex_indices = shape_setup(&self, material, shader_idx);
     
     const size_t vert_size = 24 * sizeof(vec3);
     const size_t ind_size = 6 * 6 * sizeof(uint32_t);
@@ -262,11 +262,11 @@ Model rectangular_prism_gen(float width, float height, float depth, const Materi
     return self;
 }
 
-Model rectangular_plane_gen(float width, float height, uint32_t res, const Material* material, Shader* shader)
+Model rectangular_plane_gen(float width, float height, uint32_t res, const Material* material, uint32_t shader_idx)
 {
     Model self;
 
-    uint32_t* tex_indices = shape_setup(&self, material, shader);
+    uint32_t* tex_indices = shape_setup(&self, material, shader_idx);
 
     const size_t vert_size = res * res * sizeof(vec3);
     const size_t ind_size = 6 * (res - 1) * (res - 1) * sizeof(uint32_t);
@@ -332,11 +332,11 @@ Model rectangular_plane_gen(float width, float height, uint32_t res, const Mater
     return self;
 }
 
-inline uint32_t* shape_setup(Model* model, const Material* material, Shader* shader)
+inline uint32_t* shape_setup(Model* model, const Material* material, uint32_t shader_idx)
 {
     model->meshes = (Mesh*)malloc(sizeof(Mesh));
     model->mesh_count = 1;
-    model->shader = shader;
+    model->shader_idx = shader_idx;
     model->material = *material;
 
     transform_reset(&model->transform);
@@ -345,8 +345,7 @@ inline uint32_t* shape_setup(Model* model, const Material* material, Shader* sha
 
     // allow for variable amount of textures
     // these will always be contiguous for shapes so can use loop
-    uint32_t* tex_indices = material->tex_count == 0 ? NULL : 
-                            (uint32_t*)malloc(material->tex_count * sizeof(uint32_t));
+    uint32_t* tex_indices = (uint32_t*)malloc(material->tex_count * sizeof(uint32_t));
     for(uint32_t i = 0; i < material->tex_count; i++)
     {
         tex_indices[i] = i;

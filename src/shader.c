@@ -9,11 +9,13 @@
 
 void shader_init(Shader* self, const char* vert_shader_src, const char* frag_shader_src)
 {
-    self->uniform_count = 0;
     GLuint vert_shader, frag_shader, shader_program;
     int success;
-    char info_log[512];
-    info_log[0] = '\0'; // if shader creation failed but no info log
+    char info_log[512] = {0};
+
+    self->uniform_count = 0;
+
+    memset(self->stored_uniforms, 0, sizeof(self->stored_uniforms));
 
     vert_shader = shader_compile(self, vert_shader_src, GL_VERTEX_SHADER, info_log, sizeof(info_log), &success);
     ASSERT(success, "SHADER: vertex shader comp failed. Info Log:\n%s\n", info_log);
@@ -100,7 +102,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
                 name_idx = 0; // don't need to memset name since it will be null terminated later
                 continue;
             }
-            else if(c == '[' || c == '\n' || c == '{') // ignore ubos or uniform arrays (hopefully)
+            else if(c == '[' || c == '{') // ignore ubos or uniform arrays (hopefully)
             {
                 skip_uniform = true;
                 break;
@@ -120,10 +122,15 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 
     ASSERT(self->uniform_count + add_uniform_count <= MAX_UNIFORMS, "SHADER: too many uniforms for 1 shader object\n");
 
-    memcpy(&self->stored_uniforms[self->uniform_count], new_uniforms, add_uniform_count * sizeof(Uniform));
+    //memcpy(&self->stored_uniforms[self->uniform_count], new_uniforms, add_uniform_count * sizeof(Uniform));
+    for(uint32_t i = 0; i < add_uniform_count; i++)
+    {
+        strncpy(self->stored_uniforms[self->uniform_count + i].name, new_uniforms[i].name, MAX_UNIF_NAME);
+    }
 
     self->uniform_count += add_uniform_count;
 }
+
 
 void shader_use(Shader* self)
 {
@@ -140,10 +147,9 @@ int shader_find_uniform(Shader* self, const char* name, FindUniformFunc func, vo
         return func(self, name); // if arg is null then the function does not take an extra argument
     }
 
-    Uniform curr;
     for(uint32_t i = 0; i < self->uniform_count; i++)
     {
-        curr = self->stored_uniforms[i];
+        Uniform curr = self->stored_uniforms[i];
         if(strcmp(name, curr.name) == 0) return curr.location;
     }
 
@@ -208,5 +214,4 @@ void shader_uniform_1i(Shader* self, const char* name, int i, FindUniformFunc fu
 void shader_free(Shader* self)
 {
     glDeleteProgram(self->id);
-    self->uniform_count = 0;
 }
