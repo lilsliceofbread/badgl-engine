@@ -39,4 +39,17 @@ void platform_toggle_vsync(bool on)
     wglSwapIntervalEXT((int)on);
 }
 
+double platform_get_time(void)
+{
+    LARGE_INTEGER os_time;
+    LARGE_INTEGER os_freq;
+
+    QueryPerformanceFrequency(&os_freq);
+    QueryPerformanceCounter(&os_time);
+
+    double time = (double)os_time.QuadPart / (double)os_freq.QuadPart;
+    return time;
+}
+
+
 #endif

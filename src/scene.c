@@ -1,4 +1,5 @@
 #include "scene.h"
+#include "util.h"
 
 #define DEFAULT_FOV 90.0f
 #define DEFAULT_ZNEAR 0.01f
@@ -38,14 +39,26 @@ void scene_init(Scene* self, vec3 start_pos, vec2 euler, const DirLight* dir_lig
     ubo_unbind(self->light_ubo);
 }
 
-// add string associated with models instead of using indexes?
-Model* scene_add_model(Scene* self, const Model* model)
+void scene_reallocate_models(Scene* self, uint32_t new_count)
 {
-    self->models = (Model*)realloc(self->models, (self->model_count + 1) * sizeof(Model));
-    ASSERT(self->models != NULL, "SCENE: failed to reallocate model array");
+    uint32_t model_array_size = ALIGNED_SIZE(self->model_count, MODEL_ALLOC_SIZE);
+    if(new_count > model_array_size)
+    {
+        uint32_t new_array_size = ALIGNED_SIZE(new_count, MODEL_ALLOC_SIZE);
+
+        self->models = (Model*)realloc(self->models, new_array_size * sizeof(Model));
+        ASSERT(self->models != NULL, "SCENE: models reallocation failed");
+        BADGL_LOG("SCENE: models array resize from %u to %u\n", model_array_size, new_array_size);
+    }
+}
+
+// add string associated with models instead of using indexes?
+uint32_t scene_add_model(Scene* self, const Model* model)
+{
+    scene_reallocate_models(self, self->model_count + 1);
     self->models[self->model_count++] = *model;
 
-    return &self->models[self->model_count - 1];
+    return self->model_count - 1;
 }
 
 void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model* model)
@@ -53,25 +66,27 @@ void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model*
     if(light == NULL) return;
     if(self->light_count + 1 > MAX_LIGHTS)
     {
-        printf("SCENE: cannot add light; max lights reached\n");
+        BADGL_LOG("SCENE: cannot add light; max lights reached\n");
         return;
     }
 
     self->lights[self->light_count++] = *light;
     if(model != NULL)
     {
-        Model* curr_model = scene_add_model(self, model);
+        uint32_t model_idx = scene_add_model(self, model);
+        Model* curr_model = &self->models[model_idx];
+
         curr_model->shader_idx = rd->light_shader; // enforce shader as light shader
-        
-        curr_model->material.flags |= IS_LIGHT;                 // set material to match light
-        curr_model->material.ambient = VEC4TO3(light->ambient); 
-        curr_model->material.diffuse = VEC4TO3(light->diffuse); 
-        curr_model->material.specular = VEC4TO3(light->specular); 
+
+        curr_model->material.flags |= IS_LIGHT;
+        curr_model->material.ambient = VEC4TOVEC3(light->ambient); 
+        curr_model->material.diffuse = VEC4TOVEC3(light->diffuse); 
+        curr_model->material.specular = VEC4TOVEC3(light->specular); 
 
         Transform transform = {
-            .pos = VEC4TO3(light->pos),
-            .euler = (vec3){0.0f, 0.0f, 0.0f},
-            .scale = (vec3){1.0f, 1.0f, 1.0f}
+            .pos = VEC4TOVEC3(light->pos),
+            .euler = VEC3(0.0f, 0.0f, 0.0f),
+            .scale = VEC3(1.0f, 1.0f, 1.0f)
         };
         model_update_transform(curr_model, &transform);
     }
@@ -93,7 +108,7 @@ void scene_update_lights(Scene* self, Renderer* rd)
 {
     ubo_bind_buffer_range(self->light_ubo, 0, 0, MAX_LIGHTS * sizeof(Light) + GLSL_INT_SIZE); // hardcoded for now
 
-    uint32_t shaders[self->model_count]; // ensure enough space in worst case
+    uint32_t* shaders = malloc(self->model_count * sizeof(uint32_t)); // ensure enough space in worst case
     uint32_t shader_count = 0;
     for(uint32_t i = 0; i < self->model_count; i++)
     {
@@ -116,6 +131,8 @@ void scene_update_lights(Scene* self, Renderer* rd)
         shader_use(curr_shader);
         dir_light_set_uniforms(&self->dir_light, curr_shader);
     }
+
+    free(shaders);
 }
 
 void scene_switch(Scene* self, Renderer* rd)

@@ -2,11 +2,11 @@
 
 #include <stdlib.h>
 
-static const char* material_members[4] = {
-    "ambient",
-    "diffuse",
-    "specular",
-    "shininess"
+static const char* material_members[] = {
+    "material.ambient",
+    "material.diffuse",
+    "material.specular",
+    "material.shininess"
 };
 
 Material material_textureless(bool is_cubemap_shader, vec3 ambient, vec3 diffuse, vec3 specular, float shininess)
@@ -43,8 +43,8 @@ Material material_texture_diffuse(bool is_cubemap, const char* texture_path, vec
 {
     Material mat;
 
-    mat.ambient = (vec3){1.0f, 1.0f, 1.0f};
-    mat.diffuse = (vec3){1.0f, 1.0f, 1.0f};
+    mat.ambient = VEC3(1.0f, 1.0f, 1.0f);
+    mat.diffuse = VEC3(1.0f, 1.0f, 1.0f);
     mat.specular = specular;
     mat.shininess = shininess;
 
@@ -69,12 +69,8 @@ Material material_texture_diffuse(bool is_cubemap, const char* texture_path, vec
 
 void material_set_uniforms(Material* mat, Shader* shader)
 {
-    shader_uniform_vec3(shader, "material", &mat->ambient,
-                        (FindUniformFunc)shader_find_uniform_struct, (void*)material_members[0]);
-    shader_uniform_vec3(shader, "material", &mat->diffuse,
-                        (FindUniformFunc)shader_find_uniform_struct, (void*)material_members[1]);
-    shader_uniform_vec3(shader, "material", &mat->specular,
-                        (FindUniformFunc)shader_find_uniform_struct, (void*)material_members[2]);
-    shader_uniform_1f(shader, "material", mat->shininess,
-                        (FindUniformFunc)shader_find_uniform_struct, (void*)material_members[3]);
+    shader_uniform_vec3(shader, material_members[0], &mat->ambient);
+    shader_uniform_vec3(shader, material_members[1], &mat->diffuse);
+    shader_uniform_vec3(shader, material_members[2], &mat->specular);
+    shader_uniform_1f(shader, material_members[3], mat->shininess);
 }

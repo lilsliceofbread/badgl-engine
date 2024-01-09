@@ -83,7 +83,7 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
         texture_unit_active(i); // activate next tex unit
 
         // tell sampler which unit is associated with it
-        shader_uniform_1i(shader, texture_type_get_str(curr_tex.type), (int)i, NULL, NULL);
+        shader_uniform_1i(shader, texture_type_get_str(curr_tex.type), (int)i);
 
         texture_bind(&curr_tex); // associate texture with current bound unit
     }
@@ -105,5 +105,4 @@ void mesh_free(Mesh* self)
     vao_free(self->vao);
     vbo_free(self->vbo);
     ebo_free(self->ebo);
-    //printf("MESH: vertices: %d indices %d\n", self->vert_count, self->ind_count);
 }

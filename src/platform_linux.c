@@ -2,9 +2,13 @@
 
 #ifdef __linux__
 
+#include <unistd.h>
+#include <sys/time.h>
+#include <time.h>
 #include <GL/glx.h>
 #include <GL/glxext.h>
 #include <string.h>
+#include <stdio.h>
 
 static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
 // the GLX_EXT_swap_control extension does not have
@@ -37,6 +41,20 @@ void platform_toggle_vsync(bool on)
     GLXDrawable drawable = glXGetCurrentDrawable();
 
     glXSwapIntervalEXT(display, drawable, (int)on);
+}
+
+double platform_get_time(void)
+{
+    struct timespec os_time;
+
+    #ifdef _POSIX_MONOTONIC_CLOCK
+        clock_gettime(CLOCK_MONOTONIC, &os_time);
+    #else
+        clock_gettime(CLOCK_REALTIME, &os_time);
+    #endif
+
+    double time = (double)os_time.tv_sec + (double)(0.000000001 * (double)os_time.tv_nsec);
+    return time;
 }
 
 #endif

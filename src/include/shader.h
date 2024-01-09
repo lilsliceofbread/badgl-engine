@@ -6,23 +6,22 @@
 #include "glmath.h"
 #include <inttypes.h>
 
-#define MAX_UNIF_NAME 64
-#define MAX_UNIFORMS 16
+#define MAX_UNIFORM_NAME 64
+#define UNIFORM_ALLOC_SIZE 8 
 
 /* either takes arguments
    Shader* self, const char* name, void* arg
    Shader* self, const char* name (in this case pass NULL for void* arg) */
-typedef int(*FindUniformFunc)(); 
 
 typedef struct Uniform {
-    char name[MAX_UNIF_NAME]; // if you make a uniform name longer than 64 characters i don't like you
-    GLint location;
+    char name[MAX_UNIFORM_NAME]; // if you make a uniform name longer than 64 characters i don't like you
+    int location;
 } Uniform;
 
 typedef struct Shader
 {
-    GLuint id;
-    Uniform stored_uniforms[MAX_UNIFORMS];
+    uint32_t id;
+    Uniform* uniforms;
     uint32_t uniform_count; // found during shader comp
 } Shader;
 
@@ -32,21 +31,18 @@ uint32_t shader_compile(Shader* self, const char* shader_filepath, GLenum shader
 
 void shader_find_uniforms_in_source(Shader* self, const char* src_code); // UNIFORMS ARE REPEATED IF IN VERT + FRAG SHADER
 
+// if new_count does not fit in uniforms array reallocate
+void shader_reallocate_uniforms(Shader* self, uint32_t new_count);
+
 void shader_use(Shader* self);
 
-int shader_find_uniform(Shader* self, const char* name, FindUniformFunc func, void* arg);
+int shader_find_uniform(Shader* self, const char* name);
 
-// arg should be a uint32_t that is the index within the array
-int shader_find_uniform_array(Shader* self, const char* name, void* arg);
-
-// arg should be a const char* that is the member of the struct
-int shader_find_uniform_struct(Shader* self, const char* name, void* arg);
-
-void shader_uniform_mat4(Shader* self, const char* name, mat4* mat, FindUniformFunc func, void* arg);
-void shader_uniform_vec4(Shader* self, const char* name, vec4* vec, FindUniformFunc func, void* arg);
-void shader_uniform_vec3(Shader* self, const char* name, vec3* vec, FindUniformFunc func, void* arg);
-void shader_uniform_1f(Shader* self, const char* name, float f, FindUniformFunc func, void* arg);
-void shader_uniform_1i(Shader* self, const char* name, int i, FindUniformFunc func, void* arg);
+void shader_uniform_mat4(Shader* self, const char* name, mat4* mat);
+void shader_uniform_vec4(Shader* self, const char* name, vec4* vec);
+void shader_uniform_vec3(Shader* self, const char* name, vec3* vec);
+void shader_uniform_1f(Shader* self, const char* name, float f);
+void shader_uniform_1i(Shader* self, const char* name, int i);
 
 void shader_free(Shader* self);
 

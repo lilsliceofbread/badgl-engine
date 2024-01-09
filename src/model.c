@@ -14,7 +14,7 @@
 
 Model model_load(const char* path, const Material* material, uint32_t shader_idx)
 {
-    float start_time = rd_get_time();
+    PERF_TIMER_START();
 
     Model self;
 
@@ -47,14 +47,14 @@ Model model_load(const char* path, const Material* material, uint32_t shader_idx
         {
             self.material.flags |= HAS_DIFFUSE_TEXTURE;
 
-            self.material.ambient = (vec3){1.0f, 1.0f, 1.0f};
-            self.material.diffuse = (vec3){1.0f, 1.0f, 1.0f};
+            self.material.ambient = VEC3(1.0f, 1.0f, 1.0f);
+            self.material.diffuse = VEC3(1.0f, 1.0f, 1.0f);
         }
         else if(curr_tex.type & TEXTURE_SPECULAR)
         {
             self.material.flags |= HAS_SPECULAR_TEXTURE;
 
-            self.material.specular = (vec3){1.0f, 1.0f, 1.0f};
+            self.material.specular = VEC3(1.0f, 1.0f, 1.0f);
         }
         else if(curr_tex.type & TEXTURE_NORMAL)
         {
@@ -62,7 +62,7 @@ Model model_load(const char* path, const Material* material, uint32_t shader_idx
         }
     }
 
-    printf("MODEL: loading %s took %fs\n", path, rd_get_time() - start_time);
+    PERF_TIMER_END("MODEL: loading model");
 
     return self;
 }
@@ -83,14 +83,14 @@ void model_update_transform(Model* self, Transform* transform)
 
 void model_draw(Model* self, Renderer* rd, Camera* cam)
 {
-    Shader* shader = &rd->shaders[self->shader_idx];
+    Shader* shader = rd_get_shader(rd, self->shader_idx);
 
     mat4 mvp, model_view;
     mat4_mul(&model_view, cam->view, self->model);
     mat4_mul(&mvp, cam->proj, model_view);
 
     shader_use(shader);
-    shader_uniform_mat4(shader, "mvp", &mvp, NULL, NULL);
+    shader_uniform_mat4(shader, "mvp", &mvp);
     
     MaterialFlags flags = self->material.flags;
     if(!(flags & NO_LIGHTING))
@@ -99,9 +99,9 @@ void model_draw(Model* self, Renderer* rd, Camera* cam)
     }
     if(!(flags & (NO_LIGHTING | IS_LIGHT)))
     {
-        shader_uniform_mat4(shader, "model_view", &model_view, NULL, NULL);
-        shader_uniform_mat4(shader, "model", &self->model, NULL, NULL);
-        shader_uniform_mat4(shader, "view", &cam->view, NULL, NULL);
+        shader_uniform_mat4(shader, "model_view", &model_view);
+        shader_uniform_mat4(shader, "model", &self->model);
+        shader_uniform_mat4(shader, "view", &cam->view);
     }
 
     for(uint32_t i = 0; i < self->mesh_count; i++)

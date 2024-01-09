@@ -54,7 +54,7 @@ void camera_update_proj(Camera* self, float fov, float aspect_ratio, float znear
 // MOVE TO PLAYER LATER, w/ vel, accel, player_pos
 void camera_update(Camera* self, Renderer* rd)
 {
-    float cam_step = CAM_SPEED * rd->delta_time;
+    float cam_step = CAM_SPEED * (float)rd->delta_time;
 
     vec3 step_vec;
 

@@ -24,6 +24,10 @@ file(GLOB_RECURSE BADGL_SRCS CONFIGURE_DEPENDS
      "src/*.c"
      external/glad/src/gl.c)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_definitions( -DBADGL_NO_DEBUG )
+endif()
+
 if (MSVC)
     set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS "/W4")
 else()

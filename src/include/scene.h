@@ -13,6 +13,7 @@
 typedef void (*SceneUpdateFunc)();
 
 #define MAX_LIGHTS 32
+#define MODEL_ALLOC_SIZE 4
 
 typedef enum SceneFlags {
     HAS_SKYBOX = 1 << 0,
@@ -39,7 +40,9 @@ typedef struct Scene {
 void scene_init(Scene* self, vec3 start_pos, vec2 euler, const DirLight* dir_light,
                 Renderer* rd, const char* skybox_cubemap_path, SceneUpdateFunc func);
 
-Model* scene_add_model(Scene* self, const Model* model);
+void scene_reallocate_models(Scene* self, uint32_t new_count);
+
+uint32_t scene_add_model(Scene* self, const Model* model);
 
 void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model* model);
 

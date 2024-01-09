@@ -22,7 +22,7 @@
 
 void texture_create(Texture* self, TextureType type, const char* img_path, bool use_mipmap)
 {
-    float start_time = rd_get_time();
+    PERF_TIMER_START();
 
     GLuint texture_id;
     glGenTextures(1, &texture_id);
@@ -59,7 +59,7 @@ void texture_create(Texture* self, TextureType type, const char* img_path, bool 
 
     strncpy(self->path, img_path, 128);
 
-    printf("TEXTURE: loading texture %s took %fs\n", img_path, rd_get_time() - start_time);
+    PERF_TIMER_END("TEXTURE: loading texture");
 }
 
 void texture_default_create(Texture* self, TextureType type)
@@ -114,7 +114,7 @@ void texture_default_cubemap_create(Texture* self, TextureType type)
 
 void texture_cubemap_create(Texture* self, TextureType type, const char* generic_path)
 {
-    float start_time = rd_get_time();
+    PERF_TIMER_START();
 
     GLuint texture_id;
     glGenTextures(1, &texture_id);
@@ -174,7 +174,7 @@ void texture_cubemap_create(Texture* self, TextureType type, const char* generic
 
     strncpy(self->path, generic_path, 128);
 
-    printf("TEXTURE: loading cubemap %s took %fs\n", generic_path, rd_get_time() - start_time);
+    PERF_TIMER_END("TEXTURE: loading cubemap");
 }
 
 void texture_bind(Texture* self)
@@ -200,4 +200,5 @@ const char* texture_type_get_str(TextureType type)
     if(type & TEXTURE_SPECULAR) return "texture_specular";
     if(type & TEXTURE_NORMAL) return "texture_normal";
     ASSERT(false, "TEXTURE: invalid texture type %d\n", (int)type);
+    return NULL;
 }

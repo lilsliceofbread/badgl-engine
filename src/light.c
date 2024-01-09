@@ -1,20 +1,20 @@
 #include "light.h"
 
 static const char* dir_members[] = {
-    "dir",
-    "ambient",
-    "diffuse",
-    "specular"
+    "dir_light.dir",
+    "dir_light.ambient",
+    "dir_light.diffuse",
+    "dir_light.specular"
 };
 
 Light light_create(vec3 pos, vec3 ambient, vec3 diffuse, vec3 specular, vec3 attenuation)
 {
     Light light = { // need to be vec4 to align with GPU
-        .pos = {pos.x, pos.y, pos.z, 1.0f},
-        .ambient = {ambient.x, ambient.y, ambient.z, 1.0f},
-        .diffuse = {diffuse.x, diffuse.y, diffuse.z, 1.0f},
-        .specular = {specular.x, specular.y, specular.z, 1.0f},
-        .attenuation = {attenuation.x, attenuation.y, attenuation.z, 1.0f}
+        .pos = VEC3TOVEC4(pos, 1.0f),
+        .ambient = VEC3TOVEC4(ambient, 1.0f),
+        .diffuse = VEC3TOVEC4(diffuse, 1.0f),
+        .specular = VEC3TOVEC4(specular, 1.0f),
+        .attenuation = VEC3TOVEC4(attenuation, 1.0f)
     };
 
     return light;
@@ -34,12 +34,8 @@ DirLight dir_light_create(vec3 dir, vec3 ambient, vec3 diffuse, vec3 specular)
 
 void dir_light_set_uniforms(DirLight* light, Shader* shader)
 {
-    shader_uniform_vec3(shader, "dir_light", &light->dir,
-                        (FindUniformFunc)shader_find_uniform_struct, (void*)dir_members[0]);
-    shader_uniform_vec3(shader, "dir_light", &light->ambient,
-                        (FindUniformFunc)shader_find_uniform_struct, (void*)dir_members[1]);
-    shader_uniform_vec3(shader, "dir_light", &light->diffuse,
-                        (FindUniformFunc)shader_find_uniform_struct, (void*)dir_members[2]);
-    shader_uniform_vec3(shader, "dir_light", &light->specular,
-                        (FindUniformFunc)shader_find_uniform_struct, (void*)dir_members[3]);
+    shader_uniform_vec3(shader, dir_members[0], &light->dir);
+    shader_uniform_vec3(shader, dir_members[1], &light->ambient);
+    shader_uniform_vec3(shader, dir_members[2], &light->diffuse);
+    shader_uniform_vec3(shader, dir_members[3], &light->specular);
 }

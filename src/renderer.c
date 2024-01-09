@@ -25,12 +25,13 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     self->mouse_wait_update = 1;
     self->shader_count = 0;
     self->shaders = NULL;
-    self->delta_time = 0.0f;
-    self->last_time = 0.0f;
+    self->delta_time = 0.0;
+    self->last_time = 0.0;
     self->framecount = 0;
     self->vsync_enabled = false;
 
-    ASSERT(glfwInit(), "RENDERER: failed to init GLFW\n");
+    int ret = glfwInit();
+    ASSERT(ret, "RENDERER: failed to init GLFW\n");
 
     #ifndef BADGL_NO_DEBUG
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  
@@ -51,7 +52,8 @@ void rd_init(Renderer* self, int width, int height, const char* win_title)
     glfwSetFramebufferSizeCallback(win, rd_resize_callback);
     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    ASSERT(gladLoadGL((GLADloadfunc)glfwGetProcAddress), "RENDERER: failed to init GLAD\n");
+    ret = gladLoadGL((GLADloadfunc)glfwGetProcAddress);
+    ASSERT(ret, "RENDERER: failed to init GLAD\n");
 
     rd_configure_gl(self);
 
@@ -83,7 +85,7 @@ void rd_configure_gl(Renderer* self)
     }
     else 
     {
-        fprintf(stderr, "RENDERER: OpenGL vsync extension not enabled");
+        BADGL_LOG("RENDERER: OpenGL vsync extension not enabled");
     }
 
     glViewport(0, 0, self->width, self->height);
@@ -130,13 +132,30 @@ void rd_imgui_init(Renderer* self, const char* glsl_version)
     igStyleColorsDark(NULL);
 }
 
+void rd_reallocate_shaders(Renderer* self, uint32_t new_count)
+{
+    uint32_t shader_array_size = ALIGNED_SIZE(self->shader_count, SHADER_ALLOC_SIZE);
+    if(new_count > shader_array_size)
+    {
+        uint32_t new_array_size = ALIGNED_SIZE(new_count, SHADER_ALLOC_SIZE);
+
+        self->shaders = (Shader*)realloc(self->shaders, new_array_size * sizeof(Shader));
+        ASSERT(self->shaders != NULL, "RENDERER: shader array reallocation failed");
+        BADGL_LOG("RENDERER: shader array resize from %u to %u\n", shader_array_size, new_array_size);
+    }
+}
+
 uint32_t rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
 {
-    self->shaders = (Shader*)realloc(self->shaders, (self->shader_count + 1) * sizeof(Shader));
-    ASSERT(self->shaders != NULL, "RENDERER: failed to reallocate shader array\n");
+    rd_reallocate_shaders(self, self->shader_count + 1);
     shader_init(&self->shaders[self->shader_count++], vert_src, frag_src);
 
     return self->shader_count - 1;
+}
+
+Shader* rd_get_shader(Renderer* self, uint32_t index)
+{
+    return &self->shaders[index];
 }
 
 void rd_set_wireframe(bool useWireframe)
@@ -160,7 +179,7 @@ void rd_begin_frame(Renderer* self)
     igNewFrame();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    float curr_time = rd_get_time();
+    double curr_time = platform_get_time();
     self->delta_time = curr_time - self->last_time;
     self->last_time = curr_time; 
 }
@@ -177,11 +196,6 @@ void rd_end_frame(Renderer* self)
         self->mouse_wait_update--;
 
     self->framecount++;
-}
-
-float rd_get_time(void)
-{
-    return (float)glfwGetTime();
 }
 
 bool rd_key_pressed(Renderer* self, int key)
@@ -265,36 +279,36 @@ void APIENTRY rd_debug_callback(GLenum source, GLenum type, unsigned int id,
     // ignore non-significant error/warning codes
     if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return; 
 
-    printf("GLDEBUG: ID - %d\nMESSAGE: %s\n", id, message);
+    BADGL_LOG("GLDEBUG: ID - %d\nMESSAGE: %s\n", id, message);
 
     switch (source)
     {
-        case GL_DEBUG_SOURCE_API:             printf("SOURCE: API\n"); break;
-        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   printf("SOURCE: Window System\n"); break;
-        case GL_DEBUG_SOURCE_SHADER_COMPILER: printf("SOURCE: Shader Compiler\n"); break;
-        case GL_DEBUG_SOURCE_THIRD_PARTY:     printf("SOURCE: Third Party\n"); break;
-        case GL_DEBUG_SOURCE_APPLICATION:     printf("SOURCE: Application\n"); break;
-        case GL_DEBUG_SOURCE_OTHER:           printf("SOURCE: Other\n"); break;
+        case GL_DEBUG_SOURCE_API:             BADGL_LOG("SOURCE: API\n"); break;
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   BADGL_LOG("SOURCE: Window System\n"); break;
+        case GL_DEBUG_SOURCE_SHADER_COMPILER: BADGL_LOG("SOURCE: Shader Compiler\n"); break;
+        case GL_DEBUG_SOURCE_THIRD_PARTY:     BADGL_LOG("SOURCE: Third Party\n"); break;
+        case GL_DEBUG_SOURCE_APPLICATION:     BADGL_LOG("SOURCE: Application\n"); break;
+        case GL_DEBUG_SOURCE_OTHER:           BADGL_LOG("SOURCE: Other\n"); break;
     }
 
     switch (type)
     {
-        case GL_DEBUG_TYPE_ERROR:               printf("TYPE: Error\n"); break;
-        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: printf("TYPE: Deprecated Behaviour\n"); break;
-        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  printf("TYPE: Undefined Behaviour\n"); break; 
-        case GL_DEBUG_TYPE_PORTABILITY:         printf("TYPE: Portability\n"); break;
-        case GL_DEBUG_TYPE_PERFORMANCE:         printf("TYPE: Performance\n"); break;
-        case GL_DEBUG_TYPE_MARKER:              printf("TYPE: Marker\n"); break;
-        case GL_DEBUG_TYPE_PUSH_GROUP:          printf("TYPE: Push Group\n"); break;
-        case GL_DEBUG_TYPE_POP_GROUP:           printf("TYPE: Pop Group\n"); break;
-        case GL_DEBUG_TYPE_OTHER:               printf("TYPE: Other\n"); break;
+        case GL_DEBUG_TYPE_ERROR:               BADGL_LOG("TYPE: Error\n"); break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: BADGL_LOG("TYPE: Deprecated Behaviour\n"); break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  BADGL_LOG("TYPE: Undefined Behaviour\n"); break; 
+        case GL_DEBUG_TYPE_PORTABILITY:         BADGL_LOG("TYPE: Portability\n"); break;
+        case GL_DEBUG_TYPE_PERFORMANCE:         BADGL_LOG("TYPE: Performance\n"); break;
+        case GL_DEBUG_TYPE_MARKER:              BADGL_LOG("TYPE: Marker\n"); break;
+        case GL_DEBUG_TYPE_PUSH_GROUP:          BADGL_LOG("TYPE: Push Group\n"); break;
+        case GL_DEBUG_TYPE_POP_GROUP:           BADGL_LOG("TYPE: Pop Group\n"); break;
+        case GL_DEBUG_TYPE_OTHER:               BADGL_LOG("TYPE: Other\n"); break;
     }
     
     switch (severity)
     {
-        case GL_DEBUG_SEVERITY_HIGH:         printf("SEVERITY: high\n"); break;
-        case GL_DEBUG_SEVERITY_MEDIUM:       printf("SEVERITY: medium\n"); break;
-        case GL_DEBUG_SEVERITY_LOW:          printf("SEVERITY: low\n"); break;
-        case GL_DEBUG_SEVERITY_NOTIFICATION: printf("SEVERITY: notification\n"); break;
+        case GL_DEBUG_SEVERITY_HIGH:         BADGL_LOG("SEVERITY: high\n"); break;
+        case GL_DEBUG_SEVERITY_MEDIUM:       BADGL_LOG("SEVERITY: medium\n"); break;
+        case GL_DEBUG_SEVERITY_LOW:          BADGL_LOG("SEVERITY: low\n"); break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION: BADGL_LOG("SEVERITY: notification\n"); break;
     }
 }
