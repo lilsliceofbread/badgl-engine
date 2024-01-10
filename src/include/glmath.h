@@ -4,16 +4,16 @@
 #include <math.h>
 
 #define      GL_PI 3.14159265358979323846f
-#define GL_DEG2RAD 0.01745329251994329576f // pi/180
+#define GL_DEG2RAD 0.01745329251994329576f // PI / 180
 
 #define math_rad(deg) ((deg) * GL_DEG2RAD)
 
 #define VEC4TOVEC3(vector) (vec3){vector.x, vector.y, vector.z}
 #define VEC3TOVEC4(vector, w) (vec4){vector.x, vector.y, vector.z, w}
 
-#define VEC4(x, y, z, w) (vec4){x, y, z, w}
-#define VEC3(x, y, z) (vec3){x, y, z}
-#define VEC2(x, y) (vec2){x, y}
+#define VEC4(x, y, z, w) (vec4){(x), (y), (z), (w)}
+#define VEC3(x, y, z) (vec3){(x), (y), (z)}
+#define VEC2(x, y) (vec2){(x), (y)}
 
 typedef union vec2
 {

@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "defines.h"
 #include "platform.h"
 #include "shader.h"
 #include "texture.h"
@@ -88,6 +89,8 @@ void rd_configure_gl(Renderer* self)
         BADGL_LOG("RENDERER: OpenGL vsync extension not enabled");
     }
 
+    textures_init();
+
     glViewport(0, 0, self->width, self->height);
 
     glEnable(GL_BLEND); // enable transparent textures
@@ -102,6 +105,13 @@ void rd_configure_gl(Renderer* self)
     glCullFace(GL_BACK);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+    platform_reset_time();
+}
+
+void rd_draw_triangles(uint32_t ind_count)
+{
+    glDrawElements(GL_TRIANGLES, (int)ind_count, GL_UNSIGNED_INT, 0);
 }
 
 // annoying fix, sometimes resize callback is delayed

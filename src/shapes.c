@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include "defines.h"
 #include "util.h"
 
 extern inline uint32_t* shape_setup(Model* model, const Material* material, uint32_t shader_idx);

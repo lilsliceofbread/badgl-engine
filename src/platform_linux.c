@@ -10,6 +10,9 @@
 #include <string.h>
 #include <stdio.h>
 
+static int platform_clock;
+static double platform_time_offset = 0.0;
+
 static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
 // the GLX_EXT_swap_control extension does not have
 // a GetSwapIntervalEXT func, use glXQueryDrawable instead
@@ -43,18 +46,28 @@ void platform_toggle_vsync(bool on)
     glXSwapIntervalEXT(display, drawable, (int)on);
 }
 
+void platform_reset_time(void)
+{
+    platform_clock = CLOCK_REALTIME;
+    #ifdef _POSIX_MONOTONIC_CLOCK
+        struct timespec tmp;
+        if(clock_gettime(CLOCK_MONOTONIC, &tmp) == 0)
+        {
+            platform_clock = CLOCK_MONOTONIC;
+        }
+    #endif
+
+    platform_time_offset = platform_get_time();
+}
+
 double platform_get_time(void)
 {
     struct timespec os_time;
 
-    #ifdef _POSIX_MONOTONIC_CLOCK
-        clock_gettime(CLOCK_MONOTONIC, &os_time);
-    #else
-        clock_gettime(CLOCK_REALTIME, &os_time);
-    #endif
+    clock_gettime(platform_clock, &os_time);    
 
     double time = (double)os_time.tv_sec + (double)(0.000000001 * (double)os_time.tv_nsec);
-    return time;
+    return time - platform_time_offset;
 }
 
 #endif

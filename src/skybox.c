@@ -22,9 +22,10 @@ void skybox_draw(Model* self, Renderer* rd, Camera* cam)
     mat4_mul(&vp, cam->proj, corrected_view);
 
     glCullFace(GL_FRONT); // since we are inside the box
-    shader_use(shader);
-    shader_uniform_mat4(shader, "mvp", &vp);
-    mesh_draw(&self->meshes[0], shader, self->material.textures);
+        shader_use(shader);
+        shader_uniform_mat4(shader, "mvp", &vp);
+
+        mesh_draw(&self->meshes[0], shader, self->material.textures);
     glCullFace(GL_BACK);
 }
 

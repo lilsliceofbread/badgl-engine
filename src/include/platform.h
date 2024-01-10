@@ -9,6 +9,8 @@ bool platform_init_vsync(void);
 
 void platform_toggle_vsync(bool on);
 
+void platform_reset_time(void);
+
 // returns the time since epoch in seconds
 double platform_get_time(void);
 

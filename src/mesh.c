@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "vao.h"
+#include "renderer.h"
 #include "bo.h"
 #include "arena_alloc.h"
 
@@ -89,7 +90,7 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
     }
 
     vao_bind(self->vao);
-    glDrawElements(GL_TRIANGLES, (GLsizei)self->ind_count, GL_UNSIGNED_INT, 0);
+    rd_draw_triangles(self->ind_count);
     vao_unbind();
 
     texture_unit_active(0);

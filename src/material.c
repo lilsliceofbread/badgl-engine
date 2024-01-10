@@ -1,6 +1,7 @@
 #include "material.h"
 
 #include <stdlib.h>
+#include "defines.h"
 
 static const char* material_members[] = {
     "material.ambient",
@@ -23,17 +24,8 @@ Material material_textureless(bool is_cubemap_shader, vec3 ambient, vec3 diffuse
     mat.textures = (Texture*)malloc(2 * sizeof(Texture)); // diffuse and specular
     mat.tex_count = 2;
 
-    if(!is_cubemap_shader) // create default white texture
-    {
-
-        texture_default_create(&mat.textures[0], TEXTURE_DIFFUSE);
-        texture_default_create(&mat.textures[1], TEXTURE_SPECULAR);
-    }
-    else
-    {
-        texture_default_cubemap_create(&mat.textures[0], TEXTURE_DIFFUSE);
-        texture_default_cubemap_create(&mat.textures[1], TEXTURE_SPECULAR);
-    }
+    texture_global_default_create(&mat.textures[0], TEXTURE_DIFFUSE, is_cubemap_shader);
+    texture_global_default_create(&mat.textures[1], TEXTURE_SPECULAR, is_cubemap_shader);
 
     return mat;
 }
@@ -48,7 +40,7 @@ Material material_texture_diffuse(bool is_cubemap, const char* texture_path, vec
     mat.specular = specular;
     mat.shininess = shininess;
 
-    mat.flags = 0;
+    mat.flags = HAS_DIFFUSE_TEXTURE;
 
     mat.textures = (Texture*)malloc(2 * sizeof(Texture));
     mat.tex_count = 2;
@@ -56,13 +48,13 @@ Material material_texture_diffuse(bool is_cubemap, const char* texture_path, vec
     if(!is_cubemap)
     {
         texture_create(&mat.textures[0], TEXTURE_DIFFUSE, texture_path, false);
-        texture_default_create(&mat.textures[1], TEXTURE_SPECULAR);
     }
     else
     {
         texture_cubemap_create(&mat.textures[0], TEXTURE_DIFFUSE, texture_path);
-        texture_default_cubemap_create(&mat.textures[1], TEXTURE_SPECULAR);
     }
+
+    texture_global_default_create(&mat.textures[1], TEXTURE_SPECULAR, is_cubemap);
 
     return mat;
 }

@@ -12,7 +12,8 @@ typedef enum TextureType
     TEXTURE_DIFFUSE  = 1 << 0, // colour texture
     TEXTURE_SPECULAR = 1 << 1,
     TEXTURE_NORMAL   = 1 << 2, // normal map
-    TEXTURE_CUBEMAP  = 1 << 3 
+    TEXTURE_CUBEMAP  = 1 << 3,
+    TEXTURE_DEFAULT  = 1 << 4  // dummy white 1x1 texture
 } TextureType;
 
 typedef struct Texture
@@ -23,8 +24,13 @@ typedef struct Texture
     char path[MAX_PATH_LENGTH];
 } Texture;
 
+void textures_init(void);
+
 // type must be set by user
 void texture_create(Texture* self, TextureType type, const char* img_path, bool use_mipmap);
+
+// copy the global 1x1 white texture (don't create a new texture on GPU)
+void texture_global_default_create(Texture* self, TextureType type, bool is_cubemap);
 
 // create white 1x1 texture
 void texture_default_create(Texture* self, TextureType type);

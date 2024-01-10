@@ -43,7 +43,7 @@ void model_process_node(Model* self, struct aiNode* node, const struct aiScene* 
 
 Mesh model_process_mesh(Model* self, struct aiMesh* mesh, const struct aiScene* scene);
 
-uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextureType ai_type, TextureType type, uint32_t* tex_count_out);
+uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, uint32_t* tex_count_out);
 
 void model_free(Model* self);
 

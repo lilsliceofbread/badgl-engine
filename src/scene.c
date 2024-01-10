@@ -1,5 +1,6 @@
 #include "scene.h"
-#include "util.h"
+
+#include "defines.h"
 
 #define DEFAULT_FOV 90.0f
 #define DEFAULT_ZNEAR 0.01f

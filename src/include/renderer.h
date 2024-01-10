@@ -35,6 +35,8 @@ void rd_init(Renderer* rd, int width, int height, const char* win_title);
 
 void rd_configure_gl(Renderer* self);
 
+void rd_draw_triangles(uint32_t ind_count);
+
 void rd_update_viewport(Renderer* self); // annoying fix, sometimes resize callback is delayed
 
 void rd_set_viewport(int x, int y, int width, int height); // x and y of top left point

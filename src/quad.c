@@ -46,9 +46,9 @@ void quad_draw(Quad* self, Renderer* rd)
     texture_bind(&self->texture);
 
     glDisable(GL_DEPTH_TEST);
-    vao_bind(self->vao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    vao_unbind();
+        vao_bind(self->vao);
+        rd_draw_triangles(6);
+        vao_unbind();
     glEnable(GL_DEPTH_TEST);
 }
 

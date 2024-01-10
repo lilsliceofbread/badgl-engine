@@ -1,4 +1,6 @@
 #include "shader.h"
+
+#include "defines.h"
 #include "util.h"
 #include "glmath.h"
 #include <stdio.h>

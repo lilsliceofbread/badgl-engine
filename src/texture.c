@@ -1,7 +1,7 @@
 #include "texture.h"
 
 // prevent warnings for stb_image
-#ifndef _MSC_VER // doesn't work for MSVC
+#ifndef _MSC_VER
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wsign-conversion"
     #pragma GCC diagnostic ignored "-Wconversion"
@@ -10,15 +10,37 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#ifndef _MSC_VER // doesn't work for MSVC
+#ifndef _MSC_VER
     #pragma GCC diagnostic pop
 #endif
 
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include "defines.h"
 #include "util.h"
 #include "renderer.h"
+
+static int max_texture_units = 0;
+static Texture texture_default;
+static Texture cubemap_default;
+
+void textures_init(void) {
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
+    BADGL_LOG("TEXTURE: max texture units %u\n", max_texture_units);
+
+    texture_default_create(&texture_default, 0);
+    texture_default_cubemap_create(&cubemap_default, 0);
+}
+
+void texture_global_default_create(Texture* self, TextureType type, bool is_cubemap)
+{
+    Texture* global = is_cubemap ? &cubemap_default : &texture_default;
+
+    memcpy(self, global, sizeof(Texture));
+
+    self->type |= type;
+}
 
 void texture_create(Texture* self, TextureType type, const char* img_path, bool use_mipmap)
 {
@@ -80,9 +102,10 @@ void texture_default_create(Texture* self, TextureType type)
     self->id = texture_id;
     self->width = 1;
     self->height = 1;
-    self->type = type;
+    self->type = type | TEXTURE_DEFAULT;
 
     memset(self->path, 0, MAX_PATH_LENGTH);
+    BADGL_LOG("TEXTURE: created 1x1 white texture of id: %u\n", self->id);
 }
 
 void texture_default_cubemap_create(Texture* self, TextureType type)
@@ -106,10 +129,10 @@ void texture_default_cubemap_create(Texture* self, TextureType type)
     self->id = texture_id;
     self->width = 1; 
     self->height = 1;
-    self->type = type;
-    self->type |= TEXTURE_CUBEMAP;
+    self->type = type | TEXTURE_DEFAULT | TEXTURE_CUBEMAP;
 
     memset(self->path, 0, MAX_PATH_LENGTH);
+    BADGL_LOG("TEXTURE: created 1x1 white cubemap of id: %u\n", self->id);
 }
 
 void texture_cubemap_create(Texture* self, TextureType type, const char* generic_path)
@@ -169,8 +192,7 @@ void texture_cubemap_create(Texture* self, TextureType type, const char* generic
     self->id = texture_id;
     self->width = width; // will be the size of 1 square
     self->height = height;
-    self->type = type;
-    self->type |= TEXTURE_CUBEMAP;
+    self->type = type | TEXTURE_CUBEMAP;
 
     strncpy(self->path, generic_path, 128);
 
@@ -185,7 +207,7 @@ void texture_bind(Texture* self)
 
 void texture_unit_active(uint32_t num)
 {
-    ASSERT(num <= 31, "TEXTURE: GL texture unit out of range\n");
+    ASSERT((int)num <= max_texture_units - 1, "TEXTURE: GL texture unit out of range\n");
     glActiveTexture(GL_TEXTURE0 + num);
 }
 

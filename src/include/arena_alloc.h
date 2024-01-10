@@ -5,8 +5,8 @@
 #include <stddef.h>
 
 typedef struct Arena {
-    void* raw_memory;
-    void* cursor; // position where unused memory starts
+    uint8_t* raw_memory;
+    uint8_t* cursor; // position where unused memory starts
     size_t size;
 } Arena;
 

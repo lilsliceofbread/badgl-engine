@@ -7,6 +7,9 @@
 #include "wglext.h"
 #include <string.h>
 
+static LARGE_INTEGER os_freq = 1000000000;
+static double platform_time_offset = 0.0;
+
 static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
 //static PFNWGLGETSWAPINTERVALEXTPROC wglGetSwapIntervalEXT = NULL;
 
@@ -39,16 +42,20 @@ void platform_toggle_vsync(bool on)
     wglSwapIntervalEXT((int)on);
 }
 
+void platform_reset_time(void)
+{
+    QueryPerformanceFrequency(&os_freq);
+    platform_time_offset = platform_get_time();
+}
+
 double platform_get_time(void)
 {
     LARGE_INTEGER os_time;
-    LARGE_INTEGER os_freq;
 
-    QueryPerformanceFrequency(&os_freq);
     QueryPerformanceCounter(&os_time);
 
     double time = (double)os_time.QuadPart / (double)os_freq.QuadPart;
-    return time;
+    return time - platform_time_offset;
 }
 
 

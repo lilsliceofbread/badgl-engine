@@ -51,7 +51,6 @@ void camera_update_proj(Camera* self, float fov, float aspect_ratio, float znear
     //self->proj = mat_orthographic_frustrum(0.01f, 100.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 }
 
-// MOVE TO PLAYER LATER, w/ vel, accel, player_pos
 void camera_update(Camera* self, Renderer* rd)
 {
     float cam_step = CAM_SPEED * (float)rd->delta_time;

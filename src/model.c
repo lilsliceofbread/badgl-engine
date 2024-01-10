@@ -6,6 +6,7 @@
 #include <assimp/mesh.h>
 #include <string.h>
 #include <stdbool.h>
+#include "defines.h"
 #include "glmath.h"
 #include "util.h"
 #include "texture.h"
@@ -213,16 +214,14 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     struct aiMaterial* mat = scene->mMaterials[model_mesh->mMaterialIndex];
     uint32_t diffuse_count, specular_count;
 
-    // not the best since allocs multiple temp variables, but it works
-    uint32_t* diff_indexes = model_load_textures(self, mat, aiTextureType_DIFFUSE, TEXTURE_DIFFUSE, &diffuse_count);
-    uint32_t* spec_indexes = model_load_textures(self, mat, aiTextureType_SPECULAR, TEXTURE_SPECULAR, &specular_count);
+    uint32_t* diff_indexes = model_load_textures(self, mat, TEXTURE_DIFFUSE, &diffuse_count);
+    uint32_t* spec_indexes = model_load_textures(self, mat, TEXTURE_SPECULAR, &specular_count);
 
     total_textures = diffuse_count + specular_count;
-    if(total_textures) // if no textures, don't allocate/memcpy/free
+    if(total_textures)
     {
         tex_indices = (uint32_t*)calloc(total_textures, sizeof(uint32_t));
 
-        // copy separate indexes into tex_indices
         memcpy(tex_indices, diff_indexes, diffuse_count * sizeof(uint32_t));
         memcpy(tex_indices + diffuse_count, spec_indexes, specular_count * sizeof(uint32_t));
 
@@ -234,16 +233,18 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     return mesh;
 }
 
-uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextureType ai_type, TextureType type, uint32_t* tex_count_out)
+uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, uint32_t* tex_count_out)
 {
-    uint32_t add_tex_count = aiGetMaterialTextureCount(mat, ai_type); // textures of given type
-    *tex_count_out = add_tex_count;
-    if(add_tex_count == 0) return NULL;
-    uint32_t* tex_indices = (uint32_t*)calloc(add_tex_count, sizeof(uint32_t)); // user of function must free themselves
+    enum aiTextureType ai_type = type == TEXTURE_DIFFUSE ? aiTextureType_DIFFUSE : aiTextureType_SPECULAR;
+    uint32_t tex_count = aiGetMaterialTextureCount(mat, ai_type); // textures of given type
+    *tex_count_out = tex_count;
+    if(tex_count == 0) return NULL;
+
+    uint32_t* tex_indices = (uint32_t*)calloc(tex_count, sizeof(uint32_t)); // user of function must free themselves
 
     char img_path[1024 + MAX_PATH_LENGTH]; // suppress warnings for snprintf (dir + '/' + str.data)
-    uint32_t new_add_tex_count = 0; // since we only resize if texture doesn't already exist
-    for(uint32_t i = 0; i < add_tex_count; i++)
+    uint32_t add_tex_count = 0; // since we only resize if texture doesn't already exist
+    for(uint32_t i = 0; i < tex_count; i++)
     {
         memset(img_path, 0, sizeof(img_path)); // ensure previous string doesn't cause problems
         struct aiString str;
@@ -264,8 +265,8 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
         if(!skip) // texture doesn't already exist
         {
             // increase amount to add to tex_count and reallocate textures
-            new_add_tex_count++;
-            self->material.textures = (Texture*)realloc(self->material.textures, (self->material.tex_count + new_add_tex_count) * sizeof(Texture));
+            add_tex_count++;
+            self->material.textures = (Texture*)realloc(self->material.textures, (self->material.tex_count + add_tex_count) * sizeof(Texture));
             ASSERT(self->material.textures != NULL, "MODEL: failed to realloc texture array\n");
 
             // create new texture
@@ -279,7 +280,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, enum aiTextur
     }
 
     // increase tex_count to correct size
-    self->material.tex_count += new_add_tex_count;
+    self->material.tex_count += add_tex_count;
     return tex_indices;
 }
 
