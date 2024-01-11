@@ -7,29 +7,21 @@ static const char* dir_members[] = {
     "dir_light.specular"
 };
 
-Light light_create(vec3 pos, vec3 ambient, vec3 diffuse, vec3 specular, vec3 attenuation)
+void light_create(Light* light, vec3 pos, vec3 ambient, vec3 diffuse, vec3 specular, vec3 attenuation)
 {
-    Light light = { // need to be vec4 to align with GPU
-        .pos = VEC3TOVEC4(pos, 1.0f),
-        .ambient = VEC3TOVEC4(ambient, 1.0f),
-        .diffuse = VEC3TOVEC4(diffuse, 1.0f),
-        .specular = VEC3TOVEC4(specular, 1.0f),
-        .attenuation = VEC3TOVEC4(attenuation, 1.0f)
-    };
-
-    return light;
+    light->pos = VEC3TOVEC4(pos, 1.0f);
+    light->ambient = VEC3TOVEC4(ambient, 1.0f);
+    light->diffuse = VEC3TOVEC4(diffuse, 1.0f);
+    light->specular = VEC3TOVEC4(specular, 1.0f);
+    light->attenuation = VEC3TOVEC4(attenuation, 1.0f);
 }
 
-DirLight dir_light_create(vec3 dir, vec3 ambient, vec3 diffuse, vec3 specular)
+void dir_light_create(DirLight* light, vec3 dir, vec3 ambient, vec3 diffuse, vec3 specular)
 {
-    DirLight light = {
-        .dir = dir,
-        .ambient = ambient,
-        .diffuse = diffuse,
-        .specular = specular
-    };
-
-    return light;
+    light->dir = dir;
+    light->ambient = ambient;
+    light->diffuse = diffuse;
+    light->specular = specular;
 }
 
 void dir_light_set_uniforms(DirLight* light, Shader* shader)

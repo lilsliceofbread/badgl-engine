@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+
 char* get_file_data(const char* filepath)
 {
     FILE* file;
@@ -54,7 +55,7 @@ int str_find_last_of(const char* str, char c)
 void find_directory_from_path(char* dest, const char* path)
 {
     int offset = str_find_last_of(path, '/');
-    ASSERT(offset != -1, "MODEL: invalid path for model %s\n", path);
+    ASSERT(offset != -1, "invalid path %s\n", path);
 
     strncpy(dest, path, (size_t)offset); // copy up to final / into directory
     dest[offset] = '\0';

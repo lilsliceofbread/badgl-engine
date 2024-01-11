@@ -9,11 +9,11 @@
 #define GLSL_LIGHT_SIZE 80
 #define GLSL_INT_SIZE 4
 
-void scene_init(Scene* self, vec3 start_pos, vec2 euler, const DirLight* dir_light,
+void scene_init(Scene* self, vec3 start_pos, vec2 start_euler, const DirLight* dir_light,
                 Renderer* rd, const char* skybox_cubemap_path, SceneUpdateFunc func)
 {
     const float aspect_ratio = (float)(rd->width) / (float)(rd->height); // not casting these to float causes the aspect ratio to be rounded
-    self->cam = camera_init(start_pos, euler.y, euler.x); // yaw then pitch
+    self->cam = camera_init(start_pos, start_euler.x, start_euler.y);
     camera_update_proj(&self->cam, DEFAULT_FOV, aspect_ratio, DEFAULT_ZNEAR, DEFAULT_ZFAR);
 
     self->models = NULL;
@@ -30,11 +30,11 @@ void scene_init(Scene* self, vec3 start_pos, vec2 euler, const DirLight* dir_lig
 
     if(dir_light != NULL) self->dir_light = *dir_light;
 
-    ASSERT(sizeof(Light) == GLSL_LIGHT_SIZE, "SCENE: platform struct packing/padding does not match GLSL. wtf?\n");
+    ASSERT(sizeof(Light) == GLSL_LIGHT_SIZE, "platform struct packing/padding does not match GLSL. wtf?\n");
 
     self->light_ubo = ubo_create();
 
-    size_t light_ubo_size = MAX_LIGHTS * sizeof(Light) + GLSL_INT_SIZE;
+    size_t light_ubo_size = GLSL_MAX_LIGHTS * sizeof(Light) + GLSL_INT_SIZE;
     ubo_bind(self->light_ubo);
     ubo_set_buffer(self->light_ubo, NULL, light_ubo_size, true); // configure buffer size
     ubo_unbind(self->light_ubo);
@@ -42,14 +42,14 @@ void scene_init(Scene* self, vec3 start_pos, vec2 euler, const DirLight* dir_lig
 
 void scene_reallocate_models(Scene* self, uint32_t new_count)
 {
-    uint32_t model_array_size = ALIGNED_SIZE(self->model_count, MODEL_ALLOC_SIZE);
+    uint32_t model_array_size = ALIGNED_SIZE(self->model_count, SCENE_MODEL_ALLOC_SIZE);
     if(new_count > model_array_size)
     {
-        uint32_t new_array_size = ALIGNED_SIZE(new_count, MODEL_ALLOC_SIZE);
+        uint32_t new_array_size = ALIGNED_SIZE(new_count, SCENE_MODEL_ALLOC_SIZE);
 
         self->models = (Model*)realloc(self->models, new_array_size * sizeof(Model));
-        ASSERT(self->models != NULL, "SCENE: models reallocation failed");
-        BADGL_LOG("SCENE: models array resize from %u to %u\n", model_array_size, new_array_size);
+        ASSERT(self->models != NULL, "SCENE: models reallocation failed\n");
+        BADGL_LOG(LOG_DEBUG, "models array resize from %u to %u\n", model_array_size, new_array_size);
     }
 }
 
@@ -65,9 +65,9 @@ uint32_t scene_add_model(Scene* self, const Model* model)
 void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model* model)
 {
     if(light == NULL) return;
-    if(self->light_count + 1 > MAX_LIGHTS)
+    if(self->light_count + 1 > GLSL_MAX_LIGHTS)
     {
-        BADGL_LOG("SCENE: cannot add light; max lights reached\n");
+        BADGL_LOG(LOG_WARN, "cannot add light to scene; max lights reached\n");
         return;
     }
 
@@ -93,8 +93,8 @@ void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model*
     }
 
     ubo_bind(self->light_ubo);
-    ubo_set_buffer_region(self->light_ubo, self->lights, 0, MAX_LIGHTS * sizeof(Light));
-    ubo_set_buffer_region(self->light_ubo, &self->light_count, MAX_LIGHTS * sizeof(Light), GLSL_INT_SIZE);
+    ubo_set_buffer_region(self->light_ubo, self->lights, 0, GLSL_MAX_LIGHTS * sizeof(Light));
+    ubo_set_buffer_region(self->light_ubo, &self->light_count, GLSL_MAX_LIGHTS * sizeof(Light), GLSL_INT_SIZE);
     ubo_unbind(self->light_ubo);
 }
 
@@ -107,7 +107,7 @@ void scene_set_dir_light(Scene* self, const DirLight* light)
 
 void scene_update_lights(Scene* self, Renderer* rd)
 {
-    ubo_bind_buffer_range(self->light_ubo, 0, 0, MAX_LIGHTS * sizeof(Light) + GLSL_INT_SIZE); // hardcoded for now
+    ubo_bind_buffer_range(self->light_ubo, 0, 0, GLSL_MAX_LIGHTS * sizeof(Light) + GLSL_INT_SIZE); // hardcoded for now
 
     uint32_t* shaders = malloc(self->model_count * sizeof(uint32_t)); // ensure enough space in worst case
     uint32_t shader_count = 0;

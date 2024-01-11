@@ -9,29 +9,50 @@
 #include <stdbool.h>
 #include "shader.h"
 
-#define SHADER_ALLOC_SIZE 4
+#define RD_SHADER_ALLOC_SIZE 4
+
+typedef enum RendererFlags
+{
+    // * if enabled, will generate the respective shader for each
+    RD_USE_SKYBOX   = 1 << 0,
+    RD_USE_UI       = 1 << 1,
+    RD_USE_LIGHTING = 1 << 2,
+
+    // ! user should not modify these flags, internal use only
+    RD_INTERNAL_CURSOR_DISABLED = 1 << 3, // * if this is 1, anything relying on mouse should not update
+    RD_INTERNAL_VSYNC_ENABLED = 1 << 4
+} RendererFlags;
 
 typedef struct Renderer 
 {
     Shader* shaders; // can have multiple shader programs
-    uint32_t skybox_shader, quad_shader, light_shader; // required shader indices; separate from other optional ones
+    uint32_t skybox_shader, quad_shader, light_shader; // required shader indices
     uint32_t shader_count;
     int width, height;
     GLFWwindow* win;
 
-    int mouse_wait_update; // frames until mouse can update, for preventing camera flicking when cursor jumps (optional)
-    bool cursor_disabled; // anything relying on mouse should not update when this is false
+    int mouse_wait_update; // frames until mouse can update, for preventing camera flicking when cursor jumps
 
     double last_time, delta_time;
     uint32_t framecount;
 
-    bool vsync_enabled; // if vsync extension exists on this machine
-
     ImGuiContext* imgui_ctx; 
     ImGuiIO* imgui_io; 
+
+    RendererFlags flags;
 } Renderer;
 
-void rd_init(Renderer* rd, int width, int height, const char* win_title);
+/**
+ * @brief initialise window, OpenGL and shaders
+ * @note   
+ * @param  rd: 
+ * @param  width: width of window
+ * @param  height: height of window
+ * @param  win_title: title of window
+ * @param  flags: use any RendererFlag except those marked with RD_INTERNAL_
+ * @retval None
+ */
+void rd_init(Renderer* rd, int width, int height, const char* win_title, RendererFlags flags);
 
 void rd_configure_gl(Renderer* self);
 

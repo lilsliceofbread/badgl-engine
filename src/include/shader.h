@@ -7,7 +7,7 @@
 #include <inttypes.h>
 
 #define MAX_UNIFORM_NAME 64
-#define UNIFORM_ALLOC_SIZE 8 
+#define SHADER_UNIFORM_ALLOC_SIZE 8 
 
 /* either takes arguments
    Shader* self, const char* name, void* arg

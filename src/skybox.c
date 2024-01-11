@@ -5,10 +5,12 @@
 
 Model skybox_init(Renderer* rd, const char* cubemap_path)
 {
-    Material material = material_texture_diffuse(true, cubemap_path, VEC3(1.0f, 1.0f, 1.0f), 1.0f); // dummy values
+    Model self;
+    Material material;
+    material_texture_diffuse(&material, true, cubemap_path, VEC3(1.0f, 1.0f, 1.0f), 1.0f); // dummy values
     material.flags |= NO_LIGHTING;
 
-    Model self = rectangular_prism_gen(2.0f, 2.0f, 2.0f, &material, rd->skybox_shader);
+    rectangular_prism_gen(&self, 2.0f, 2.0f, 2.0f, &material, rd->skybox_shader);
     return self;
 }
 

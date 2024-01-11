@@ -8,9 +8,8 @@ Arena arena_create(size_t size)
 {
     Arena self;
 
-    //
     self.raw_memory = (uint8_t*)malloc(size + 1);
-    ASSERT(self.raw_memory != NULL, "ARENA: malloc(%lu) failed", size);
+    ASSERT(self.raw_memory != NULL, "malloc(%lu) failed", size);
 
     self.cursor = self.raw_memory;
     self.size = size;

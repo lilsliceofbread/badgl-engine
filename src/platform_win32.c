@@ -7,7 +7,7 @@
 #include "wglext.h"
 #include <string.h>
 
-static LARGE_INTEGER os_freq = 1000000000;
+static LARGE_INTEGER os_freq;
 static double platform_time_offset = 0.0;
 
 static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;

@@ -9,13 +9,13 @@
 
 // all shapes are centered on (0, 0, 0) or model space
 
-Model uv_sphere_gen(float radius, uint32_t res, const Material* material, uint32_t shader_idx);
+void uv_sphere_gen(Model* self, float radius, uint32_t res, const Material* material, uint32_t shader_idx);
 
-Model rectangular_prism_gen(float width, float height, float depth, const Material* material, uint32_t shader_idx);
+void rectangular_prism_gen(Model* self, float width, float height, float depth, const Material* material, uint32_t shader_idx);
 
 /* will be perpendicular to x/z axis
    width along x-axis
    height along z-axis */
-Model rectangular_plane_gen(float width, float height, uint32_t res, const Material* material, uint32_t shader_idx);
+void rectangular_plane_gen(Model* self, float width, float height, uint32_t res, const Material* material, uint32_t shader_idx);
 
 #endif
