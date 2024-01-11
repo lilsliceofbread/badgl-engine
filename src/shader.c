@@ -19,10 +19,10 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
     self->uniforms = NULL;
 
     vert_shader = shader_compile(self, vert_shader_src, GL_VERTEX_SHADER, info_log, sizeof(info_log), &success);
-    ASSERT(success, "SHADER: vertex shader comp failed. Info Log:\n%s\n", info_log);
+    ASSERT(success, "vertex shader comp failed. Info Log:\n%s\n", info_log);
 
     frag_shader = shader_compile(self, frag_shader_src, GL_FRAGMENT_SHADER, info_log, sizeof(info_log), &success);
-    ASSERT(success, "SHADER: fragment shader comp failed. info log:\n%s\n", info_log);
+    ASSERT(success, "fragment shader comp failed. info log:\n%s\n", info_log);
 
     shader_program = glCreateProgram();
     self->id = shader_program;
@@ -33,7 +33,7 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
 
     glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
     glGetProgramInfoLog(shader_program, sizeof(info_log), NULL, info_log);
-    ASSERT(success, "SHADER: shader program creation failed. info log:\n%s\n", info_log);
+    ASSERT(success, "shader program creation failed. info log:\n%s\n", info_log);
 
     // here because needs to be done after linking program
     for(uint32_t i = 0; i < self->uniform_count; i++)
@@ -41,7 +41,7 @@ void shader_init(Shader* self, const char* vert_shader_src, const char* frag_sha
         int location = glGetUniformLocation(self->id, self->uniforms[i].name);
         if(location == -1)
         {
-            BADGL_LOG("SHADER: uniform %s was not given a location\n", self->uniforms[i].name);
+            BADGL_LOG(LOG_WARN, "uniform %s was not given a location\n", self->uniforms[i].name);
         }
         self->uniforms[i].location = location;
     }
@@ -61,7 +61,7 @@ uint32_t shader_compile(Shader* self, const char* shader_filepath, GLenum shader
 
     shader_src = get_file_data(shader_filepath);
 
-    ASSERT(shader_src != NULL, "SHADER: failed to get shader source\n");
+    ASSERT(shader_src != NULL, "failed to get shader source\n");
 
     shader = glCreateShader(shader_type);
 
@@ -136,14 +136,14 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 
 void shader_reallocate_uniforms(Shader* self, uint32_t new_count)
 {
-    uint32_t uniform_array_size = ALIGNED_SIZE(self->uniform_count, UNIFORM_ALLOC_SIZE);
+    uint32_t uniform_array_size = ALIGNED_SIZE(self->uniform_count, SHADER_UNIFORM_ALLOC_SIZE);
     if(new_count > uniform_array_size)
     {
-        uint32_t new_array_size = ALIGNED_SIZE(new_count, UNIFORM_ALLOC_SIZE);
+        uint32_t new_array_size = ALIGNED_SIZE(new_count, SHADER_UNIFORM_ALLOC_SIZE);
 
         self->uniforms = (Uniform*)realloc(self->uniforms, new_array_size * sizeof(Uniform));
-        ASSERT(self->uniforms != NULL, "SHADER: uniform cache reallocation failed");
-        //BADGL_LOG("SHADER: uniform cache resize from %u to %u\n", uniform_array_size, new_array_size);
+        ASSERT(self->uniforms != NULL, "uniform cache reallocation failed");
+        //BADGL_LOG(LOG_DEBUG, "uniform cache resize from %u to %u\n", uniform_array_size, new_array_size);
     }
 }
 
@@ -160,7 +160,7 @@ int shader_find_uniform(Shader* self, const char* name)
         if(strcmp(name, curr.name) == 0) return curr.location;
     }
 
-    //BADGL_LOG("SHADER: uniform %s not found. Caching...\n", name);
+    //BADGL_LOG(LOG_DEBUG, "uniform %s not found. Caching...\n", name);
     int location = glGetUniformLocation(self->id, name);
 
     shader_reallocate_uniforms(self, self->uniform_count + 1);

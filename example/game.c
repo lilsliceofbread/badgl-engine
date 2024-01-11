@@ -26,7 +26,7 @@ void game_init(GameState* s)
     s->current_scene = 0;
     s->is_vsync_on = true;
 
-    rd_init(&s->rd, GAME_WIDTH, GAME_HEIGHT, "cool stuff");
+    rd_init(&s->rd, GAME_WIDTH, GAME_HEIGHT, "badgl demo", RD_USE_SKYBOX | RD_USE_UI | RD_USE_LIGHTING);
 
     loading_begin(&s->rd);
 
@@ -52,56 +52,55 @@ void game_add_models(GameState* s)
     uint32_t model_shader = rd_add_shader(&s->rd, "shaders/model.vert", "shaders/model.frag");
     uint32_t sphere_shader = rd_add_shader(&s->rd, "shaders/sphere.vert", "shaders/sphere.frag");
 
+    Material material = {0}; 
+    Model model_tmp = {0};
+    Transform transform;
+    transform_reset(&transform);
+
     /* scene 0 */
 
-    Material material = {0}; 
-    Transform transform = {
-        .pos   = VEC3(5.0f, 0.0f, -2.0f),
-        .euler = VEC3(0.0f, 0.0f, 0.0f),
-        .scale = VEC3(1.0f, 1.0f, 1.0f)
-    };
-
-    material = material_texture_diffuse(true, "res/earth/e.png",
+    material_texture_diffuse(&material, true, "res/earth/e.png",
                                 VEC3(1.0f, 1.0f, 1.0f), 32.0f);
-    Model model_tmp = uv_sphere_gen(2.0f, 15, &material, sphere_shader);
+    uv_sphere_gen(&model_tmp, 2.0f, 15, &material, sphere_shader);
     scene_add_model(&s->scenes[0], &model_tmp);
 
-    material = material_textureless(true,
+    material_textureless(&material, true,
                             VEC3(0.8f, 0.1f, 0.2f),
                             VEC3(0.8f, 0.1f, 0.2f),
                             VEC3(1.0f, 1.0f, 1.0f), 32.0f);
-    model_tmp = uv_sphere_gen(2.0f, 15, &material, sphere_shader);
+    uv_sphere_gen(&model_tmp, 2.0f, 15, &material, sphere_shader);
     scene_add_model(&s->scenes[0], &model_tmp);
+    transform.pos = VEC3(5.0f, 0.0f, -2.0f);
     model_update_transform(&s->scenes[0].models[1], &transform); // TODO: use some identifier for models? strings?
 
     /* scene 1 */
 
-    material = material_textureless(false,
+    material_textureless(&material, false,
                             VEC3(0.3f, 0.2f, 0.8f),
                             VEC3(0.3f, 0.2f, 0.8f),
                             VEC3(1.0f, 1.0f, 1.0f), 32.0f);
-    model_tmp = rectangular_plane_gen(100.0f, 100.0f, 10, &material, model_shader);
+    rectangular_plane_gen(&model_tmp, 100.0f, 100.0f, 10, &material, model_shader);
     scene_add_model(&s->scenes[1], &model_tmp);
 
-    model_tmp = model_load("res/backpack/backpack.obj", &material, model_shader);
+    model_load(&model_tmp, "res/backpack/backpack.obj", &material, model_shader);
     scene_add_model(&s->scenes[1], &model_tmp);
     transform.pos = VEC3(3.0f, 3.0f, 0.0f);
     model_update_transform(&s->scenes[1].models[1], &transform);
 
-    material = material_textureless(false,
+    material_textureless(&material, false,
                             VEC3(0.8f, 0.2f, 0.3f),
                             VEC3(0.8f, 0.2f, 0.3f),
                             VEC3(1.0f, 1.0f, 1.0f), 32.0f);
-    model_tmp = rectangular_prism_gen(1.5f, 2.0f, 3.0f, &material, model_shader);
+    rectangular_prism_gen(&model_tmp, 1.5f, 2.0f, 3.0f, &material, model_shader);
     scene_add_model(&s->scenes[1], &model_tmp);
     transform.pos = VEC3(-2.0f, 2.0f, 0.0f);
     model_update_transform(&s->scenes[1].models[2], &transform);
 
-    material = material_textureless(true,
+    material_textureless(&material, true,
                             VEC3(0.8f, 0.1f, 0.2f),
                             VEC3(0.8f, 0.1f, 0.2f),
                             VEC3(1.0f, 1.0f, 1.0f), 32.0f);
-    model_tmp = uv_sphere_gen(4.0f, 15, &material, sphere_shader);
+    uv_sphere_gen(&model_tmp, 4.0f, 15, &material, sphere_shader);
     scene_add_model(&s->scenes[1], &model_tmp);
     transform.pos = VEC3(-8.0f, 5.0f, 3.0f);
     model_update_transform(&s->scenes[1].models[3], &transform);
@@ -109,39 +108,43 @@ void game_add_models(GameState* s)
 
 void game_add_lights(GameState* s)
 {
+    Material material = {0}; // annoying that this temp material is needed
+    Model model_tmp;
+    Light light;
+    DirLight dir_light;
+
     /* scene 0 */
 
-    Material material = {0}; // annoying that this temp material is needed
-    Model light_model = uv_sphere_gen(0.5f, 10, &material, 0); // don't need to worry about setting shader, scene will do that for us
-    Light light = light_create(VEC3(0.0f, 5.0f, 5.0f), 
-                               VEC3(0.2f, 0.2f, 0.2f),
-                               VEC3(0.6f, 0.6f, 0.6f),
-                               VEC3(0.8f, 0.8f, 0.8f),
-                               VEC3(0.003f, 0.007f, 1.0f));
-    scene_add_light(&s->scenes[0], &s->rd, &light, &light_model);
+    uv_sphere_gen(&model_tmp, 0.5f, 10, &material, 0); // don't need to worry about setting shader, scene will do that for us
+    light_create(&light, VEC3(0.0f, 5.0f, 5.0f), 
+                         VEC3(0.2f, 0.2f, 0.2f),
+                         VEC3(0.6f, 0.6f, 0.6f),
+                         VEC3(0.8f, 0.8f, 0.8f),
+                         VEC3(0.003f, 0.007f, 1.0f));
+    scene_add_light(&s->scenes[0], &s->rd, &light, &model_tmp);
 
     /* scene 1 */
 
-    light_model = uv_sphere_gen(0.5f, 10, &material, 0);
-    light = light_create(VEC3(10.0f, 5.0f, 5.0f),
+    uv_sphere_gen(&model_tmp, 0.5f, 10, &material, 0);
+    light_create(&light, VEC3(10.0f, 5.0f, 5.0f),
                          VEC3(0.0f, 0.0f, 0.2f),
                          VEC3(0.0f, 0.0f, 0.6f),
                          VEC3(0.0f, 0.0f, 0.8f),
                          VEC3(0.007f, 0.014f, 1.0f));
-    scene_add_light(&s->scenes[1], &s->rd, &light, &light_model);
+    scene_add_light(&s->scenes[1], &s->rd, &light, &model_tmp);
 
-    light_model = uv_sphere_gen(0.5f, 10, &material, 0);
-    light = light_create(VEC3(-5.0f, 5.0f, -5.0f),
+    uv_sphere_gen(&model_tmp, 0.5f, 10, &material, 0);
+    light_create(&light, VEC3(-5.0f, 5.0f, -5.0f),
                          VEC3(0.2f, 0.0f, 0.0f),
                          VEC3(0.5f, 0.0f, 0.0f),
                          VEC3(0.8f, 0.0f, 0.0f),
                          VEC3(0.007f, 0.014f, 1.0f));
-    scene_add_light(&s->scenes[1], &s->rd, &light, &light_model);
+    scene_add_light(&s->scenes[1], &s->rd, &light, &model_tmp);
 
-    DirLight dir_light = dir_light_create(VEC3(1.0f,-1.0f, 0.0f),
-                                          VEC3(0.2f, 0.2f, 0.2f),
-                                          VEC3(0.5f, 0.5f, 0.5f),
-                                          VEC3(0.8f, 0.8f, 0.8f));
+    dir_light_create(&dir_light, VEC3(1.0f,-1.0f, 0.0f),
+                                 VEC3(0.2f, 0.2f, 0.2f),
+                                 VEC3(0.5f, 0.5f, 0.5f),
+                                 VEC3(0.8f, 0.8f, 0.8f));
     scene_set_dir_light(&s->scenes[1], &dir_light);
 }
 

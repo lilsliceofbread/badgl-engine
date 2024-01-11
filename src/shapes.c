@@ -7,11 +7,9 @@
 
 extern inline uint32_t* shape_setup(Model* model, const Material* material, uint32_t shader_idx);
 
-Model uv_sphere_gen(float radius, uint32_t res, const Material* material, uint32_t shader_idx)
+void uv_sphere_gen(Model* self, float radius, uint32_t res, const Material* material, uint32_t shader_idx)
 {
-    Model self;
-
-    uint32_t* tex_indices = shape_setup(&self, material, shader_idx);
+    uint32_t* tex_indices = shape_setup(self, material, shader_idx);
 
     uint32_t vert_count = 0, ind_count = 0;
 
@@ -26,10 +24,10 @@ Model uv_sphere_gen(float radius, uint32_t res, const Material* material, uint32
         .normal = NULL,
         .uv = NULL
     };
-    ASSERT(vertex_buffer.pos != NULL, "SPHERE: failed to allocate vertices\n");
+    ASSERT(vertex_buffer.pos != NULL, "failed to allocate vertices\n");
 
     uint32_t* indices = (uint32_t*)arena_alloc(&mesh_arena, total_indices * sizeof(uint32_t));
-    ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");
+    ASSERT(indices != NULL, "failed to allocate indices\n");
 
 
     // top vertex
@@ -89,11 +87,13 @@ Model uv_sphere_gen(float radius, uint32_t res, const Material* material, uint32
         ind_count += 3;
     }
 
-    /* loop through quads
-       horizontals - 2 represents stopping before final bottom triangles,
-       as each iteration involves 1 layer and another below, and the top
-       and bottom layers only have 1 set of triangle indices as they are
-       triangles but the quads have 2, so 1 less set on top */
+    /**
+     * loop through quads
+     * horizontals - 2 represents stopping before final bottom triangles,
+     * as each iteration involves 1 layer and another below, and the top
+     * and bottom layers only have 1 set of triangle indices as they are
+     * triangles but the quads have 2, so 1 less set on top 
+    */
     for(uint32_t i = 0; i < horizontals - 2; i++)
     {
         uint32_t layer1 = i * verticals + 1; // add 1 because of top vertex and then go down horizontals by multiplying by num verticals
@@ -134,16 +134,12 @@ Model uv_sphere_gen(float radius, uint32_t res, const Material* material, uint32
         ind_count += 3;
     }
 
-    mesh_init(&self.meshes[0], mesh_arena, vertex_buffer, vert_count, indices, ind_count, tex_indices, self.material.tex_count);
-
-    return self;
+    mesh_init(&self->meshes[0], mesh_arena, vertex_buffer, vert_count, indices, ind_count, tex_indices, self->material.tex_count);
 }
 
-Model rectangular_prism_gen(float width, float height, float depth, const Material* material, uint32_t shader_idx)
+void rectangular_prism_gen(Model* self, float width, float height, float depth, const Material* material, uint32_t shader_idx)
 {
-    Model self;
-
-    uint32_t* tex_indices = shape_setup(&self, material, shader_idx);
+    uint32_t* tex_indices = shape_setup(self, material, shader_idx);
     
     const size_t vert_size = 24 * sizeof(vec3);
     const size_t ind_size = 6 * 6 * sizeof(uint32_t);
@@ -154,10 +150,10 @@ Model rectangular_prism_gen(float width, float height, float depth, const Materi
         .normal = (vec3*)arena_alloc(&arena, vert_size),
         .uv = NULL
     };
-    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices\n");
+    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "failed to allocate vertices\n");
 
     uint32_t* indices = (uint32_t*)arena_alloc(&arena, ind_size);
-    ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");
+    ASSERT(indices != NULL, "failed to allocate indices\n");
 
     {
         // half width, height, depth
@@ -258,16 +254,12 @@ Model rectangular_prism_gen(float width, float height, float depth, const Materi
         memcpy(indices, indices_tmp, ind_size);
     }
 
-    mesh_init(&self.meshes[0], arena, vertex_buffer, 24, indices, 6 * 6, tex_indices, self.material.tex_count);
-
-    return self;
+    mesh_init(&self->meshes[0], arena, vertex_buffer, 24, indices, 6 * 6, tex_indices, self->material.tex_count);
 }
 
-Model rectangular_plane_gen(float width, float height, uint32_t res, const Material* material, uint32_t shader_idx)
+void rectangular_plane_gen(Model* self, float width, float height, uint32_t res, const Material* material, uint32_t shader_idx)
 {
-    Model self;
-
-    uint32_t* tex_indices = shape_setup(&self, material, shader_idx);
+    uint32_t* tex_indices = shape_setup(self, material, shader_idx);
 
     const size_t vert_size = res * res * sizeof(vec3);
     const size_t ind_size = 6 * (res - 1) * (res - 1) * sizeof(uint32_t);
@@ -278,10 +270,10 @@ Model rectangular_plane_gen(float width, float height, uint32_t res, const Mater
         .normal = (vec3*)arena_alloc(&arena, vert_size),
         .uv = NULL
     };
-    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "SPHERE: failed to allocate vertices\n");
+    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "failed to allocate vertices\n");
 
     uint32_t* indices = (uint32_t*)arena_alloc(&arena, ind_size);
-    ASSERT(indices != NULL, "SPHERE: failed to allocate indices\n");
+    ASSERT(indices != NULL, "failed to allocate indices\n");
 
     vec3 normal;
     normal.x = normal.z = 0.0f;
@@ -328,9 +320,7 @@ Model rectangular_plane_gen(float width, float height, uint32_t res, const Mater
         }
     }
 
-    mesh_init(&self.meshes[0], arena, vertex_buffer, res * res, indices, 6 * (res - 1) * (res - 1), tex_indices, self.material.tex_count);
-
-    return self;
+    mesh_init(&self->meshes[0], arena, vertex_buffer, res * res, indices, 6 * (res - 1) * (res - 1), tex_indices, self->material.tex_count);
 }
 
 inline uint32_t* shape_setup(Model* model, const Material* material, uint32_t shader_idx)

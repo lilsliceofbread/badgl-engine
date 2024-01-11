@@ -13,6 +13,7 @@ typedef struct Transform {
     vec3 scale;
 } Transform;
 
+
 char* get_file_data(const char* filepath);
 
 int str_find_last_of(const char* str, char c);

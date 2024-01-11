@@ -13,59 +13,55 @@
 #include "renderer.h"
 #include "light.h"
 
-Model model_load(const char* path, const Material* material, uint32_t shader_idx)
+void model_load(Model* self, const char* path, const Material* material, uint32_t shader_idx)
 {
     PERF_TIMER_START();
 
-    Model self;
-
-    if(material != NULL) self.material = *material; // use aiMat to set?
-    self.material.textures = NULL; // undefined behaviour if not set to NULL before realloc (uninit memory)
-    self.material.tex_count = 0;
-    self.material.flags = 0;
-    self.shader_idx = shader_idx;
-    transform_reset(&self.transform);
-    mat4_identity(&self.model);
-    find_directory_from_path(self.directory, path);
+    if(material != NULL) self->material = *material; // use aiMat to set?
+    self->material.textures = NULL; // undefined behaviour if not set to NULL before realloc (uninit memory)
+    self->material.tex_count = 0;
+    self->material.flags = 0;
+    self->shader_idx = shader_idx;
+    transform_reset(&self->transform);
+    mat4_identity(&self->model);
+    find_directory_from_path(self->directory, path);
 
     const struct aiScene* scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-    ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "MODEL: loading %s failed\n%s\n", path, aiGetErrorString());
+    ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "loading model %s failed\n%s\n", path, aiGetErrorString());
 
-    self.mesh_count = 0;
-    self.meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
+    self->mesh_count = 0;
+    self->meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
 
-    model_process_node(&self, scene->mRootNode, scene);
+    model_process_node(self, scene->mRootNode, scene);
 
     aiReleaseImport(scene);
 
 
 
-    for(uint32_t i = 0; i < self.material.tex_count; i++)
+    for(uint32_t i = 0; i < self->material.tex_count; i++)
     {
-        Texture curr_tex = self.material.textures[i];
+        Texture curr_tex = self->material.textures[i];
 
         if(curr_tex.type & TEXTURE_DIFFUSE)
         {
-            self.material.flags |= HAS_DIFFUSE_TEXTURE;
+            self->material.flags |= HAS_DIFFUSE_TEXTURE;
 
-            self.material.ambient = VEC3(1.0f, 1.0f, 1.0f);
-            self.material.diffuse = VEC3(1.0f, 1.0f, 1.0f);
+            self->material.ambient = VEC3(1.0f, 1.0f, 1.0f);
+            self->material.diffuse = VEC3(1.0f, 1.0f, 1.0f);
         }
         else if(curr_tex.type & TEXTURE_SPECULAR)
         {
-            self.material.flags |= HAS_SPECULAR_TEXTURE;
+            self->material.flags |= HAS_SPECULAR_TEXTURE;
 
-            self.material.specular = VEC3(1.0f, 1.0f, 1.0f);
+            self->material.specular = VEC3(1.0f, 1.0f, 1.0f);
         }
         else if(curr_tex.type & TEXTURE_NORMAL)
         {
-            self.material.flags |= HAS_NORMAL_TEXTURE;
+            self->material.flags |= HAS_NORMAL_TEXTURE;
         }
     }
 
-    PERF_TIMER_END("MODEL: loading model");
-
-    return self;
+    PERF_TIMER_END("loading model");
 }
 
 void model_update_transform(Model* self, Transform* transform)
@@ -73,11 +69,11 @@ void model_update_transform(Model* self, Transform* transform)
     self->transform = *transform;
     mat4_identity(&self->model);
 
+    mat4_scale(&self->model, self->transform.scale);
+
     mat4_rotate_x(&self->model, self->transform.euler.x); // pitch
     mat4_rotate_y(&self->model, self->transform.euler.y); // yaw
     mat4_rotate_z(&self->model, self->transform.euler.z); // roll
-
-    mat4_scale(&self->model, self->transform.scale);
 
     mat4_trans(&self->model, self->transform.pos);
 }
@@ -113,7 +109,7 @@ void model_draw(Model* self, Renderer* rd, Camera* cam)
 
 void model_add_mesh(Model* self, Mesh mesh, uint32_t total_meshes)
 {
-    ASSERT(self->mesh_count <= total_meshes, "MODEL: meshes exceeded expected count\n");
+    ASSERT(self->mesh_count <= total_meshes, "meshes exceeded expected count\n");
     self->meshes[self->mesh_count] = mesh;
     self->mesh_count++;
 }
@@ -163,10 +159,10 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         .uv = (vec2*)arena_alloc(&arena, total_vertices * sizeof(vec2))
     };
     memset(vertex_buffer.uv, 0, total_vertices * sizeof(vec2)); // if no tex coords, then all values zeroed out
-    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL && vertex_buffer.uv != NULL, "MODEL: failed to allocate vertices\n");
+    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL && vertex_buffer.uv != NULL, "failed to allocate vertices\n");
 
     indices = (uint32_t*)arena_alloc(&arena, total_indices * sizeof(uint32_t));
-    ASSERT(indices != NULL, "MODEL: failed to allocate indices\n");
+    ASSERT(indices != NULL, "failed to allocate indices\n");
 
     for(uint32_t i = 0; i < total_vertices; i++)
     {
@@ -267,7 +263,7 @@ uint32_t* model_load_textures(Model* self, struct aiMaterial* mat, TextureType t
             // increase amount to add to tex_count and reallocate textures
             add_tex_count++;
             self->material.textures = (Texture*)realloc(self->material.textures, (self->material.tex_count + add_tex_count) * sizeof(Texture));
-            ASSERT(self->material.textures != NULL, "MODEL: failed to realloc texture array\n");
+            ASSERT(self->material.textures != NULL, "failed to realloc texture array\n");
 
             // create new texture
             Texture texture;

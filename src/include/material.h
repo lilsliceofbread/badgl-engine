@@ -29,9 +29,9 @@ typedef struct Material {
 //void material_add_texture(Material* mat, const char* texture_path, TextureType type);
 
 // will this material be used in a shader that uses cubemap textures
-Material material_textureless(bool is_cubemap_shader, vec3 ambient, vec3 diffuse, vec3 specular, float shininess);
+void material_textureless(Material* mat, bool is_cubemap_shader, vec3 ambient, vec3 diffuse, vec3 specular, float shininess);
 
-Material material_texture_diffuse(bool is_cubemap, const char* texture_path, vec3 specular, float shininess);
+void material_texture_diffuse(Material* mat, bool is_cubemap, const char* texture_path, vec3 specular, float shininess);
 
 void material_set_uniforms(Material* mat, Shader* shader);
 

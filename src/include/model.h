@@ -31,7 +31,7 @@ typedef struct Model
     Material material;
 } Model;
 
-Model model_load(const char* path, const Material* material, uint32_t shader_idx);
+void model_load(Model* self, const char* path, const Material* material, uint32_t shader_idx);
 
 void model_update_transform(Model* self, Transform* transform);
 

@@ -9,7 +9,7 @@ typedef struct Light {
     vec4 ambient;
     vec4 diffuse;
     vec4 specular;
-    vec4 attenuation; // attenuation constants: (x, y, z) -> (quadratic, linear, constant)
+    vec4 attenuation; // * attenuation constants: (x, y, z) -> (quadratic, linear, constant)
 } Light;
 
 typedef struct DirLight {
@@ -19,9 +19,10 @@ typedef struct DirLight {
     vec3 specular;
 } DirLight;
 
-Light light_create(vec3 pos, vec3 ambient, vec3 diffuse, vec3 specular, vec3 attenuation);
+// TODO: make inline
+void light_create(Light* light, vec3 pos, vec3 ambient, vec3 diffuse, vec3 specular, vec3 attenuation);
 
-DirLight dir_light_create(vec3 dir, vec3 ambient, vec3 diffuse, vec3 specular);
+void dir_light_create(DirLight* light, vec3 dir, vec3 ambient, vec3 diffuse, vec3 specular);
 
 void dir_light_set_uniforms(DirLight* light, Shader* shader);
 
