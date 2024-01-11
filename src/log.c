@@ -36,11 +36,11 @@ void badgl_log_impl(LogType type, const char* msg, ...)
         HANDLE console_handle = (type == LOG_ERROR)
                               ? GetStdHandle(STD_ERROR_HANDLE) : GetStdHandle(STD_OUTPUT_HANDLE);
         GetConsoleScreenBufferInfo(console_handle, &cb_info);
-        int original_colour = cb_info.wAttributes;
+        int original_colour = cbInfo.wAttributes;
 
-        SetConsoleTextAttribute(console_handle, (WORD)type);
+        SetConsoleTextAttribute(console_handle, (int)type);
             fprintf(output_stream, "%s: ", prefix);
-        SetConsoleTextAttribute(console_handle, (WORD)original_colour);
+        SetConsoleTextAttribute(console_handle, original_colour);
     #endif
 
     va_start(args, msg);
