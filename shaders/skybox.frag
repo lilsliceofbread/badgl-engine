@@ -1,10 +1,10 @@
 #version 430 core
 out vec4 frag_colour;
 
-in vec3 f_pos; // this value becomes interpolated between vertices
+in vec3 f_pos;
 
 uniform samplerCube texture_diffuse;
-uniform samplerCube texture_specular;
+uniform samplerCube texture_specular; // TODO: make it so that this is not necessary
 
 void main()
 {

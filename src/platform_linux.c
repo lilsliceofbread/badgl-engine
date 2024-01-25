@@ -9,13 +9,22 @@
 #include <GL/glxext.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
-static int platform_clock;
-static double platform_time_offset = 0.0;
+static struct
+{
+    int platform_clock;
+    double platform_time_offset;
+} linux_ctx;
 
 static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
 // the GLX_EXT_swap_control extension does not have
 // a GetSwapIntervalEXT func, use glXQueryDrawable instead
+
+bool platform_file_exists(const char* filename)
+{
+    return access(filename, F_OK) == 0;
+}
 
 bool platform_gl_extension_supported(const char* extension)
 {
@@ -48,26 +57,26 @@ void platform_toggle_vsync(bool on)
 
 void platform_reset_time(void)
 {
-    platform_clock = CLOCK_REALTIME;
+    linux_ctx.platform_clock = CLOCK_REALTIME;
     #ifdef _POSIX_MONOTONIC_CLOCK
         struct timespec tmp;
         if(clock_gettime(CLOCK_MONOTONIC, &tmp) == 0)
         {
-            platform_clock = CLOCK_MONOTONIC;
+            linux_ctx.platform_clock = CLOCK_MONOTONIC;
         }
     #endif
 
-    platform_time_offset = platform_get_time();
+    linux_ctx.platform_time_offset = platform_get_time();
 }
 
 double platform_get_time(void)
 {
     struct timespec os_time;
 
-    clock_gettime(platform_clock, &os_time);    
+    clock_gettime(linux_ctx.platform_clock, &os_time);    
 
     double time = (double)os_time.tv_sec + (double)(0.000000001 * (double)os_time.tv_nsec);
-    return time - platform_time_offset;
+    return time - linux_ctx.platform_time_offset;
 }
 
 #endif

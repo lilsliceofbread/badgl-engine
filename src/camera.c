@@ -2,13 +2,10 @@
 
 #include <math.h>
 #include <stdio.h>
-#include <stdbool.h>
+#include "defines.h"
 #include "glmath.h"
 
-#define SENSITIVITY 0.1f
-#define CAM_SPEED 5.0f
-
-Camera camera_init(vec3 start_pos, float start_pitch, float start_yaw)
+Camera camera_create(vec3 start_pos, float start_pitch, float start_yaw, float speed, float sensitivity)
 {
     Camera self;
     self.pos = start_pos;
@@ -16,6 +13,8 @@ Camera camera_init(vec3 start_pos, float start_pitch, float start_yaw)
     self.pitch = start_pitch;
     self.last_cursor_x = 0.0f; // default value for starting
     self.last_cursor_y = 0.0f;
+    self.speed = speed;
+    self.sensitivity = sensitivity;
 
     camera_update_view(&self);
 
@@ -27,9 +26,9 @@ void camera_update_view(Camera* self)
     vec3 world_up = VEC3(0.0f, 1.0f, 0.0f);
 
     vec3 dir = VEC3( 
-        cosf(math_rad(self->yaw)) * cosf(math_rad(self->pitch)),
-        sinf(math_rad(self->pitch)),
-        sinf(math_rad(self->yaw)) * cosf(math_rad(self->pitch))
+        cosf(RADIANS(self->yaw)) * cosf(RADIANS(self->pitch)),
+        sinf(RADIANS(self->pitch)),
+        sinf(RADIANS(self->yaw)) * cosf(RADIANS(self->pitch))
     );
 
     self->dir = dir;
@@ -49,20 +48,19 @@ void camera_update_proj(Camera* self, float fov, float aspect_ratio, float znear
     self->zfar = zfar;
 
     mat_perspective_fov(&self->proj, fov, aspect_ratio, znear, zfar);
-    //self->proj = mat_perspective_frustrum(0.01f, 100.0f, -0.1f, 0.1f, -0.1f, 0.1f);
-    //self->proj = mat_orthographic_frustrum(0.01f, 100.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+    //mat_perspective_frustrum(&self->proj, 0.01f, 100.0f, -0.1f, 0.1f, -0.1f, 0.1f);
+    //mat_orthographic_frustrum(&self->proj, 0.01f, 100.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 }
 
 void camera_update(Camera* self, Renderer* rd)
 {
-    rd_update_viewport(rd); // in case glfw hasn't updated framebuffer callback yet
     const float aspect_ratio = (float)(rd->width) / (float)(rd->height);
-    if(aspect_ratio != self->aspect_ratio) // if aspect ratio has changed
+    if(aspect_ratio != self->aspect_ratio)
     {
         camera_update_proj(self, self->fov, aspect_ratio, self->znear, self->zfar);
     }
 
-    const float cam_step = CAM_SPEED * (float)rd->delta_time;
+    const float cam_step = self->speed * (float)rd->delta_time;
 
     // remove y component from "velocity" vecs to keep moving on flat plane
     vec3 flat_dir = VEC3( 
@@ -124,8 +122,8 @@ void camera_update(Camera* self, Renderer* rd)
         return;
     }
 
-    self->yaw += SENSITIVITY * (cursor_x - self->last_cursor_x); // x offset * sens = yaw
-    self->pitch += SENSITIVITY * (self->last_cursor_y - cursor_y); // reversed y offset
+    self->yaw += self->sensitivity * (cursor_x - self->last_cursor_x); // x offset * sens = yaw
+    self->pitch += self->sensitivity * (self->last_cursor_y - cursor_y); // reversed y offset
     self->last_cursor_x = cursor_x;
     self->last_cursor_y = cursor_y;
 

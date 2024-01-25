@@ -1,16 +1,17 @@
 #include "skybox.h"
-#include "shapes.h"
+
 #include <stdlib.h>
 #include <string.h>
+#include "shapes.h"
 
-Model skybox_init(Renderer* rd, const char* cubemap_path)
+Model skybox_create(Renderer* rd, const char* cubemap_path)
 {
     Model self;
     Material material;
     material_texture_diffuse(&material, true, cubemap_path, VEC3(1.0f, 1.0f, 1.0f), 1.0f); // dummy values
     material.flags |= NO_LIGHTING;
 
-    rectangular_prism_gen(&self, 2.0f, 2.0f, 2.0f, &material, rd->skybox_shader);
+    shapes_rectangular_prism(&self, 2.0f, 2.0f, 2.0f, &material, rd->skybox_shader);
     return self;
 }
 

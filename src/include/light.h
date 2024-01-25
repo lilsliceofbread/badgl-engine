@@ -1,5 +1,5 @@
-#ifndef BADGL_LIGHT_H
-#define BADGL_LIGHT_H
+#ifndef BGL_LIGHT_H
+#define BGL_LIGHT_H
 
 #include "glmath.h"
 #include "shader.h"

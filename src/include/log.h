@@ -1,12 +1,12 @@
-#ifndef BADGL_LOG_H
-#define BADGL_LOG_H
+#ifndef BGL_LOG_H
+#define BGL_LOG_H
 
-#ifdef BADGL_NO_DEBUG
-    #define BADGL_LOG(type, msg, ...)
-    #define BADGL_LOG_NO_CTX(type, msg, ...)
+#ifdef BGL_NO_DEBUG
+    #define BGL_LOG(type, msg, ...)
+    #define BGL_LOG_NO_CTX(type, msg, ...)
 #else
-    #define BADGL_LOG(type, msg, ...) badgl_log_ctx_impl(type, msg, __FILE__, __LINE__, ##__VA_ARGS__)
-    #define BADGL_LOG_NO_CTX(type, msg, ...) badgl_log_impl(type, msg, ##__VA_ARGS__) // no file/line suffix
+    #define BGL_LOG(type, msg, ...) bgl_log_ctx_impl(type, msg, __FILE__, __LINE__, ##__VA_ARGS__)
+    #define BGL_LOG_NO_CTX(type, msg, ...) bgl_log_impl(type, msg, ##__VA_ARGS__) // no file/line suffix
 #endif
 
 typedef enum LogType
@@ -22,8 +22,8 @@ typedef enum LogType
     #endif
 } LogType;
 
-void badgl_log_impl(LogType type, const char* msg, ...);
+void bgl_log_impl(LogType type, const char* msg, ...);
 
-void badgl_log_ctx_impl(LogType type, const char* msg, const char* file, int line, ...);
+void bgl_log_ctx_impl(LogType type, const char* msg, const char* file, int line, ...);
 
 #endif

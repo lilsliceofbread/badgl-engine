@@ -1,8 +1,7 @@
-#ifndef BADGL_SCENE_H
-#define BADGL_SCENE_H
+#ifndef BGL_SCENE_H
+#define BGL_SCENE_H
 
-#include <inttypes.h>
-#include <stdbool.h>
+#include "defines.h"
 #include "camera.h"
 #include "model.h"
 #include "skybox.h"
@@ -23,11 +22,11 @@ typedef struct Scene {
     Camera cam;
 
     Model* models;
-    uint32_t model_count;
+    u32 model_count;
     Model skybox;
 
     Light lights[GLSL_MAX_LIGHTS];
-    int32_t light_count;
+    i32 light_count;
     UBO light_ubo;
     DirLight dir_light;
 
@@ -40,16 +39,16 @@ typedef struct Scene {
  * @brief initialise scene
  * @note this function must any other scene function is used with your scene
  * @param self:
- * @param start_pos initial position of the camera
- * @param euler initial rotation of the camera (x: pitch, y: yaw)
- * @param dir_light optional directional light for the scene (pass NULL to ignore)
  * @param rd 
- * @param skybox_cubemap_path optional path to a skybox (to format, see texture_cubemap_create) (pass NULL to ignore)
- * @param func optional user update callback to run every scene_update (pass NULL to ignore)
+ * @param start_pos initial position of the camera
+ * @param start_euler initial rotation of the camera (x: pitch, y: yaw)
  * @retval None
 */
-void scene_init(Scene* self, vec3 start_pos, vec2 start_euler, const DirLight* dir_light,
-                Renderer* rd, const char* skybox_cubemap_path, SceneUpdateFunc func);
+void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler);
+
+void scene_set_skybox(Scene* self, Renderer* rd, const char* cubemap_path);
+
+void scene_set_update_callback(Scene* self, SceneUpdateFunc func);
 
 /**
  * ! this function is for library use only
@@ -60,7 +59,7 @@ void scene_init(Scene* self, vec3 start_pos, vec2 start_euler, const DirLight* d
  * @param  new_count: the new amount of models
  * @retval None
  */
-void scene_reallocate_models(Scene* self, uint32_t new_count);
+void scene_reallocate_models(Scene* self, u32 new_count);
 
 /**
  * @brief add a model to your scene 
@@ -69,7 +68,7 @@ void scene_reallocate_models(Scene* self, uint32_t new_count);
  * @param  model: const pointer to your model
  * @retval the index of the model in scene->models
  */
-uint32_t scene_add_model(Scene* self, const Model* model);
+u32 scene_add_model(Scene* self, const Model* model);
 
 /**
  * @brief add a point light to the scene 

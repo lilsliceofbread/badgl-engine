@@ -2,19 +2,10 @@
 
 int main(void)
 {
-    GameState state;
+    game_init();
     
-    game_init(&state);
+    game_run();
     
-    while(!rd_win_should_close(&state.rd))
-    {
-        rd_begin_frame(&state.rd);
-
-        game_update(&state);
-
-        rd_end_frame(&state.rd);
-    }
-    
-    game_end(&state);
+    game_end();
     return 0;
 }

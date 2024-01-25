@@ -1,38 +1,37 @@
 #include "shapes.h"
 
-#include <stdbool.h>
 #include <stdlib.h>
 #include "defines.h"
 #include "util.h"
 
-extern inline uint32_t* shape_setup(Model* model, const Material* material, uint32_t shader_idx);
+extern inline u32* shape_setup(Model* model, const Material* material, u32 shader_idx);
 
-void uv_sphere_gen(Model* self, float radius, uint32_t res, const Material* material, uint32_t shader_idx)
+void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader_idx)
 {
-    uint32_t* tex_indices = shape_setup(self, material, shader_idx);
+    u32* tex_indices = shape_setup(self, material, shader_idx);
 
-    uint32_t vert_count = 0, ind_count = 0;
+    u32 vert_count = 0, ind_count = 0;
 
-    const uint32_t horizontals = res, verticals = 2 * res;
+    const u32 horizontals = res, verticals = 2 * res;
     const size_t total_vertices = horizontals * verticals + 2;
     const size_t total_indices = 6 * verticals * (horizontals - 1); // 6 indices per square, but top and bottom rings are triangles (3 per), so h - 2 + 1
 
-    Arena mesh_arena = arena_create((total_vertices * 2 * sizeof(vec3)) + (total_indices * sizeof(uint32_t)));
+    Arena mesh_arena = arena_create((total_vertices * 2 * sizeof(vec3)) + (total_indices * sizeof(u32)));
 
     VertexBuffer vertex_buffer = {
         .pos = (vec3*)arena_alloc(&mesh_arena, total_vertices * sizeof(vec3)),
         .normal = NULL,
         .uv = NULL
     };
-    ASSERT(vertex_buffer.pos != NULL, "failed to allocate vertices\n");
+    BGL_ASSERT(vertex_buffer.pos != NULL, "failed to allocate vertices\n");
 
-    uint32_t* indices = (uint32_t*)arena_alloc(&mesh_arena, total_indices * sizeof(uint32_t));
-    ASSERT(indices != NULL, "failed to allocate indices\n");
+    u32* indices = (u32*)arena_alloc(&mesh_arena, total_indices * sizeof(u32));
+    BGL_ASSERT(indices != NULL, "failed to allocate indices\n");
 
 
     // top vertex
     vertex_buffer.pos[0].x = 0.0f;
-    vertex_buffer.pos[0].y = radius;
+    vertex_buffer.pos[0].y = 1.0f;
     vertex_buffer.pos[0].z = 0.0f;
 
     vert_count++;
@@ -40,26 +39,28 @@ void uv_sphere_gen(Model* self, float radius, uint32_t res, const Material* mate
     const float inv_hori = 1.0f / (float)horizontals;
     const float inv_vert = 1.0f / (float)verticals;
     const float pi2 = 2.0f * GL_PI; // multiply 2 * PI before hand
-    for(uint32_t i = 0; i < horizontals; i++) // latitudes (start after top vertex (i+1) and stop before bottom vertex (< not <=))
+    for(u32 i = 0; i < horizontals; i++) // latitudes (start after top vertex (i+1) and stop before bottom vertex (< not <=))
     {
         // only 1PI because horizontal stacks will only need to sweep half the circle (other half is just the reverse)
         const float horizontal_angle = (float)(i + 1) * GL_PI * inv_hori;
 
         const float sh = sinf(horizontal_angle);
-        const float y = radius * cosf(horizontal_angle); // same for whole horizontal
+        const float y = cosf(horizontal_angle); // same for whole horizontal
 
-        for(uint32_t j = 0; j < verticals; j++) // longitudes (< to stop before 2PI which is a repeat of 0)
+        for(u32 j = 0; j < verticals; j++) // longitudes (< to stop before 2PI which is a repeat of 0)
         {
-            /* 2PI because it's going around the full circumference.
-               since opengl is right-handed this creates vertices clockwise
-               as the unit circle is reversed with +z going "down" */
+            /**
+             * 2PI because it's going around the full circumference.
+             * since opengl is right-handed this creates vertices clockwise
+             * as the unit circle is reversed with +z going "down"
+             */
             float vertical_angle = (float)j * pi2 * inv_vert;
 
             vec3 pos;
             // calculate cartesian coords from spherical
-            pos.x = radius * sh * cosf(vertical_angle);
+            pos.x = sh * cosf(vertical_angle);
             pos.y = y;
-            pos.z = radius * sh * sinf(vertical_angle);
+            pos.z = sh * sinf(vertical_angle);
 
             vertex_buffer.pos[vert_count] = pos;
             vert_count++;
@@ -69,16 +70,16 @@ void uv_sphere_gen(Model* self, float radius, uint32_t res, const Material* mate
 
     // bottom vertex
     vertex_buffer.pos[vert_count].x = 0.0f;
-    vertex_buffer.pos[vert_count].y = -radius;
+    vertex_buffer.pos[vert_count].y = -1.0f;
     vertex_buffer.pos[vert_count].z = 0.0f;
 
     vert_count++;
 
     // top triangle's indices
-    for(uint32_t i = 0; i < verticals; i++)
+    for(u32 i = 0; i < verticals; i++)
     {
-        uint32_t p1 = (i) + 1; // add 1 because 0 is top vertex
-        uint32_t p2 = ((i + 1) % verticals) + 1; // i + 2 but remember to wrap around back to 0 instead of going above verticals
+        u32 p1 = (i) + 1; // add 1 because 0 is top vertex
+        u32 p2 = ((i + 1) % verticals) + 1; // i + 2 but remember to wrap around back to 0 instead of going above verticals
 
         indices[ind_count] = 0; // first vertex is top vertex
         indices[ind_count + 1] = p2; // p2 first in counter-clockwise order
@@ -93,18 +94,18 @@ void uv_sphere_gen(Model* self, float radius, uint32_t res, const Material* mate
      * as each iteration involves 1 layer and another below, and the top
      * and bottom layers only have 1 set of triangle indices as they are
      * triangles but the quads have 2, so 1 less set on top 
-    */
-    for(uint32_t i = 0; i < horizontals - 2; i++)
+     */
+    for(u32 i = 0; i < horizontals - 2; i++)
     {
-        uint32_t layer1 = i * verticals + 1; // add 1 because of top vertex and then go down horizontals by multiplying by num verticals
-        uint32_t layer2 = (i + 1) * verticals + 1; // i + 1 gives next layer down
+        u32 layer1 = i * verticals + 1; // add 1 because of top vertex and then go down horizontals by multiplying by num verticals
+        u32 layer2 = (i + 1) * verticals + 1; // i + 1 gives next layer down
         
-        for(uint32_t j = 0; j < verticals; j++)
+        for(u32 j = 0; j < verticals; j++)
         {
-            uint32_t tr = layer1 + j; // j: from 0 to verticals - 1
-            uint32_t tl = layer1 + (j + 1) % verticals; // j + 1 but remembering to wrap back to 0
-            uint32_t br = layer2 + j;
-            uint32_t bl = layer2 + (j + 1) % verticals;
+            u32 tr = layer1 + j; // j: from 0 to verticals - 1
+            u32 tl = layer1 + (j + 1) % verticals; // j + 1 but remembering to wrap back to 0
+            u32 br = layer2 + j;
+            u32 bl = layer2 + (j + 1) % verticals;
 
             // counter-clockwise quad indices
             indices[ind_count] = tr;
@@ -121,11 +122,11 @@ void uv_sphere_gen(Model* self, float radius, uint32_t res, const Material* mate
     }
 
     // bottom triangle's indices
-    const uint32_t final_layer_index = verticals * (horizontals - 2) + 1; // add 1 because of top vertex
-    for(uint32_t i = 0; i < verticals; i++)
+    const u32 final_layer_index = verticals * (horizontals - 2) + 1; // add 1 because of top vertex
+    for(u32 i = 0; i < verticals; i++)
     {
-        uint32_t p1 = final_layer_index + i; // first vertex
-        uint32_t p2 = final_layer_index + ((i + 1) % verticals); // next vertex, remembering to wrap back to 0 on last
+        u32 p1 = final_layer_index + i; // first vertex
+        u32 p2 = final_layer_index + ((i + 1) % verticals); // next vertex, remembering to wrap back to 0 on last
 
         indices[ind_count] = vert_count - 1; // first vertex is bottom vertex
         indices[ind_count + 1] = p1;
@@ -134,26 +135,29 @@ void uv_sphere_gen(Model* self, float radius, uint32_t res, const Material* mate
         ind_count += 3;
     }
 
-    mesh_init(&self->meshes[0], mesh_arena, vertex_buffer, vert_count, indices, ind_count, tex_indices, self->material.tex_count);
+    mesh_create(&self->meshes[0], mesh_arena, vertex_buffer, vert_count, indices, ind_count,
+                tex_indices, material == NULL ? 0 : self->material.tex_count);
 }
 
-void rectangular_prism_gen(Model* self, float width, float height, float depth, const Material* material, uint32_t shader_idx)
+void shapes_rectangular_prism(Model* self, float width, float height, float depth, const Material* material, u32 shader_idx)
 {
-    uint32_t* tex_indices = shape_setup(self, material, shader_idx);
+    u32* tex_indices = shape_setup(self, material, shader_idx);
     
-    const size_t vert_size = 24 * sizeof(vec3);
-    const size_t ind_size = 6 * 6 * sizeof(uint32_t);
-    Arena arena = arena_create((2 * vert_size) + ind_size); // 2 vertex attributes
+    const u32 vert_count = 6 * 4;
+    const size_t vert_size = (size_t) vert_count * (2 * sizeof(vec3));
+    const size_t ind_size = 6 * 6 * sizeof(u32);
+    Arena arena = arena_create(vert_size + ind_size);
 
     VertexBuffer vertex_buffer = {
-        .pos = (vec3*)arena_alloc(&arena, vert_size),
-        .normal = (vec3*)arena_alloc(&arena, vert_size),
+        .pos = (vec3*)arena_alloc(&arena, vert_count * sizeof(vec3)),
+        .normal = (vec3*)arena_alloc(&arena, vert_count * sizeof(vec3)),
         .uv = NULL
     };
-    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "failed to allocate vertices\n");
+    BGL_ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL,
+               "failed to allocate vertices\n");
 
-    uint32_t* indices = (uint32_t*)arena_alloc(&arena, ind_size);
-    ASSERT(indices != NULL, "failed to allocate indices\n");
+    u32* indices = (u32*)arena_alloc(&arena, ind_size);
+    BGL_ASSERT(indices != NULL, "failed to allocate indices\n");
 
     {
         // half width, height, depth
@@ -210,7 +214,7 @@ void rectangular_prism_gen(Model* self, float width, float height, float depth, 
             {0.0f, 0.0f, -1.0f},
             {0.0f, 0.0f, -1.0f},
 
-            {0.0f, -1.0f, 0.0f}, // top
+            {0.0f, -1.0f, 0.0f}, // bottom
             {0.0f, -1.0f, 0.0f},
             {0.0f, -1.0f, 0.0f},
             {0.0f, -1.0f, 0.0f},
@@ -226,12 +230,12 @@ void rectangular_prism_gen(Model* self, float width, float height, float depth, 
             {-1.0f, 0.0f, 0.0f},
         };
 
-        memcpy(vertex_buffer.pos, vertex_positions, vert_size);
-        memcpy(vertex_buffer.normal, vertex_normals, vert_size);
+        memcpy(vertex_buffer.pos, vertex_positions, vert_count * sizeof(vec3));
+        memcpy(vertex_buffer.normal, vertex_normals, vert_count * sizeof(vec3));
     }
 
     {
-        const uint32_t indices_tmp[] = {
+        const u32 indices_tmp[] = {
             0, 1, 2, // front
             0, 2, 3,
 
@@ -254,15 +258,16 @@ void rectangular_prism_gen(Model* self, float width, float height, float depth, 
         memcpy(indices, indices_tmp, ind_size);
     }
 
-    mesh_init(&self->meshes[0], arena, vertex_buffer, 24, indices, 6 * 6, tex_indices, self->material.tex_count);
+    mesh_create(&self->meshes[0], arena, vertex_buffer, vert_count, indices, 6 * 6,
+                tex_indices, material == NULL ? 0 : self->material.tex_count);
 }
 
-void rectangular_plane_gen(Model* self, float width, float height, uint32_t res, const Material* material, uint32_t shader_idx)
+void shapes_rectangular_plane(Model* self, float width, float height, u32 res, const Material* material, u32 shader_idx)
 {
-    uint32_t* tex_indices = shape_setup(self, material, shader_idx);
+    u32* tex_indices = shape_setup(self, material, shader_idx);
 
     const size_t vert_size = res * res * sizeof(vec3);
-    const size_t ind_size = 6 * (res - 1) * (res - 1) * sizeof(uint32_t);
+    const size_t ind_size = 6 * (res - 1) * (res - 1) * sizeof(u32);
     Arena arena = arena_create((2 * vert_size) + ind_size); // 2 vertex attributes
 
     VertexBuffer vertex_buffer = {
@@ -270,10 +275,10 @@ void rectangular_plane_gen(Model* self, float width, float height, uint32_t res,
         .normal = (vec3*)arena_alloc(&arena, vert_size),
         .uv = NULL
     };
-    ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "failed to allocate vertices\n");
+    BGL_ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "failed to allocate vertices\n");
 
-    uint32_t* indices = (uint32_t*)arena_alloc(&arena, ind_size);
-    ASSERT(indices != NULL, "failed to allocate indices\n");
+    u32* indices = (u32*)arena_alloc(&arena, ind_size);
+    BGL_ASSERT(indices != NULL, "failed to allocate indices\n");
 
     vec3 normal;
     normal.x = normal.z = 0.0f;
@@ -285,28 +290,29 @@ void rectangular_plane_gen(Model* self, float width, float height, uint32_t res,
 
     float top_left_x = -0.5f * width;
     float top_left_z = -0.5f * height;
-    for(uint32_t z = 0; z < res; z++)
+    for(u32 z = 0; z < res; z++)
     {
         float curr_z = top_left_z + ((float)z * step_z);
 
-        for(uint32_t x = 0; x < res; x++)
+        for(u32 x = 0; x < res; x++)
         {
-            uint32_t idx = z * res + x;
+            u32 idx = z * res + x;
 
-            vec3 curr;
-            curr.x = top_left_x + ((float)x * step_x);
-            curr.y = 0.0f;
-            curr.z = curr_z;
-            vertex_buffer.pos[idx] = curr;
+            vec3 pos = VEC3(
+                top_left_x + ((float)x * step_x),
+                0.0f,
+                curr_z
+            );
+            vertex_buffer.pos[idx] = pos;
 
             vertex_buffer.normal[idx] = normal;
         }
     }
 
-    uint32_t idx = 0;
-    for(uint32_t y = 0; y < res - 1; y++) // y as in the distance down
+    u32 idx = 0;
+    for(u32 y = 0; y < res - 1; y++) // y as in the distance down
     {
-        for(uint32_t x = 0; x < res - 1; x++)
+        for(u32 x = 0; x < res - 1; x++)
         {
             // anti-clockwise indices
             indices[idx]     = (res * y)       + x + 1; // top right
@@ -320,15 +326,23 @@ void rectangular_plane_gen(Model* self, float width, float height, uint32_t res,
         }
     }
 
-    mesh_init(&self->meshes[0], arena, vertex_buffer, res * res, indices, 6 * (res - 1) * (res - 1), tex_indices, self->material.tex_count);
+    mesh_create(&self->meshes[0], arena, vertex_buffer, res * res, indices, 6 * (res - 1) * (res - 1),
+                tex_indices, material == NULL ? 0 : self->material.tex_count);
 }
 
-inline uint32_t* shape_setup(Model* model, const Material* material, uint32_t shader_idx)
+inline u32* shape_setup(Model* model, const Material* material, u32 shader_idx)
 {
     model->meshes = (Mesh*)malloc(sizeof(Mesh));
     model->mesh_count = 1;
     model->shader_idx = shader_idx;
-    model->material = *material;
+    if(material == NULL)
+    {
+        memset(&model->material, 0, sizeof(Material));
+    }
+    else
+    {
+        model->material = *material;
+    }
 
     transform_reset(&model->transform);
     mat4_identity(&model->model);
@@ -336,8 +350,8 @@ inline uint32_t* shape_setup(Model* model, const Material* material, uint32_t sh
 
     // allow for variable amount of textures
     // these will always be contiguous for shapes so can use loop
-    uint32_t* tex_indices = (uint32_t*)malloc(material->tex_count * sizeof(uint32_t));
-    for(uint32_t i = 0; i < material->tex_count; i++)
+    u32* tex_indices = (u32*)malloc(model->material.tex_count * sizeof(u32));
+    for(u32 i = 0; i < model->material.tex_count; i++)
     {
         tex_indices[i] = i;
     }

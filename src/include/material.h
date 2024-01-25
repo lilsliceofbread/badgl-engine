@@ -1,7 +1,6 @@
-#ifndef BADGL_MATERIAL_H
-#define BADGL_MATERIAL_H
+#ifndef BGL_MATERIAL_H
+#define BGL_MATERIAL_H
 
-#include <inttypes.h>
 #include "glmath.h"
 #include "texture.h"
 #include "shader.h"
@@ -23,7 +22,7 @@ typedef struct Material {
     MaterialFlags flags;
 
     Texture* textures;
-    uint32_t tex_count;
+    u32 tex_count;
 } Material;
 
 //void material_add_texture(Material* mat, const char* texture_path, TextureType type);

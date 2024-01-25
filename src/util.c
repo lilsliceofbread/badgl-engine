@@ -16,7 +16,7 @@ char* get_file_data(const char* filepath)
     }
 
     // since we seeked the end of file, ftell will return the position of the EOF or the file size
-    long file_size = ftell(file);
+    i64 file_size = (i64)ftell(file);
     if(file_size == -1)
     {
         return NULL;
@@ -37,8 +37,8 @@ char* get_file_data(const char* filepath)
 
 int str_find_last_of(const char* str, char c)
 {
-    int i = 0;
-    int latest_occurrence = -1;
+    i32 i = 0;
+    i32 latest_occurrence = -1;
     const char* curr = str;
     while(curr != NULL && *curr != '\0')
     {
@@ -54,16 +54,16 @@ int str_find_last_of(const char* str, char c)
 
 void find_directory_from_path(char* dest, const char* path)
 {
-    int offset = str_find_last_of(path, '/');
-    ASSERT(offset != -1, "invalid path %s\n", path);
+    i32 offset = str_find_last_of(path, '/');
+    BGL_ASSERT(offset != -1, "invalid path %s\n", path);
 
     strncpy(dest, path, (size_t)offset); // copy up to final / into directory
     dest[offset] = '\0';
 }
 
-bool array_contains(uint32_t* array, uint32_t length, uint32_t val)
+bool array_contains(u32* array, u32 length, u32 val)
 {
-    for(uint32_t i = 0; i < length; i++)
+    for(u32 i = 0; i < length; i++)
     {
         if(val == array[i]) return true;
     }
@@ -73,7 +73,7 @@ bool array_contains(uint32_t* array, uint32_t length, uint32_t val)
 
 void transform_reset(Transform* transform)
 {
-    transform->pos = vec3_zero();
-    transform->euler = vec3_zero();
-    vec3_copy(VEC3(1.0f, 1.0f, 1.0f), &transform->scale);
+    transform->pos = VEC3(0.0f, 0.0f, 0.0f);
+    transform->euler = VEC3(0.0f, 0.0f, 0.0f);
+    transform->scale = VEC3(1.0f, 1.0f, 1.0f);
 }

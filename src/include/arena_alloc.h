@@ -1,12 +1,12 @@
-#ifndef BADGL_ARENA_ALLOC_H
-#define BADGL_ARENA_ALLOC_H
+#ifndef BGL_ARENA_ALLOC_H
+#define BGL_ARENA_ALLOC_H
 
-#include <inttypes.h>
 #include <stddef.h>
+#include "defines.h"
 
 typedef struct Arena {
-    uint8_t* raw_memory;
-    uint8_t* cursor; // position where unused memory starts
+    u8* raw_memory;
+    u8* cursor; // position where unused memory starts
     size_t size;
 } Arena;
 

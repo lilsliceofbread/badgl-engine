@@ -1,13 +1,13 @@
-#ifndef BADGL_BO_H
-#define BADGL_BO_H
+#ifndef BGL_BO_H
+#define BGL_BO_H
 
 #include <glad/gl.h>
 #include <stddef.h>
-#include <stdbool.h>
+#include "defines.h"
 
 typedef struct BO
 {
-    GLuint id;
+    u32 id;
     GLenum type;
 } BO;
 
@@ -45,14 +45,14 @@ void bo_unbind(BO self);
 
 void bo_set_buffer(BO self, const void* data, size_t size, bool dynamic); // can't use dynamic rn
 
-void bo_set_buffer_region(BO self, const void* data, int offset, size_t size);
+void bo_set_buffer_region(BO self, const void* data, i32 offset, size_t size);
 
 void bo_free(BO self); // free gpu allocation
 
 /* UBO ONLY */
 
-void ubo_bind_buffer_base(UBO self, uint32_t index);
+void ubo_bind_buffer_base(UBO self, u32 index);
 
-void ubo_bind_buffer_range(UBO self, uint32_t index, int offset, size_t size);
+void ubo_bind_buffer_range(UBO self, u32 index, i32 offset, size_t size);
 
 #endif

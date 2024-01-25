@@ -6,7 +6,7 @@
     #include <windows.h>
 #endif
 
-void badgl_log_impl(LogType type, const char* msg, ...)
+void bgl_log_impl(LogType type, const char* msg, ...)
 {
     va_list args;
     FILE* output_stream;
@@ -48,7 +48,7 @@ void badgl_log_impl(LogType type, const char* msg, ...)
     va_end(args);
 }
 
-void badgl_log_ctx_impl(LogType type, const char* msg, const char* file, int line, ...)
+void bgl_log_ctx_impl(LogType type, const char* msg, const char* file, int line, ...)
 {
     va_list args;
     char buffer[8192];
@@ -58,5 +58,5 @@ void badgl_log_ctx_impl(LogType type, const char* msg, const char* file, int lin
         vsprintf(buffer, msg, args);
     va_end(args);
 
-    badgl_log_impl(type, "%s at %s in line %d\n\n", buffer, file, line);
+    bgl_log_impl(type, "%s at %s in line %d\n\n", buffer, file, line);
 }

@@ -1,9 +1,8 @@
-#ifndef BADGL_CAMERA_H
-#define BADGL_CAMERA_H
+#ifndef BGL_CAMERA_H
+#define BGL_CAMERA_H
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include <stdbool.h>
 #include "glmath.h"
 #include "renderer.h"
 
@@ -17,6 +16,8 @@ typedef struct Camera
 
     float pitch, yaw;
     float last_cursor_x, last_cursor_y;
+    float speed;
+    float sensitivity;
 
     float fov;
     float aspect_ratio; // store aspect ratio to know if it has changed
@@ -25,7 +26,7 @@ typedef struct Camera
     mat4 proj; // view and projection matrix
 } Camera;
 
-Camera camera_init(vec3 start_pos, float start_pitch, float start_yaw);
+Camera camera_create(vec3 start_pos, float start_pitch, float start_yaw, float speed, float sensitivity);
 
 void camera_update(Camera* self, Renderer* rd);
 

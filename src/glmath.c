@@ -1,21 +1,7 @@
 #include "glmath.h"
+
 #include <stdlib.h>
 #include <string.h>
-
-void vec3_copy(vec3 src, vec3* dest)
-{
-    dest->x = src.x;
-    dest->y = src.y;
-    dest->z = src.z;
-}
-
-vec3 vec3_zero(void)
-{
-    vec3 vec;
-    vec.x = vec.y = vec.z = 0.0f;
-
-    return vec;
-}
 
 float vec3_dot(vec3 v1, vec3 v2)
 {
@@ -84,20 +70,6 @@ vec3 vec_cross(vec3 v1, vec3 v2)
     new_vec.z = v1.x * v2.y - v1.y * v2.x;
 
     return new_vec;
-}
-
-void vec2_copy(vec2 src, vec2* dest)
-{
-    dest->x = src.x;
-    dest->y = src.y;
-}
-
-vec2 vec2_zero(void)
-{
-    vec2 vec;
-    vec.x = vec.y = 0.0f;
-
-    return vec;
 }
 
 float vec2_dot(vec2 v1, vec2 v2)
@@ -202,31 +174,27 @@ void mat4_identity(mat4* out)
     memcpy(out, mat.data, sizeof(mat));
 }
 
-mat4 mat4_transpose(mat4 mat)
+void mat4_transpose(mat4* out, mat4 mat)
 {
-    mat4 new_mat;
+    out->m11 = mat.m11;
+    out->m21 = mat.m12;
+    out->m31 = mat.m13;
+    out->m41 = mat.m14;
 
-    new_mat.m11 = mat.m11;
-    new_mat.m21 = mat.m12;
-    new_mat.m31 = mat.m13;
-    new_mat.m41 = mat.m14;
+    out->m12 = mat.m21;
+    out->m22 = mat.m22;
+    out->m32 = mat.m23;
+    out->m42 = mat.m24;
 
-    new_mat.m12 = mat.m21;
-    new_mat.m22 = mat.m22;
-    new_mat.m32 = mat.m23;
-    new_mat.m42 = mat.m24;
+    out->m13 = mat.m31;
+    out->m23 = mat.m32;
+    out->m33 = mat.m33;
+    out->m43 = mat.m34;
 
-    new_mat.m13 = mat.m31;
-    new_mat.m23 = mat.m32;
-    new_mat.m33 = mat.m33;
-    new_mat.m43 = mat.m34;
-
-    new_mat.m14 = mat.m41;
-    new_mat.m24 = mat.m42;
-    new_mat.m34 = mat.m43;
-    new_mat.m44 = mat.m44;
-
-    return new_mat;
+    out->m14 = mat.m41;
+    out->m24 = mat.m42;
+    out->m34 = mat.m43;
+    out->m44 = mat.m44;
 }
 
 void mat4_scale(mat4* out, vec3 s)
@@ -265,7 +233,7 @@ void mat4_scale_scalar(mat4* out, float s)
 
 void mat4_trans(mat4* out, vec3 t)
 {
-    mat4 trans_mat = { // appears transposed because opengl column major memory ordering
+    mat4 trans_mat = { // * appears transposed because opengl column major memory ordering
         1,   0,   0,   0,
         0,   1,   0,   0,
         0,   0,   1,   0,
@@ -279,7 +247,7 @@ void mat4_rotate_x(mat4* out, float a) // not figuring out arbitrary axis rotati
 {
     float c = cosf(a);
     float s = sinf(a);
-    mat4 rot_mat = { // appears transposed because opengl column major memory ordering
+    mat4 rot_mat = { // * appears transposed because opengl column major memory ordering
         1,  0,  0,  0,
         0,  c,  s,  0,
         0, -s,  c,  0,
@@ -293,7 +261,7 @@ void mat4_rotate_y(mat4* out, float a)
 {
     float c = cosf(a);
     float s = sinf(a);
-    mat4 rot_mat = { // appears transposed because opengl column major memory ordering
+    mat4 rot_mat = { // * appears transposed because opengl column major memory ordering
         c,  0, -s,  0,
         0,  1,  0,  0,
         s,  0,  c,  0,
@@ -307,7 +275,7 @@ void mat4_rotate_z(mat4* out, float a)
 {
     float c = cosf(a);
     float s = sinf(a);
-    mat4 rot_mat = { // appears transposed because opengl column major memory ordering
+    mat4 rot_mat = { // * appears transposed because opengl column major memory ordering
         c,  s,  0,  0,
         -s, c,  0,  0,
         0,  0,  1,  0,
@@ -351,6 +319,7 @@ void mat_perspective_frustrum(mat4* out, float near, float far, float left, floa
     out->m11 = near2 * xdenom;
     out->m22 = near2 * ydenom;
     out->m33 = -(far + near) * zdenom;
+    //   m44
 
     // other z thing
     out->m34 = (-2.0f * far * near) * zdenom;
@@ -384,17 +353,19 @@ void mat_orthographic_frustrum(mat4* out, float near, float far, float left, flo
     //   m44
 }
 
-// t is pos, k is dir or "z axis", i is right or "x axis"
+// t is pos/translation from 0, k is dir or "z axis", i is right or "x axis"
 // bit different from normal lookat matrix since it doesn't take in a target
 void mat_look_at(mat4* out, vec3 t, vec3 k, vec3 i)
 {
     vec3 j = vec_cross(i, k); // j is up or "y axis"
     vec3_norm(&j);
 
-    // the inverse of the matrix which transforms you to the position/rotation of the player -> does the opposite so camera stays at center
-    // k is negative because opengl rh coords
-    // the product of a rotation and translation matrix
-    // i, j and k represent the "axes" of the space where the player is
+    /**
+     * the inverse of the matrix which transforms you to the position/rotation of the player -> does the opposite so camera stays at center
+     * k is negative because opengl rh coords
+     * the product of a rotation and translation matrix
+     * i, j and k represent the "axes" of the space where the player is
+     */
     out->m11 = i.x; out->m12 = i.y; out->m13 = i.z; out->m14 = -vec3_dot(t, i);
     out->m21 = j.x; out->m22 = j.y; out->m23 = j.z; out->m24 = -vec3_dot(t, j);
     out->m31 = -k.x; out->m32 = -k.y; out->m33 = -k.z; out->m34 = vec3_dot(t, k);

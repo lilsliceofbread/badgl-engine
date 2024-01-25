@@ -1,7 +1,9 @@
-#ifndef BADGL_PLATFORM_H
-#define BADGL_PLATFORM_H
+#ifndef BGL_PLATFORM_H
+#define BGL_PLATFORM_H
 
-#include <stdbool.h>
+#include "defines.h"
+
+bool platform_file_exists(const char* filename);
 
 bool platform_gl_extension_supported(const char* extension);
 

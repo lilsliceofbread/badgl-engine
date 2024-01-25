@@ -4,14 +4,22 @@
 
 #include "glad/gl.h"
 #include <windows.h>
+#include <io.h>
 #include "wglext.h"
 #include <string.h>
 
-static LARGE_INTEGER os_freq;
-static double platform_time_offset = 0.0;
+static struct
+{
+    LARGE_INTEGER os_freq;
+    double platform_time_offset;
+} win_ctx;
 
 static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
-//static PFNWGLGETSWAPINTERVALEXTPROC wglGetSwapIntervalEXT = NULL;
+
+bool platform_file_exists(const char* filename)
+{
+    return _access(filename, 0) != -1;
+}
 
 bool platform_gl_extension_supported(const char* extension)
 {
@@ -44,8 +52,8 @@ void platform_toggle_vsync(bool on)
 
 void platform_reset_time(void)
 {
-    QueryPerformanceFrequency(&os_freq);
-    platform_time_offset = platform_get_time();
+    QueryPerformanceFrequency(&win_ctx.os_freq);
+    win_ctx.platform_time_offset = platform_get_time();
 }
 
 double platform_get_time(void)
@@ -54,9 +62,8 @@ double platform_get_time(void)
 
     QueryPerformanceCounter(&os_time);
 
-    double time = (double)os_time.QuadPart / (double)os_freq.QuadPart;
-    return time - platform_time_offset;
+    double time = (double)os_time.QuadPart / (double)win_ctx.os_freq.QuadPart;
+    return time - win_ctx.platform_time_offset;
 }
-
 
 #endif

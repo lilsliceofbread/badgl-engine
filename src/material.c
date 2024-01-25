@@ -56,5 +56,5 @@ void material_set_uniforms(Material* mat, Shader* shader)
     shader_uniform_vec3(shader, material_members[0], &mat->ambient);
     shader_uniform_vec3(shader, material_members[1], &mat->diffuse);
     shader_uniform_vec3(shader, material_members[2], &mat->specular);
-    shader_uniform_1f(shader, material_members[3], mat->shininess);
+    shader_uniform_float(shader, material_members[3], mat->shininess);
 }

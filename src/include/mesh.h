@@ -1,7 +1,6 @@
-#ifndef BADGL_MESH_H
-#define BADGL_MESH_H
+#ifndef BGL_MESH_H
+#define BGL_MESH_H
 
-#include <inttypes.h>
 #include "glmath.h"
 #include "texture.h"
 #include "vao.h"
@@ -18,8 +17,8 @@ typedef struct VertexBuffer
 
 typedef struct Mesh
 {
-    uint32_t* tex_indices; // indexes into parent structure's array
-    uint32_t vert_count, ind_count, tex_count;
+    u32* tex_indices; // indexes into parent structure's array
+    u32 vert_count, ind_count, tex_count;
 
     VAO vao;
     VBO vbo;
@@ -27,10 +26,10 @@ typedef struct Mesh
 } Mesh;
 
 // all vertices, indices and textures should be pre-allocated, and will be freed in mesh_free()
-void mesh_init(Mesh* self, Arena arena,
-               VertexBuffer vertex_buffer, uint32_t vert_count,
-               uint32_t* indices, uint32_t ind_count,
-               uint32_t* tex_indices, uint32_t tex_count);
+void mesh_create(Mesh* self, Arena arena,
+               VertexBuffer vertex_buffer, u32 vert_count,
+               u32* indices, u32 ind_count,
+               u32* tex_indices, u32 tex_count);
 
 void mesh_draw(Mesh* self, Shader* shader, Texture* textures);
 

@@ -1,12 +1,13 @@
-#ifndef BADGL_VAO_H
-#define BADGL_VAO_H
+#ifndef BGL_VAO_H
+#define BGL_VAO_H
 
 #include <glad/gl.h>
 #include <stddef.h>
+#include "defines.h"
 
 typedef struct VAO
 {
-    GLuint id;
+    u32 id;
 } VAO;
 
 VAO vao_create(void);

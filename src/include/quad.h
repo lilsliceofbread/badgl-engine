@@ -1,5 +1,5 @@
-#ifndef BADGL_QUAD_H
-#define BADGL_QUAD_H
+#ifndef BGL_QUAD_H
+#define BGL_QUAD_H
 
 #include "shader.h"
 #include "vao.h"
@@ -16,7 +16,7 @@ typedef struct Quad {
 } Quad;
 
 // pos is bottom left of quad
-Quad quad_init(vec2 pos, vec2 size, const char* texture_path);
+Quad quad_create(vec2 pos, vec2 size, const char* texture_path);
 
 void quad_draw(Quad* self, Renderer* rd);
 

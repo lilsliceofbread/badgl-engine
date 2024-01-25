@@ -1,31 +1,54 @@
-#ifndef BADGL_DEFINES_H
-#define BADGL_DEFINES_H
+#ifndef BGL_DEFINES_H
+#define BGL_DEFINES_H
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+
 #include "platform.h"
 #include "log.h"
 
-#ifdef BADGL_NO_DEBUG
-    #define ASSERT(cond, msg, ...)
+#ifdef BGL_NO_DEBUG
+    #define DEBUG_BREAK()
+    #define BGL_ASSERT(cond, msg, ...)
 
     #define PERF_TIMER_START()
     #define PERF_TIMER_END(str)
 #else
+    #ifdef __linux__
+        #define DEBUG_BREAK() __builtin_trap()
+    #elif _WIN32
+        #define DEBUG_BREAK() __debugbreak()
+    #endif
 
-    #define ASSERT(cond, msg, ...)                   \
+    #define BGL_ASSERT(cond, msg, ...)               \
     {                                                \
         if(!(cond))                                  \
         {                                            \
-            BADGL_LOG(LOG_ERROR, msg, ##__VA_ARGS__);\
-            exit(1);                                 \
+            BGL_LOG(LOG_ERROR, msg, ##__VA_ARGS__);  \
+            DEBUG_BREAK();                           \
         }                                            \
     }
 
     #define PERF_TIMER_START() double perf_start_time = platform_get_time()
-    #define PERF_TIMER_END(str) BADGL_LOG(LOG_DEBUG, "%s took %lfs\n", str, platform_get_time() - perf_start_time) 
+    #define PERF_TIMER_END(str) BGL_LOG(LOG_DEBUG, "%s took %lfs\n", str, platform_get_time() - perf_start_time) 
+#endif
+
+#ifdef _WIN32
+    #define BADGL_EXPORT __declspec(dllexport)
+#else
+    #define BADGL_EXPORT
 #endif
 
 #define ALIGNED_SIZE(size, alignment) ((size) % (alignment) == 0) ? (size) : (size) + ((alignment) - ((size) % (alignment)))
+
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned int u32;
+typedef unsigned long long u64;
+
+typedef signed char i8;
+typedef short i16;
+typedef int i32;
+typedef long long i64;
 
 #endif
