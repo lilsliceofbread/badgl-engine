@@ -4,7 +4,7 @@ static const char* dir_members[] = {
     "dir_light.dir",
     "dir_light.ambient",
     "dir_light.diffuse",
-    "dir_light.specular"
+    "dir_light.specular",
 };
 
 void light_create(Light* light, vec3 pos, vec3 ambient, vec3 diffuse, vec3 specular, vec3 attenuation)

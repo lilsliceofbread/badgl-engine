@@ -150,7 +150,7 @@ void shader_reallocate_uniforms(Shader* self, u32 new_count)
 
         self->uniforms = (Uniform*)realloc(self->uniforms, new_array_size * sizeof(Uniform));
         BGL_ASSERT(self->uniforms != NULL, "uniform cache reallocation failed");
-        ////BGL_LOG(LOG_DEBUG, "uniform cache resize from %u to %u\n", uniform_array_size, new_array_size);
+        ////BGL_LOG(LOG_INFO, "uniform cache resize from %u to %u\n", uniform_array_size, new_array_size);
     }
 }
 
@@ -167,7 +167,7 @@ int shader_find_uniform(Shader* self, const char* name)
         if(strcmp(name, curr.name) == 0) return curr.location;
     }
 
-    ////BGL_LOG(LOG_DEBUG, "uniform %s not found. Caching...\n", name);
+    ////BGL_LOG(LOG_INFO, "uniform %s not found. Caching...\n", name);
     i32 location = glGetUniformLocation(self->id, name);
 
     shader_reallocate_uniforms(self, self->uniform_count + 1);

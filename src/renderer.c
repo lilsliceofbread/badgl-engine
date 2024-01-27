@@ -32,6 +32,7 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     self->width = width;
     self->height = height;
     self->mouse_wait_update = 1;
+    self->mouse_should_update = false;
     self->shader_count = 0;
     self->shaders = NULL;
     self->delta_time = 0.0;
@@ -99,7 +100,7 @@ void rd_configure_gl(Renderer* self)
     }
     else 
     {
-        BGL_LOG(LOG_DEBUG, "OpenGL vsync extension not enabled");
+        BGL_LOG(LOG_INFO, "OpenGL vsync extension not enabled");
     }
 
     textures_init();
@@ -164,7 +165,7 @@ void rd_reallocate_shaders(Renderer* self, u32 new_count)
 
         self->shaders = (Shader*)realloc(self->shaders, new_array_size * sizeof(Shader));
         BGL_ASSERT(self->shaders != NULL, "shader array reallocation failed");
-        BGL_LOG(LOG_DEBUG, "shader array resize from %u to %u\n", shader_array_size, new_array_size);
+        BGL_LOG(LOG_INFO, "shader array resize from %u to %u\n", shader_array_size, new_array_size);
     }
 }
 
@@ -215,9 +216,21 @@ void rd_end_frame(Renderer* self)
     glfwSwapBuffers(self->win);
     glfwPollEvents();
 
-    if(self->mouse_wait_update > 0) self->mouse_wait_update--;
-
     self->framecount++;
+
+    if(self->mouse_wait_update > 0)
+    {
+        self->mouse_wait_update--;
+        self->mouse_should_update = false;
+        return;
+    }
+    else if(self->flags & RD_INTERNAL_CURSOR_DISABLED)
+    {
+        self->mouse_should_update = false;
+        return;
+    }
+
+    self->mouse_should_update = true;
 }
 
 bool rd_key_pressed(Renderer* self, i32 key)
@@ -254,7 +267,7 @@ void rd_resize_callback(GLFWwindow* win, i32 width, i32 height)
     rd->height = height;
 }
 
-void rd_key_callback(GLFWwindow* win, i32 key, i32 scancode, i32 action, i32 mods)
+void rd_key_callback(GLFWwindow* win, i32 key, BGL_UNUSED i32 scancode, i32 action, BGL_UNUSED i32 mods)
 {
     Renderer* rd = (Renderer*)glfwGetWindowUserPointer(win);
 
@@ -267,9 +280,10 @@ void rd_key_callback(GLFWwindow* win, i32 key, i32 scancode, i32 action, i32 mod
         if(rd->flags & RD_INTERNAL_CURSOR_DISABLED) // toggle between cursor locked vs usable
         {
             glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwSetCursorPos(win, rd->width / 2, rd->height / 2);
 
             rd->flags &= (RendererFlags)~(RD_INTERNAL_CURSOR_DISABLED);
-            rd->mouse_wait_update = 2; // mouse updates should wait 2 frames to prevent flicking
+            rd->mouse_wait_update = 1; // mouse updates should wait 1 frame to prevent flicking
         }
         else
         {
@@ -294,12 +308,10 @@ void rd_get_cursor_pos(Renderer* self, float* cursor_x_out, float* cursor_y_out)
     *cursor_y_out = (float)ypos;
 }
 
-void APIENTRY rd_debug_callback(GLenum source, GLenum type,  u32 id,
-                                GLenum severity, GLsizei length,
-                                const char *message, const void *user_param)
+void APIENTRY rd_debug_callback(BGL_UNUSED GLenum source, BGL_UNUSED GLenum type,  u32 id,
+                                GLenum severity, BGL_UNUSED GLsizei length,
+                                const char *message, BGL_UNUSED const void *user_param)
 {
-    // ignore non-significant error/warning codes
-    //if(id == 131169 || id == 131185 || id == 131218 || id == 131204) return; 
     if(id == 131185) return; // ignore this garbage
 
     LogType log_type;
@@ -307,8 +319,8 @@ void APIENTRY rd_debug_callback(GLenum source, GLenum type,  u32 id,
     {
         case GL_DEBUG_SEVERITY_HIGH:         log_type = LOG_ERROR; break;
         case GL_DEBUG_SEVERITY_MEDIUM:       log_type = LOG_WARN; break;
-        case GL_DEBUG_SEVERITY_LOW:          log_type = LOG_DEBUG; break;
-        case GL_DEBUG_SEVERITY_NOTIFICATION: log_type = LOG_DEBUG; break;
+        case GL_DEBUG_SEVERITY_LOW:          log_type = LOG_INFO; break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION: log_type = LOG_INFO; break;
     }
 
     BGL_LOG_NO_CTX(log_type, "OPENGLDEBUG ID - %d\nMESSAGE: %s\n\n", id, message);

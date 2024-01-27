@@ -3,7 +3,6 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include "defines.h"
 #include "glmath.h"
 #include "platform.h"
 
@@ -15,13 +14,14 @@ typedef struct Transform {
 
 char* get_file_data(const char* filepath);
 
-int str_find_last_of(const char* str, char c);
+char* str_find_last_of(const char* str, char c);
 
-// assumes user provides a dest large enough
-void find_directory_from_path(char* dest, const char* path);
+// may truncate output string to size if size is smaller than required
+void find_directory_from_path(char* dest, size_t size, const char* path);
+void find_file_from_path(char* dest, size_t size, const char* path);
 
 void transform_reset(Transform* transform);
 
-bool array_contains(u32* array, u32 length, u32 val);
+bool array_contains(unsigned int* array, unsigned int length, unsigned int val);
 
 #endif

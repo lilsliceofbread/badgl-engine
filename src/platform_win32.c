@@ -40,7 +40,6 @@ bool platform_init_vsync(void)
     if(!platform_gl_extension_supported("WGL_EXT_swap_control")) return false;
 
     wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC) wglGetProcAddress("wglSwapIntervalEXT");
-    //wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC) wglGetProcAddress("wglGetSwapIntervalEXT");
 
     return true;
 }
@@ -53,6 +52,12 @@ void platform_toggle_vsync(bool on)
 void platform_reset_time(void)
 {
     QueryPerformanceFrequency(&win_ctx.os_freq);
+    if(win_ctx.os_freq == 0)
+    {
+        printf("ERROR: unable to get platform timer frequency\n");
+        exit(-1);
+    }
+
     win_ctx.platform_time_offset = platform_get_time();
 }
 

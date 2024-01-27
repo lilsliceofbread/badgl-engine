@@ -157,7 +157,7 @@ mat4 mat4_zero(void)
         0, 0, 0, 0,
         0, 0, 0, 0,
         0, 0, 0, 0,
-        0, 0, 0, 0
+        0, 0, 0, 0,
     };
 
     return mat;
@@ -169,7 +169,7 @@ void mat4_identity(mat4* out)
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
-        0, 0, 0, 1 
+        0, 0, 0, 1,
     };
     memcpy(out, mat.data, sizeof(mat));
 }
@@ -199,14 +199,14 @@ void mat4_transpose(mat4* out, mat4 mat)
 
 void mat4_scale(mat4* out, vec3 s)
 {
-    mat4 scale_mat = {
+    mat4 mat = {
         s.x, 0,   0,   0,
         0,   s.y, 0,   0,
         0,   0,   s.z, 0,
-        0,   0,   0,   1
+        0,   0,   0,   1,
     };
 
-    mat4_mul(out, *out, scale_mat);
+    mat4_mul(out, mat, *out);
 }
 
 // doesn't scale 4th column
@@ -233,56 +233,56 @@ void mat4_scale_scalar(mat4* out, float s)
 
 void mat4_trans(mat4* out, vec3 t)
 {
-    mat4 trans_mat = { // * appears transposed because opengl column major memory ordering
+    mat4 mat = { // * appears transposed because opengl column major memory ordering
         1,   0,   0,   0,
         0,   1,   0,   0,
         0,   0,   1,   0,
-        t.x, t.y, t.z, 1
+        t.x, t.y, t.z, 1,
     };
 
-    mat4_mul(out, *out, trans_mat);
+    mat4_mul(out, mat, *out);
 }
 
 void mat4_rotate_x(mat4* out, float a) // not figuring out arbitrary axis rotation
 {
     float c = cosf(a);
     float s = sinf(a);
-    mat4 rot_mat = { // * appears transposed because opengl column major memory ordering
+    mat4 mat = { // * appears transposed because opengl column major memory ordering
         1,  0,  0,  0,
         0,  c,  s,  0,
         0, -s,  c,  0,
-        0,  0,  0,  1
+        0,  0,  0,  1,
     };
 
-    mat4_mul(out, *out, rot_mat);
+    mat4_mul(out, mat, *out);
 }
 
 void mat4_rotate_y(mat4* out, float a)
 {
     float c = cosf(a);
     float s = sinf(a);
-    mat4 rot_mat = { // * appears transposed because opengl column major memory ordering
+    mat4 mat = { // * appears transposed because opengl column major memory ordering
         c,  0, -s,  0,
         0,  1,  0,  0,
         s,  0,  c,  0,
-        0,  0,  0,  1 
+        0,  0,  0,  1,
     };
 
-    mat4_mul(out, *out, rot_mat);
+    mat4_mul(out, mat, *out);
 }
 
 void mat4_rotate_z(mat4* out, float a)
 {
     float c = cosf(a);
     float s = sinf(a);
-    mat4 rot_mat = { // * appears transposed because opengl column major memory ordering
+    mat4 mat = { // * appears transposed because opengl column major memory ordering
         c,  s,  0,  0,
         -s, c,  0,  0,
         0,  0,  1,  0,
-        0,  0,  0,  1
+        0,  0,  0,  1,
     };
 
-    mat4_mul(out, *out, rot_mat);
+    mat4_mul(out, mat, *out);
 }
 
 // calculate perspective matrix based on fov and aspect ratio

@@ -20,18 +20,21 @@ void model_process_node(Model* self, struct aiNode* node, const struct aiScene* 
 Mesh model_process_mesh(Model* self, struct aiMesh* mesh, const struct aiScene* scene);
 u32* model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, u32* tex_count_out);
 
-void model_load(Model* self, const char* path, const Material* material, u32 shader_idx)
+void model_load(Model* self, const char* path, u32 shader_idx)
 {
     PERF_TIMER_START();
 
-    if(material != NULL) self->material = *material; // use aiMat to set?
+    self->material.ambient = VEC3(1.0f, 1.0f, 1.0f);
+    self->material.specular = VEC3(1.0f, 1.0f, 1.0f);
+    self->material.diffuse = VEC3(1.0f, 1.0f, 1.0f);
+    self->material.shininess = 32.0f;
     self->material.textures = NULL; // undefined behaviour if not set to NULL before realloc (uninit memory)
     self->material.tex_count = 0;
     self->material.flags = 0;
     self->shader_idx = shader_idx;
     transform_reset(&self->transform);
     mat4_identity(&self->model);
-    find_directory_from_path(self->directory, path);
+    find_directory_from_path(self->directory, MAX_PATH_LENGTH, path);
 
     const struct aiScene* scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
     BGL_ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "loading model %s failed\n%s\n", path, aiGetErrorString());
@@ -49,22 +52,15 @@ void model_load(Model* self, const char* path, const Material* material, u32 sha
     {
         Texture curr_tex = self->material.textures[i];
 
+        // TODO: make use material functions instead
         if(curr_tex.type & TEXTURE_DIFFUSE)
         {
-            self->material.flags |= HAS_DIFFUSE_TEXTURE;
-
             self->material.ambient = VEC3(1.0f, 1.0f, 1.0f);
             self->material.diffuse = VEC3(1.0f, 1.0f, 1.0f);
         }
         else if(curr_tex.type & TEXTURE_SPECULAR)
         {
-            self->material.flags |= HAS_SPECULAR_TEXTURE;
-
             self->material.specular = VEC3(1.0f, 1.0f, 1.0f);
-        }
-        else if(curr_tex.type & TEXTURE_NORMAL)
-        {
-            self->material.flags |= HAS_NORMAL_TEXTURE;
         }
     }
 
@@ -76,13 +72,13 @@ void model_update_transform(Model* self, const Transform* transform)
     self->transform = *transform;
     mat4_identity(&self->model);
 
+    mat4_scale(&self->model, self->transform.scale);
+
     mat4_rotate_x(&self->model, RADIANS(self->transform.euler.x)); // pitch
     mat4_rotate_y(&self->model, RADIANS(self->transform.euler.y)); // yaw
     mat4_rotate_z(&self->model, RADIANS(self->transform.euler.z)); // roll
 
     mat4_trans(&self->model, self->transform.pos);
-
-    mat4_scale(&self->model, self->transform.scale);
 }
 
 void model_draw(Model* self, Renderer* rd, Camera* cam)
@@ -94,14 +90,11 @@ void model_draw(Model* self, Renderer* rd, Camera* cam)
     mat4_mul(&mvp, cam->proj, model_view);
 
     shader_use(shader);
-    shader_uniform_mat4(shader, "mvp", &mvp);
     
-    MaterialFlags flags = self->material.flags;
-    if(!(flags & NO_LIGHTING))
-    {
-        material_set_uniforms(&self->material, shader);
-    }
-    if(!(flags & (NO_LIGHTING | IS_LIGHT)))
+    material_set_uniforms(&self->material, shader);
+
+    shader_uniform_mat4(shader, "mvp", &mvp);
+    if(!(self->material.flags & (NO_LIGHTING | IS_LIGHT)))
     {
         shader_uniform_mat4(shader, "model_view", &model_view);
         shader_uniform_mat4(shader, "model", &self->model);
@@ -293,11 +286,5 @@ void model_free(Model* self)
 
     free(self->meshes);
 
-    if(self->material.textures == NULL && self->material.tex_count == 0) return; // if only 1 of these conditions occurs smth is wrong so continue and give error
-
-    for(u32 i = 0; i < self->material.tex_count; i++)
-    {
-        texture_free(&self->material.textures[i]);
-    }
-    free(self->material.textures);
+    material_free(&self->material);
 }

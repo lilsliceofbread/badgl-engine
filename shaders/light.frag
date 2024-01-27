@@ -12,5 +12,5 @@ uniform Material material;
 
 void main()
 {
-    frag_colour = vec4(material.specular, 1.0);
+    frag_colour = vec4(material.diffuse, 1.0);
 }

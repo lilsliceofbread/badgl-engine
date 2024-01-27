@@ -19,7 +19,7 @@ typedef enum RendererFlags
     RD_USE_LIGHTING = 1 << 2,
 
     // ! user should not modify these flags, internal use only
-    RD_INTERNAL_CURSOR_DISABLED = 1 << 3, // * if this is 1, anything relying on mouse should not update
+    RD_INTERNAL_CURSOR_DISABLED = 1 << 3,
     RD_INTERNAL_VSYNC_ENABLED = 1 << 4
 } RendererFlags;
 
@@ -32,6 +32,7 @@ typedef struct Renderer
     GLFWwindow* win;
 
     i32 mouse_wait_update; // frames until mouse can update, for preventing camera flicking when cursor jumps
+    bool mouse_should_update; // * if this is true, anything relying on mouse should not update
 
     double last_time, delta_time;
     u32 framecount;

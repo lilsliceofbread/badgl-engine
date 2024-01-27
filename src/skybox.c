@@ -8,7 +8,9 @@ Model skybox_create(Renderer* rd, const char* cubemap_path)
 {
     Model self;
     Material material;
-    material_texture_diffuse(&material, true, cubemap_path, VEC3(1.0f, 1.0f, 1.0f), 1.0f); // dummy values
+    vec3 tmp = VEC3(1.0f, 1.0f, 1.0f); // don't care about colour values
+    material_create(&material, true, tmp, tmp, tmp, 1.0f);
+    material_add_texture(&material, TEXTURE_DIFFUSE, cubemap_path);
     material.flags |= NO_LIGHTING;
 
     shapes_rectangular_prism(&self, 2.0f, 2.0f, 2.0f, &material, rd->skybox_shader);

@@ -18,15 +18,17 @@ static struct
 {
     Renderer rd;
     Scene scenes[MAX_SCENES];
+
     u32 current_scene;
     u32 scene_count;
+    i32 light_index;
     bool is_vsync_on;
 } s; // game state
 
 void game_add_models(void);
 void game_add_lights(void);
-void loading_begin(Renderer* rd);
-void loading_end(Renderer* rd);
+void loading_begin(void);
+void loading_end(void);
 void sphere_scene_update(Scene* scene);
 
 void game_init(void)
@@ -37,7 +39,7 @@ void game_init(void)
 
     rd_init(&s.rd, 1280, 720, "badgl demo", RD_USE_SKYBOX | RD_USE_UI | RD_USE_LIGHTING);
 
-    loading_begin(&s.rd);
+    loading_begin(); // a simple quad is drawn to the screen before loading
 
     vec3 start_pos = VEC3(0.0f, 1.0f, 3.0f);
     vec2 start_euler = VEC2(0.0f, -90.0f); // pitch then yaw
@@ -52,9 +54,9 @@ void game_init(void)
     game_add_models();
     game_add_lights();
 
-    scene_update_lights(&s.scenes[s.current_scene], &s.rd);
+    scene_switch(&s.scenes[s.current_scene], &s.rd); // call this when switching to a new scene
 
-    loading_end(&s.rd);
+    loading_end();
 }
 
 void game_run(void)
@@ -66,16 +68,47 @@ void game_run(void)
         igBegin("settings", NULL, 0);
             igText("fps: %f", 1.0f / s.rd.delta_time);
 
-            if(igButton("toggle v-sync",(struct ImVec2){0,0}))
+            if(igButton("toggle v-sync", (ImVec2){0, 0}))
             {
                 platform_toggle_vsync(!s.is_vsync_on);
                 s.is_vsync_on = !s.is_vsync_on; 
             }
 
-            if(igButton("next scene",(struct ImVec2){0,0}))
+            if(igButton("next scene", (ImVec2){0, 0}))
             {
                 s.current_scene = (s.current_scene + 1) % s.scene_count;
                 scene_switch(&s.scenes[s.current_scene], &s.rd);
+            }
+
+            {
+                igText("light editor");
+
+                Scene* scene = &s.scenes[s.current_scene];
+
+                igInputInt("current light", &s.light_index, 1, 1, 0);
+                s.light_index = CLAMP(s.light_index, 0, scene->light_count - 1);
+
+                Light* light = &scene->lights[s.light_index];
+                DirLight* dir_light = &scene->dir_light;
+
+                igText("position:");
+                igInputFloat("x", (float*)&light->pos.x, 0.5f, 0.5f, "%.1f", 0);
+                igInputFloat("y", (float*)&light->pos.y, 0.5f, 0.5f, "%.1f", 0);
+                igInputFloat("z", (float*)&light->pos.z, 0.5f, 0.5f, "%.1f", 0);
+                igColorEdit3("ambient", (float*)&light->ambient, 0);
+                igColorEdit3("diffuse", (float*)&light->diffuse, 0);
+                igColorEdit3("specular", (float*)&light->specular, 0);
+                igSliderFloat3("attenuation", (float*)&light->attenuation, 0.0f, 1.0f, "%.3f", 0);
+
+                igDummy((ImVec2){1, 1}); // spacing
+                igText("directional light");
+
+                igSliderFloat3("direction", (float*)&dir_light->dir, -1.0f, 1.0f, "%.2f", 0);
+                igColorEdit3("ambient##1", (float*)&dir_light->ambient, 0);
+                igColorEdit3("diffuse##1", (float*)&dir_light->diffuse, 0);
+                igColorEdit3("specular##1", (float*)&dir_light->specular, 0);
+
+                scene_update_lights(scene, &s.rd); // this updates light data and light graphics as well, because we are rendering this scene
             }
         igEnd();
 
@@ -96,144 +129,172 @@ void game_end(void)
     rd_free(&s.rd);
 }
 
-void loading_begin(Renderer* rd)
+void loading_begin(void)
 {
-    Quad loading_screen = quad_create((vec2){-1.0f, -1.0f}, (vec2){2.0f, 2.0f}, "res/loading.png");
+    Quad loading_screen = quad_create(VEC2(-1.0f, -1.0f), VEC2(2.0f, 2.0f), "res/loading.png");
 
-    rd_update_viewport(rd); // glfw framebuffer size may not have updated yet so update renderer width/height
+    rd_update_viewport(&s.rd); // glfw framebuffer size may not have updated yet so update renderer width/height
 
-    int size = (rd->width >= rd->height) ? rd->height >> 1 : rd->width >> 1;
-    rd_set_viewport((rd->width >> 1) - (size >> 1), (rd->height >> 1) - (size >> 1), size, size); // place loading in middle of screen
+    int size = (s.rd.width >= s.rd.height) ? s.rd.height >> 1 : s.rd.width >> 1;
+    rd_set_viewport((s.rd.width >> 1) - (size >> 1), (s.rd.height >> 1) - (size >> 1), size, size); // place loading in middle of screen
 
-    quad_draw(&loading_screen, rd);
-    rd_swap_buffers(rd);
+    quad_draw(&loading_screen, &s.rd);
+    rd_swap_buffers(&s.rd);
     quad_free(&loading_screen);
 }
 
-void loading_end(Renderer* rd)
+void loading_end(void)
 {
-    rd_update_viewport(rd); // reset back after loading screen
+    rd_update_viewport(&s.rd); // reset back after loading screen
 }
 
 void sphere_scene_update(Scene* scene)
 {
     const float rotate_speed = 50.0f;
-    float time = (float)platform_get_time();
+    const float time = (float)platform_get_time();
 
     Transform sphere = scene->models[0].transform;
     sphere.euler = VEC3(0.0f, rotate_speed * time, 0.0f);
-    model_update_transform(&scene->models[0], &sphere);
+    model_update_transform(&scene->models[0], &sphere); // TODO: use some identifier for models in scene? strings?
 }
 
 void game_add_models(void)
 {
-    // create shaders ourselves then pass index to structures so multiple use same shader
+    /* create shaders for our models */
+
     u32 model_shader = rd_add_shader(&s.rd, "shaders/model.vert", "shaders/model.frag");
     u32 sphere_shader = rd_add_shader(&s.rd, "shaders/sphere.vert", "shaders/sphere.frag");
 
-    Material material = {0}; 
-    Model model_tmp = {0};
-    Transform transform;
-    transform_reset(&transform);
+    Material materials[5] = {0}; 
+    Model models[6] = {0};
+    Transform transforms[6] = {0};
 
-    /* scene 0 */
+    /* creating materials */
 
-    material_texture_diffuse(&material, true, "res/earth/e.png",
-                                VEC3(1.0f, 1.0f, 1.0f), 32.0f);
-    shapes_uv_sphere(&model_tmp, 15, &material, sphere_shader);
-    scene_add_model(&s.scenes[0], &model_tmp);
-    transform.scale = VEC3(2.0f, 2.0f, 2.0f);
-    model_update_transform(&s.scenes[0].models[0], &transform); // TODO: use some identifier for models? strings?
+    material_create(&materials[0], true,
+                    VEC3(0.0f, 0.0f, 0.0f),
+                    VEC3(0.0f, 0.0f, 0.0f),
+                    VEC3(0.0f, 0.0f, 0.0f), 32.0f);
+    material_add_texture(&materials[0], TEXTURE_DIFFUSE, "res/earth_day_diffuse.png");
+    material_add_texture(&materials[0], TEXTURE_SPECULAR, "res/earth_specular.png");
 
-    material_textureless(&material, true,
-                            VEC3(0.8f, 0.1f, 0.2f),
-                            VEC3(0.8f, 0.1f, 0.2f),
-                            VEC3(1.0f, 1.0f, 1.0f), 32.0f);
-    shapes_uv_sphere(&model_tmp, 15, &material, sphere_shader);
-    scene_add_model(&s.scenes[0], &model_tmp);
-    transform.pos = VEC3(5.0f, 0.0f, -2.0f);
-    transform.scale = VEC3(2.0f, 2.0f, 2.0f);
-    model_update_transform(&s.scenes[0].models[1], &transform);
+    material_create(&materials[1], true,
+                    VEC3(0.8f, 0.1f, 0.2f),
+                    VEC3(0.8f, 0.1f, 0.2f),
+                    VEC3(1.0f, 1.0f, 1.0f), 32.0f);
 
-    transform.scale = VEC3(1.0f, 1.0f, 1.0f);
+    material_create(&materials[2], false,
+                    VEC3(0.3f, 0.2f, 0.8f),
+                    VEC3(0.3f, 0.2f, 0.8f),
+                    VEC3(1.0f, 1.0f, 1.0f), 32.0f);
 
-    /* scene 1 */
+    material_create(&materials[3], false,
+                    VEC3(0.8f, 0.2f, 0.3f),
+                    VEC3(0.8f, 0.2f, 0.3f),
+                    VEC3(1.0f, 1.0f, 1.0f), 32.0f);
 
-    material_textureless(&material, false,
-                            VEC3(0.3f, 0.2f, 0.8f),
-                            VEC3(0.3f, 0.2f, 0.8f),
-                            VEC3(1.0f, 1.0f, 1.0f), 32.0f);
-    shapes_rectangular_plane(&model_tmp, 100.0f, 100.0f, 10, &material, model_shader);
-    scene_add_model(&s.scenes[1], &model_tmp);
+    material_create(&materials[4], true,
+                    VEC3(0.8f, 0.1f, 0.2f),
+                    VEC3(0.8f, 0.1f, 0.2f),
+                    VEC3(1.0f, 1.0f, 1.0f), 32.0f);
 
-    model_load(&model_tmp, "res/backpack/backpack.obj", &material, model_shader);
-    scene_add_model(&s.scenes[1], &model_tmp);
-    transform.pos = VEC3(3.0f, 3.0f, 0.0f);
-    model_update_transform(&s.scenes[1].models[1], &transform);
+    /* creating transforms */
 
-    material_textureless(&material, false,
-                            VEC3(0.8f, 0.2f, 0.3f),
-                            VEC3(0.8f, 0.2f, 0.3f),
-                            VEC3(1.0f, 1.0f, 1.0f), 32.0f);
-    shapes_rectangular_prism(&model_tmp, 1.5f, 2.0f, 3.0f, &material, model_shader);
-    scene_add_model(&s.scenes[1], &model_tmp);
-    transform.pos = VEC3(-2.0f, 2.0f, 0.0f);
-    model_update_transform(&s.scenes[1].models[2], &transform);
+    for(i32 i = 0; i < 6; i++) transform_reset(&transforms[i]);
 
-    material_textureless(&material, true,
-                            VEC3(0.8f, 0.1f, 0.2f),
-                            VEC3(0.8f, 0.1f, 0.2f),
-                            VEC3(1.0f, 1.0f, 1.0f), 32.0f);
-    shapes_uv_sphere(&model_tmp, 15, &material, sphere_shader);
-    scene_add_model(&s.scenes[1], &model_tmp);
-    transform.pos = VEC3(-8.0f, 5.0f, 3.0f);
-    transform.scale = VEC3(4.0f, 4.0f, 4.0f);
-    model_update_transform(&s.scenes[1].models[3], &transform);
+    transforms[0].scale = VEC3(2.0f, 2.0f, 2.0f);
+
+    transforms[1].pos = VEC3(5.0f, 0.0f, -2.0f);
+    transforms[1].scale = VEC3(2.0f, 2.0f, 2.0f);
+
+    // transform[2] has default transform
+
+    transforms[3].pos = VEC3(3.0f, 3.0f, 0.0f);
+
+    transforms[4].pos = VEC3(-2.0f, 2.0f, 0.0f);
+
+    transforms[5].pos = VEC3(-8.0f, 5.0f, 3.0f);
+    transforms[5].scale = VEC3(4.0f, 4.0f, 4.0f);
+
+    /* creating models */
+
+    shapes_uv_sphere(&models[0], 20, &materials[0], sphere_shader);
+    shapes_uv_sphere(&models[1], 20, &materials[1], sphere_shader);
+
+    shapes_rectangular_plane(&models[2], 50.0f, 50.0f, 2, &materials[2], model_shader);
+    model_load(&models[3], "res/backpack/backpack.obj", model_shader);
+    shapes_rectangular_prism(&models[4], 1.5f, 2.0f, 3.0f, &materials[3], model_shader);
+    shapes_uv_sphere(&models[5], 20, &materials[4], sphere_shader);
+
+    /* setting/updating transforms */
+
+    for(i32 i = 0; i < 6; i++) model_update_transform(&models[i], &transforms[i]);
+
+    /* adding models to scene */
+
+    scene_add_model(&s.scenes[0], &models[0]);
+    scene_add_model(&s.scenes[0], &models[1]);
+
+    scene_add_model(&s.scenes[1], &models[2]);
+    scene_add_model(&s.scenes[1], &models[3]);
+    scene_add_model(&s.scenes[1], &models[4]);
+    scene_add_model(&s.scenes[1], &models[5]);
 }
 
 void game_add_lights(void)
 {
-    Model model_tmp;
-    Light light;
+    Light lights[3];
     DirLight dir_light;
-    Transform transform;
-    transform_reset(&transform);
-    transform.scale = VEC3(0.5f, 0.5f, 0.5f);
 
-    /* scene 0 */
+    /* creating lights */
 
-    shapes_uv_sphere(&model_tmp, 10, NULL, 0); // don't need to worry about setting shader, scene will do that for us
-    model_update_transform(&model_tmp, &transform);
-    light_create(&light, VEC3(0.0f, 5.0f, 5.0f), 
-                         VEC3(0.2f, 0.2f, 0.2f),
-                         VEC3(0.6f, 0.6f, 0.6f),
-                         VEC3(0.8f, 0.8f, 0.8f),
-                         VEC3(0.003f, 0.007f, 1.0f));
-    scene_add_light(&s.scenes[0], &s.rd, &light, &model_tmp);
+    light_create(&lights[0], VEC3(0.0f, 5.0f, 5.0f),      // position
+                             VEC3(0.2f, 0.2f, 0.2f),      // ambient
+                             VEC3(0.6f, 0.6f, 0.6f),      // diffuse
+                             VEC3(0.8f, 0.8f, 0.8f),      // specular
+                             VEC3(0.003f, 0.007f, 1.0f)); // attenuation constants (quadratic, linear, const)
 
-    /* scene 1 */
+    light_create(&lights[1], VEC3(10.0f, 5.0f, 5.0f),
+                             VEC3(0.0f, 0.0f, 0.2f),
+                             VEC3(0.0f, 0.0f, 0.6f),
+                             VEC3(0.0f, 0.0f, 0.8f),
+                             VEC3(0.007f, 0.014f, 1.0f));
 
-    shapes_uv_sphere(&model_tmp, 10, NULL, 0);
-    model_update_transform(&model_tmp, &transform);
-    light_create(&light, VEC3(10.0f, 5.0f, 5.0f),
-                         VEC3(0.0f, 0.0f, 0.2f),
-                         VEC3(0.0f, 0.0f, 0.6f),
-                         VEC3(0.0f, 0.0f, 0.8f),
-                         VEC3(0.007f, 0.014f, 1.0f));
-    scene_add_light(&s.scenes[1], &s.rd, &light, &model_tmp);
+    light_create(&lights[2], VEC3(-5.0f, 5.0f, -5.0f),
+                             VEC3(0.2f, 0.0f, 0.0f),
+                             VEC3(0.5f, 0.0f, 0.0f),
+                             VEC3(0.8f, 0.0f, 0.0f),
+                             VEC3(0.007f, 0.014f, 1.0f));
 
-    shapes_uv_sphere(&model_tmp, 10, NULL, 0);
-    model_update_transform(&model_tmp, &transform);
-    light_create(&light, VEC3(-5.0f, 5.0f, -5.0f),
-                         VEC3(0.2f, 0.0f, 0.0f),
-                         VEC3(0.5f, 0.0f, 0.0f),
-                         VEC3(0.8f, 0.0f, 0.0f),
-                         VEC3(0.007f, 0.014f, 1.0f));
-    scene_add_light(&s.scenes[1], &s.rd, &light, &model_tmp);
-
-    dir_light_create(&dir_light, VEC3(-4.0f, -12.0f, 10.0f), // roughly the position of the sun on the skybox
+    dir_light_create(&dir_light, VEC3(-4.0f, -12.0f, 10.0f), // roughly the direction of the sun on the skybox
                                  VEC3(0.2f, 0.2f, 0.2f),
                                  VEC3(0.5f, 0.5f, 0.5f),
                                  VEC3(0.8f, 0.8f, 0.8f));
+
+    /* creating a custom model for one of the lights */
+
+    Model model;
+    Transform transform;
+
+    shapes_rectangular_prism(&model, 1.0f, 1.0f, 1.0f, NULL, 0); // last 2 parameters are not used for lights, set to NULL and 0
+
+    transform_reset(&transform);
+    transform.euler = VEC3(45.0f, 30.0f, 45.0f); // can set euler and scale, but position will be set by scene_add_light
+    transform.scale = VEC3(0.5f, 0.5f, 0.5f);
+    model_update_transform(&model, &transform);
+
+    /* adding lights to scene */
+
+    scene_add_light(&s.scenes[0], &s.rd, &lights[0], NULL);
+
+    scene_add_light(&s.scenes[1], &s.rd, &lights[1], NULL);
+    scene_add_light(&s.scenes[1], &s.rd, &lights[2], &model);
     scene_set_dir_light(&s.scenes[1], &dir_light);
+
+    /* update lights */
+
+    for(u32 i = 0; i < s.scene_count; i++)
+    {
+        scene_update_light_data(&s.scenes[i]); // update light data without updating graphically, scene_switch() will do that
+    }
 }

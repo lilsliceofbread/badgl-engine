@@ -5,6 +5,7 @@
 #ifdef _WIN32
     #include <windows.h>
 #endif
+#include "util.h"
 
 void bgl_log_impl(LogType type, const char* msg, ...)
 {
@@ -22,9 +23,9 @@ void bgl_log_impl(LogType type, const char* msg, ...)
             output_stream = stdout;
             prefix = "WARN";
             break; 
-        case LOG_DEBUG:
+        case LOG_INFO:
             output_stream = stdout;
-            prefix = "DEBUG";
+            prefix = "INFO";
             break; 
     }
 
@@ -53,10 +54,13 @@ void bgl_log_ctx_impl(LogType type, const char* msg, const char* file, int line,
     va_list args;
     char buffer[8192];
 
+    char file_no_path[128];
+    find_file_from_path(file_no_path, 128, file);
+
     // ? bit scuffed doing this twice but whatever
     va_start(args, line);
         vsprintf(buffer, msg, args);
     va_end(args);
 
-    bgl_log_impl(type, "%s at %s in line %d\n\n", buffer, file, line);
+    bgl_log_impl(type, "%s in %s on line %d\n\n", buffer, file_no_path, line);
 }

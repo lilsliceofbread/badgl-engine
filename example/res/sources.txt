@@ -10,6 +10,6 @@ Authors: Dimitrios Savva, Greg Zaal, Jarod Guest
 Source: https://opengameart.org/content/space-skybox-1
 Authors: kurtk84
 
-[earth/e.png]
-Source: ??? (earth equirectangular projection)
+[earth_diffuse.png, earth_specular.png]
+Source: https://www.solarsystemscope.com/textures
 Authors: NASA

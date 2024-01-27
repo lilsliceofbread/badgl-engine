@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 char* get_file_data(const char* filepath)
 {
     FILE* file;
@@ -35,30 +34,37 @@ char* get_file_data(const char* filepath)
     return file_data;
 }
 
-int str_find_last_of(const char* str, char c)
+char* str_find_last_of(const char* str, char c)
 {
-    i32 i = 0;
-    i32 latest_occurrence = -1;
-    const char* curr = str;
+    char* curr = (char*)str; // discarding const but not modifying the string
+    char* latest_occurrence = NULL;
+
     while(curr != NULL && *curr != '\0')
     {
-        if(*curr == c) {
-            latest_occurrence = i;
-        }
-        ++curr;
-        ++i;
+        if(*curr == c) latest_occurrence = curr;
+        curr++;
     }
 
     return latest_occurrence;
 }
 
-void find_directory_from_path(char* dest, const char* path)
+void find_directory_from_path(char* dest, size_t size, const char* path)
 {
-    i32 offset = str_find_last_of(path, '/');
-    BGL_ASSERT(offset != -1, "invalid path %s\n", path);
+    char* last_char = str_find_last_of(path, '/');
+    BGL_ASSERT(last_char != NULL, "invalid path %s\n", path);
+    i32 offset = (i32)(last_char - path);
 
-    strncpy(dest, path, (size_t)offset); // copy up to final / into directory
+    strncpy(dest, path, (size_t)offset < size ? (size_t)offset : size); // copy up to final / into directory
     dest[offset] = '\0';
+}
+
+void find_file_from_path(char* dest, size_t size, const char* path)
+{
+    char* last_char = str_find_last_of(path, '/');
+    BGL_ASSERT(last_char != NULL, "invalid path %s\n", path);
+
+    BGL_ASSERT(strlen(last_char) > 1, "path %s contains no file\n", path);
+    strncpy(dest, last_char + 1, size);
 }
 
 bool array_contains(u32* array, u32 length, u32 val)

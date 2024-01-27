@@ -11,7 +11,7 @@
 
 typedef void (*SceneUpdateFunc)();
 
-#define GLSL_MAX_LIGHTS 32
+#define GLSL_MAX_LIGHTS 32 // * at some point create polyglot include for C and GLSL
 #define SCENE_MODEL_ALLOC_SIZE 4
 
 typedef enum SceneFlags {
@@ -26,6 +26,7 @@ typedef struct Scene {
     Model skybox;
 
     Light lights[GLSL_MAX_LIGHTS];
+    u32 light_models[GLSL_MAX_LIGHTS];
     i32 light_count;
     UBO light_ubo;
     DirLight dir_light;
@@ -76,7 +77,7 @@ u32 scene_add_model(Scene* self, const Model* model);
  * @param  self: 
  * @param  rd: 
  * @param  light: your light 
- * @param  model: an optional model for the light (pass NULL to be invisible)
+ * @param  model: an optional model that is aligned with the light and has the same material (pass NULL to use default sphere)
  * @retval None
  */
 void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model* model);
@@ -84,6 +85,11 @@ void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model*
 void scene_set_dir_light(Scene* self, const DirLight* light);
 
 void scene_update_lights(Scene* self, Renderer* rd);
+
+// call this to update light data without rendering it to the screen
+// use this if you want to update light data for another scene while
+// a different one is being rendered, so as to prevent disturbing that scene's graphics
+void scene_update_light_data(Scene* self);
 
 void scene_switch(Scene* self, Renderer* rd);
 

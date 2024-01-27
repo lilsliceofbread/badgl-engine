@@ -25,7 +25,7 @@ file(GLOB_RECURSE BADGL_SRCS CONFIGURE_DEPENDS
      external/glad/src/gl.c)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_definitions( -DBADGL_NO_DEBUG )
+    add_definitions( -DBGL_NO_DEBUG )
 endif()
 
 if (MSVC)

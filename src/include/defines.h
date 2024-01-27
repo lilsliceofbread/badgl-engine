@@ -30,13 +30,20 @@
     }
 
     #define PERF_TIMER_START() double perf_start_time = platform_get_time()
-    #define PERF_TIMER_END(str) BGL_LOG(LOG_DEBUG, "%s took %lfs\n", str, platform_get_time() - perf_start_time) 
+    #define PERF_TIMER_END(str) BGL_LOG(LOG_INFO, "%s took %lfs\n", str, platform_get_time() - perf_start_time) 
 #endif
 
 #ifdef _WIN32
-    #define BADGL_EXPORT __declspec(dllexport)
+    #define BGL_EXPORT __declspec(dllexport)
 #else
-    #define BADGL_EXPORT
+    #define BGL_EXPORT
+#endif
+
+#ifdef __GNUC__
+    // ignore unused variable warnings, at least for gcc
+    #define BGL_UNUSED __attribute__((unused))
+#else
+    #define BGL_UNUSED
 #endif
 
 #define ALIGNED_SIZE(size, alignment) ((size) % (alignment) == 0) ? (size) : (size) + ((alignment) - ((size) % (alignment)))

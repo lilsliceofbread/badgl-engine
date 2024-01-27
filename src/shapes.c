@@ -8,6 +8,8 @@ extern inline u32* shape_setup(Model* model, const Material* material, u32 shade
 
 void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader_idx)
 {
+    BGL_ASSERT(res >= 2, "%u too small of a resolution for uv sphere\n", res);
+
     u32* tex_indices = shape_setup(self, material, shader_idx);
 
     u32 vert_count = 0, ind_count = 0;
@@ -264,6 +266,8 @@ void shapes_rectangular_prism(Model* self, float width, float height, float dept
 
 void shapes_rectangular_plane(Model* self, float width, float height, u32 res, const Material* material, u32 shader_idx)
 {
+    BGL_ASSERT(res >= 2, "%u too small of a resolution for rectangular plane\n", res);
+
     u32* tex_indices = shape_setup(self, material, shader_idx);
 
     const size_t vert_size = res * res * sizeof(vec3);

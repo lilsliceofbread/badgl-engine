@@ -10,6 +10,8 @@
 
 #define RADIANS(deg) ((deg) * GL_DEG2RAD)
 
+#define CLAMP(val, lower, upper) ((val) < (lower)) ? (lower) : ((val) > (upper)) ? (upper) : (val);
+
 #define VEC4TOVEC3(vector) (vec3){vector.x, vector.y, vector.z}
 #define VEC3TOVEC4(vector, w) (vec4){vector.x, vector.y, vector.z, w}
 
