@@ -3,13 +3,18 @@
 cmake_minimum_required(VERSION 3.13.4)
 
 set(CMAKE_BUILD_TYPE Debug)
-set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE) # build all libs as shared if not explicitly static. DO NOT USE ON WINDOWS.
+set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 
 project(badgl)
 
+#
+# BADGL BUILD OPTIONS
+#
+
 set(BADGL_BUILD_EXAMPLE ON)
 
-# assimp build options
+
+
 set(ASSIMP_NO_EXPORT ON CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE INTERNAL "" FORCE)
@@ -32,13 +37,12 @@ if (MSVC)
     set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS "/W4")
 else()
     set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS
-                                "-Wall -Wextra -Wconversion -pedantic -Wno-missing-braces")
+                                "-Wall -Wextra -Wconversion -Wpedantic -Wno-missing-braces")
 endif()
 
-# get git package if exists
+# update git submodules if necessary
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
-    # update submodules if necessary
     option(GIT_SUBMODULE "Check submodules during build" ON)
     if(GIT_SUBMODULE)
         message(STATUS "Updating submodules")
@@ -69,13 +73,7 @@ add_library(cimgui ${CIMGUI_SRCS})
 target_include_directories(cimgui PUBLIC ${cimgui}/imgui PUBLIC external/glfw/include)
 target_compile_definitions(cimgui PRIVATE IMGUI_IMPL_API=extern\ \"C\")
 
-# shared lib is faster to build but is broken on windows
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set_target_properties(cimgui PROPERTIES POSITION_INDEPENDENT_CODE ON) # compile cimgui so it can be in a shared library
-    add_library(${PROJECT_NAME} SHARED ${BADGL_SRCS})
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    add_library(${PROJECT_NAME} ${BADGL_SRCS})
-endif()
+add_library(${PROJECT_NAME} ${BADGL_SRCS})
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC -DCIMGUI_USE_OPENGL3 -DCIMGUI_USE_GLFW)
 target_compile_definitions(${PROJECT_NAME} PRIVATE IMGUI_IMPL_API=\ )

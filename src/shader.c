@@ -12,7 +12,7 @@
 /**
  * internal functions
  */
-u32 shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type, char* info_log_out, i32 log_size, int* success_out);
+u32 shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type, char* info_log_out, i32 log_size, i32* success_out);
 void shader_find_uniforms_in_source(Shader* self, const char* src_code); // UNIFORMS ARE REPEATED IF IN VERT + FRAG SHADER
 void shader_reallocate_uniforms(Shader* self, u32 new_count);
 
@@ -60,7 +60,7 @@ void shader_create(Shader* self, const char* vert_shader_src, const char* frag_s
     glDeleteShader(frag_shader);
 }
 
-u32 shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type, char* info_log_out, i32 log_size, int* success_out)
+u32 shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type, char* info_log_out, i32 log_size, i32* success_out)
 {
     char* shader_src;
     GLuint shader;
@@ -105,7 +105,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
         i32 name_idx = 0;
         bool skip_uniform = false;
 
-        for(int i = 0; (c = temp[i]) != ';'; i++) // while we haven't seen ;
+        for(i32 i = 0; (c = temp[i]) != ';'; i++) // while we haven't seen ;
         {
             // can't use switch because break keyword applies to it, requiring another if anyway
             if(c == ' ') // reset name and continue (this is not the name)
@@ -159,7 +159,7 @@ void shader_use(Shader* self)
     glUseProgram(self->id);
 }
 
-int shader_find_uniform(Shader* self, const char* name)
+i32 shader_find_uniform(Shader* self, const char* name)
 {
     for(u32 i = 0; i < self->uniform_count; i++)
     {

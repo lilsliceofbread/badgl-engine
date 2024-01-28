@@ -2,11 +2,14 @@
 
 #ifdef _WIN32
 
-#include "glad/gl.h"
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <io.h>
+#include "glad/gl.h"
 #include "wglext.h"
+#include <stdio.h>
 #include <string.h>
+#include "defines.h"
 
 static struct
 {
@@ -15,6 +18,12 @@ static struct
 } win_ctx;
 
 static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
+
+void platform_get_executable_path(char* buffer, u32 length)
+{
+    BGL_ASSERT(GetModuleFileNameA(NULL, buffer, (DWORD)length) != 0,
+               "unable to get executable directory. err: %lu\n", GetLastError());
+}
 
 bool platform_file_exists(const char* filename)
 {
@@ -52,11 +61,7 @@ void platform_toggle_vsync(bool on)
 void platform_reset_time(void)
 {
     QueryPerformanceFrequency(&win_ctx.os_freq);
-    if(win_ctx.os_freq == 0)
-    {
-        printf("ERROR: unable to get platform timer frequency\n");
-        exit(-1);
-    }
+    BGL_ASSERT(win_ctx.os_freq.QuadPart != 0, "unable to get platform timer frequency. err: %lu\n", GetLastError());
 
     win_ctx.platform_time_offset = platform_get_time();
 }

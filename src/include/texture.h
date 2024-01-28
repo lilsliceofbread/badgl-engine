@@ -25,25 +25,25 @@ typedef struct Texture
 } Texture;
 
 /**
- * @brief setup texture context
- * @note this function must be called before using any texture functions
- * @retval None
+ * @note for engine internal use only 
  */
 void textures_init(void);
 
 // type must be set by user
-void texture_create(Texture* self, TextureType type, const char* img_path, bool use_mipmap);
+void texture_create(Texture* self, TextureType type, const char* path, bool use_mipmap);
 
 // copy the global 1x1 texture (don't create a new texture on GPU)
-// TODO: allow black for normal maps
 void texture_global_default_create(Texture* self, TextureType type, bool is_cubemap);
 
-// create 1x1 texture
+// create 1x1 texture with rgb = brightness
 void texture_default_create(Texture* self, u8 brightness, TextureType type);
 
 void texture_default_cubemap_create(Texture* self, u8 brightness, TextureType type);
 
 /**
+ * for single image cubemaps:
+ *  
+ * for multi image cubemaps:
  * expects faces to have suffixes _px, _nx, etc for all sides
  * should all have the same extension and name
  * example file: res/img_px.png, res/img_nx.png - pass in ("res/img.png")

@@ -54,16 +54,19 @@ void texture_global_default_create(Texture* self, TextureType type, bool is_cube
     self->type |= type;
 }
 
-void texture_create(Texture* self, TextureType type, const char* img_path, bool use_mipmap)
+void texture_create(Texture* self, TextureType type, const char* path, bool use_mipmap)
 {
-    PERF_TIMER_START();
+    BGL_PERFORMANCE_START();
+
+    char full_path[1024];
+    prepend_executable_directory(full_path, 1024, path);
 
     glGenTextures(1, &self->id);
 
     i32 width, height, num_channels;
     stbi_set_flip_vertically_on_load(true);
-    u8* img_data = stbi_load(img_path, &width, &height, &num_channels, 4);
-    BGL_ASSERT(img_data, "could not load image %s\n", img_path);
+    u8* img_data = stbi_load(full_path, &width, &height, &num_channels, 4);
+    BGL_ASSERT(img_data, "could not load image %s\n", full_path);
 
     glBindTexture(GL_TEXTURE_2D, self->id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);
@@ -88,9 +91,9 @@ void texture_create(Texture* self, TextureType type, const char* img_path, bool 
     self->height = height;
     self->type = type;
 
-    strncpy(self->path, img_path, 128);
+    strncpy(self->path, full_path, MAX_PATH_LENGTH);
 
-    PERF_TIMER_END("loading texture");
+    BGL_PERFORMANCE_END("loading texture");
 }
 
 void texture_default_create(Texture* self, u8 brightness, TextureType type)
@@ -127,7 +130,7 @@ void texture_default_cubemap_create(Texture* self, u8 brightness, TextureType ty
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); // since it can be sampled in 3 dimensions
 
     u8 img_data[] = {brightness, brightness, brightness, 255}; // 1 white pixel
-    for(int i = 0; i < 6; i++)
+    for(i32 i = 0; i < 6; i++)
     {
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + (GLenum)i, 0, GL_RGB,
                      1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);
@@ -143,7 +146,10 @@ void texture_default_cubemap_create(Texture* self, u8 brightness, TextureType ty
 
 void texture_cubemap_create(Texture* self, TextureType type, const char* path)
 {
-    PERF_TIMER_START();
+    BGL_PERFORMANCE_START();
+
+    char full_path[1024];
+    prepend_executable_directory(full_path, 1024, path);
 
     glGenTextures(1, &self->id);
     glBindTexture(GL_TEXTURE_CUBE_MAP, self->id);
@@ -154,20 +160,20 @@ void texture_cubemap_create(Texture* self, TextureType type, const char* path)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); // since it can be sampled in 3 dimensions
 
-    if(platform_file_exists(path))
+    if(platform_file_exists(full_path))
     {
-        texture_single_image_cubemap_create(self, path);
+        texture_single_image_cubemap_create(self, full_path);
     }
     else
     {
-        texture_multi_image_cubemap_create(self, path); // if path is incorrect, will error in this function
+        texture_multi_image_cubemap_create(self, full_path); // if path is incorrect, will error in this function
     }
 
     self->type = type | TEXTURE_CUBEMAP;
 
-    strncpy(self->path, path, 128);
+    strncpy(self->path, full_path, MAX_PATH_LENGTH);
 
-    PERF_TIMER_END("loading cubemap texture");
+    BGL_PERFORMANCE_END("loading cubemap texture");
 }
 
 void texture_bind(Texture* self)
@@ -217,7 +223,7 @@ void texture_single_image_cubemap_create(Texture* self, const char* texture_path
     };
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, width); // ! won't work on OpenGL ES
-    for(int i = 0; i < 6; i++)
+    for(i32 i = 0; i < 6; i++)
     {
         i32 idx = 2 * i;
         i32 sub_x = sub_image_starts[idx];
@@ -247,9 +253,9 @@ void texture_multi_image_cubemap_create(Texture* self, const char* generic_path)
 
     u32 path_idx = 0;
     char curr;
-    char path_no_ext[128];
+    char path_no_ext[MAX_PATH_LENGTH];
 
-    while((curr = generic_path[path_idx]) != '.' && generic_path[path_idx] != '\0' && path_idx < 128)
+    while((curr = generic_path[path_idx]) != '.' && generic_path[path_idx] != '\0' && path_idx < MAX_PATH_LENGTH)
     {
         path_no_ext[path_idx] = curr;
         path_idx++;
@@ -259,12 +265,12 @@ void texture_multi_image_cubemap_create(Texture* self, const char* generic_path)
 
     char img_path[256];
     i32 width, height, num_channels;
-    for(int i = 0; i < 6; i++)
+    for(i32 i = 0; i < 6; i++)
     {
         memset(img_path, 0, sizeof(img_path));
         strncpy(img_path, path_no_ext, 256);
         strncat(img_path, suffixes[i], 3);
-        strncat(img_path, extension, 32); // 32 should be fine...
+        strncat(img_path, extension, 16);
 
         stbi_set_flip_vertically_on_load(false); // don't need to flip, not using uv coordinate space
         u8* img_data = stbi_load(img_path, &width, &height, &num_channels, 4);

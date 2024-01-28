@@ -39,7 +39,7 @@ typedef struct Scene {
 /**
  * @brief initialise scene
  * @note this function must any other scene function is used with your scene
- * @param self:
+ * @param self
  * @param rd 
  * @param start_pos initial position of the camera
  * @param start_euler initial rotation of the camera (x: pitch, y: yaw)
@@ -50,17 +50,6 @@ void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler);
 void scene_set_skybox(Scene* self, Renderer* rd, const char* cubemap_path);
 
 void scene_set_update_callback(Scene* self, SceneUpdateFunc func);
-
-/**
- * ! this function is for library use only
- * ? should this function be exposed to users? inline?
- * @brief if model array is out of space, reallocate aligned with block size 
- * @note   
- * @param  self: 
- * @param  new_count: the new amount of models
- * @retval None
- */
-void scene_reallocate_models(Scene* self, u32 new_count);
 
 /**
  * @brief add a model to your scene 

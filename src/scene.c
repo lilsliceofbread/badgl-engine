@@ -17,11 +17,14 @@
 /**
  * internal functions
  */
+void scene_reallocate_models(Scene* self, u32 new_count);
 void scene_update_light_model(Scene* self, u32 index);
 void scene_send_lights(Scene* self, Renderer* rd);
 
 void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
 {
+    BGL_ASSERT(sizeof(Light) == GLSL_LIGHT_SIZE, "platform struct packing/padding does not match GLSL. wtf?\n");
+
     const float aspect_ratio = (float)(rd->width) / (float)(rd->height); // not casting these to float causes the aspect ratio to be rounded
     self->cam = camera_create(start_pos, start_euler.x, start_euler.y, MOVESPEED, SENSITIVITY);
     camera_update_proj(&self->cam, DEFAULT_FOV, aspect_ratio, DEFAULT_ZNEAR, DEFAULT_ZFAR);
@@ -30,12 +33,12 @@ void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
     self->model_count = 0;
     self->light_count = 0;
     self->flags = 0;
+    self->user_update_func = NULL;
+
     self->dir_light.dir = VEC3(0.0f, 0.0f, 0.0f);
     self->dir_light.ambient = VEC3(0.0f, 0.0f, 0.0f);
     self->dir_light.diffuse = VEC3(0.0f, 0.0f, 0.0f);
     self->dir_light.specular = VEC3(0.0f, 0.0f, 0.0f);
-
-    BGL_ASSERT(sizeof(Light) == GLSL_LIGHT_SIZE, "platform struct packing/padding does not match GLSL. wtf?\n");
 
     self->light_ubo = ubo_create();
 
@@ -67,7 +70,7 @@ void scene_reallocate_models(Scene* self, u32 new_count)
         u32 new_array_size = ALIGNED_SIZE(new_count, SCENE_MODEL_ALLOC_SIZE);
 
         self->models = (Model*)realloc(self->models, new_array_size * sizeof(Model));
-        BGL_ASSERT(self->models != NULL, "SCENE: models reallocation failed\n");
+        BGL_ASSERT(self->models != NULL, "models array reallocation failed\n");
         BGL_LOG(LOG_INFO, "models array resize from %u to %u\n", model_array_size, new_array_size);
     }
 }
@@ -184,7 +187,7 @@ void scene_update_light_data(Scene* self)
 {
     const u32 light_buf_size = GLSL_MAX_LIGHTS * sizeof(Light);
     ubo_bind(self->light_ubo);
-    ubo_set_buffer_region(self->light_ubo, self->lights,       0,              light_buf_size);
+    ubo_set_buffer_region(self->light_ubo, self->lights,       0,                   light_buf_size);
     ubo_set_buffer_region(self->light_ubo, &self->light_count, (i32)light_buf_size, GLSL_INT_SIZE);
     ubo_unbind(self->light_ubo);
 
@@ -198,9 +201,10 @@ void scene_send_lights(Scene* self, Renderer* rd)
 {
     ubo_bind_buffer_range(self->light_ubo, 0, 0, GLSL_MAX_LIGHTS * sizeof(Light) + GLSL_INT_SIZE); // hardcoded for now
 
+    // TODO: add dir_light to ubo so as to not do this garbage
     // * updating dir_light for all shaders
 
-    u32 shaders[self->model_count]; // ensure enough space in worst case (variable length array)
+    u32 shaders[self->model_count];
     u32 shader_count = 0;
     for(u32 i = 0; i < self->model_count; i++)
     {

@@ -20,10 +20,10 @@ char* get_file_data(const char* filepath)
     {
         return NULL;
     }
-    char* file_data = (char*)malloc((size_t)file_size + 1); // +1 for the null terminator
+    char* file_data = (char*)malloc((u32)file_size + 1); // +1 for the null terminator
     
     fseek(file, 0, SEEK_SET); // i think since already checked fseek before should be fine
-    if(file_data == NULL || fread(file_data, 1, (size_t)file_size, file) != (size_t)file_size)
+    if(file_data == NULL || fread(file_data, 1, (u32)file_size, file) != (u32)file_size)
     {
         free(file_data);
         return NULL;
@@ -48,23 +48,41 @@ char* str_find_last_of(const char* str, char c)
     return latest_occurrence;
 }
 
-void find_directory_from_path(char* dest, size_t size, const char* path)
+void find_directory_from_path(char* buffer, u32 length, const char* path)
 {
-    char* last_char = str_find_last_of(path, '/');
+    char* last_char = str_find_last_of(path, FILEPATH_SEPARATOR);
     BGL_ASSERT(last_char != NULL, "invalid path %s\n", path);
     i32 offset = (i32)(last_char - path);
 
-    strncpy(dest, path, (size_t)offset < size ? (size_t)offset : size); // copy up to final / into directory
-    dest[offset] = '\0';
+    u32 str_end = (u32)offset < length ? (u32)offset : length;
+    strncpy(buffer, path, str_end); // copy up to final / into directory
+    buffer[str_end] = '\0';
 }
 
-void find_file_from_path(char* dest, size_t size, const char* path)
+void find_file_from_path(char* buffer, u32 length, const char* path)
 {
-    char* last_char = str_find_last_of(path, '/');
+    char* last_char = str_find_last_of(path, FILEPATH_SEPARATOR);
     BGL_ASSERT(last_char != NULL, "invalid path %s\n", path);
 
     BGL_ASSERT(strlen(last_char) > 1, "path %s contains no file\n", path);
-    strncpy(dest, last_char + 1, size);
+    strncpy(buffer, last_char + 1, length);
+    buffer[length - 1] = '\0'; // just in case
+}
+
+void prepend_executable_directory(char* buffer, u32 length, const char* path)
+{
+    // TODO: cache this
+    char exe_path[512];
+    char directory[512];
+    platform_get_executable_path(exe_path, 512);
+    find_directory_from_path(directory, 512, exe_path);
+    if(strstr(path, directory)) // if already full path
+    {
+        strncpy(buffer, path, length);
+        return;
+    }
+    
+    snprintf(buffer, length, "%s%c%s", directory, FILEPATH_SEPARATOR, path);
 }
 
 bool array_contains(u32* array, u32 length, u32 val)

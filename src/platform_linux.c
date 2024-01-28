@@ -4,22 +4,27 @@
 
 #include <unistd.h>
 #include <sys/time.h>
+#include <errno.h>
 #include <time.h>
 #include <GL/glx.h>
 #include <GL/glxext.h>
 #include <string.h>
 #include <stdio.h>
-#include <unistd.h>
+#include "defines.h"
 
 static struct
 {
-    int platform_clock;
+    i32 platform_clock;
     double platform_time_offset;
 } linux_ctx;
 
 static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
-// the GLX_EXT_swap_control extension does not have
-// a GetSwapIntervalEXT func, use glXQueryDrawable instead
+
+void platform_get_executable_path(char* buffer, u32 length)
+{
+    BGL_ASSERT(readlink("/proc/self/exe", buffer, length) != -1,
+               "unable to get executable directory. errno: %d\n", errno);
+}
 
 bool platform_file_exists(const char* filename)
 {

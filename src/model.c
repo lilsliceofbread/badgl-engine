@@ -22,7 +22,7 @@ u32* model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, 
 
 void model_load(Model* self, const char* path, u32 shader_idx)
 {
-    PERF_TIMER_START();
+    BGL_PERFORMANCE_START();
 
     self->material.ambient = VEC3(1.0f, 1.0f, 1.0f);
     self->material.specular = VEC3(1.0f, 1.0f, 1.0f);
@@ -34,10 +34,14 @@ void model_load(Model* self, const char* path, u32 shader_idx)
     self->shader_idx = shader_idx;
     transform_reset(&self->transform);
     mat4_identity(&self->model);
-    find_directory_from_path(self->directory, MAX_PATH_LENGTH, path);
 
-    const struct aiScene* scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-    BGL_ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE), "loading model %s failed\n%s\n", path, aiGetErrorString());
+    char full_path[1024];
+    prepend_executable_directory(full_path, 1024, path);
+    find_directory_from_path(self->directory, MAX_PATH_LENGTH, full_path);
+
+    const struct aiScene* scene = aiImportFile(full_path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    BGL_ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE),
+               "loading model %s failed\n%s\n", full_path, aiGetErrorString());
 
     self->mesh_count = 0;
     self->meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
@@ -64,7 +68,7 @@ void model_load(Model* self, const char* path, u32 shader_idx)
         }
     }
 
-    PERF_TIMER_END("loading model");
+    BGL_PERFORMANCE_END("loading model");
 }
 
 void model_update_transform(Model* self, const Transform* transform)

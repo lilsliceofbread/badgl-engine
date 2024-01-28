@@ -6,6 +6,7 @@
     #include <windows.h>
 #endif
 #include "util.h"
+#include "types.h"
 
 void bgl_log_impl(LogType type, const char* msg, ...)
 {
@@ -31,13 +32,13 @@ void bgl_log_impl(LogType type, const char* msg, ...)
 
     // set colour for prefix
     #ifdef __linux__
-        fprintf(output_stream, "\x1B[%dm%s:\x1B[0m ", (int)type, prefix);
+        fprintf(output_stream, "\x1B[%dm%s:\x1B[0m ", (i32)type, prefix);
     #elif _WIN32
         CONSOLE_SCREEN_BUFFER_INFO cb_info;
         HANDLE console_handle = (type == LOG_ERROR)
                               ? GetStdHandle(STD_ERROR_HANDLE) : GetStdHandle(STD_OUTPUT_HANDLE);
         GetConsoleScreenBufferInfo(console_handle, &cb_info);
-        int original_colour = cb_info.wAttributes;
+        i32 original_colour = cb_info.wAttributes;
 
         SetConsoleTextAttribute(console_handle, (WORD)type);
             fprintf(output_stream, "%s: ", prefix);
@@ -49,7 +50,7 @@ void bgl_log_impl(LogType type, const char* msg, ...)
     va_end(args);
 }
 
-void bgl_log_ctx_impl(LogType type, const char* msg, const char* file, int line, ...)
+void bgl_log_ctx_impl(LogType type, const char* msg, const char* file, i32 line, ...)
 {
     va_list args;
     char buffer[8192];

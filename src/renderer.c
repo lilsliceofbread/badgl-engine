@@ -135,7 +135,7 @@ void rd_update_viewport(Renderer* self)
     glViewport(0, 0, self->width, self->height);
 }
 
-void rd_set_viewport(int x, i32 y, i32 width, i32 height)
+void rd_set_viewport(i32 x, i32 y, i32 width, i32 height)
 {
     glViewport(x, y, width, height);
 }
@@ -150,6 +150,13 @@ void rd_imgui_init(Renderer* self, const char* glsl_version)
 {
     self->imgui_ctx = igCreateContext(NULL); 
     self->imgui_io = igGetIO(); 
+
+    // force imgui to use executable directory for imgui.ini
+    self->imgui_io->IniFilename = NULL;
+    char imgui_ini_path[1024];
+    prepend_executable_directory(imgui_ini_path, 1024, "imgui.ini");
+    igLoadIniSettingsFromDisk(imgui_ini_path);
+
     ImGui_ImplGlfw_InitForOpenGL(self->win, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
@@ -250,6 +257,10 @@ void rd_free(Renderer* self)
         shader_free(&self->shaders[i]);
     }
     if(self->shaders != NULL) free(self->shaders);
+
+    char imgui_ini_path[1024];
+    prepend_executable_directory(imgui_ini_path, 1024, "imgui.ini");
+    igSaveIniSettingsToDisk(imgui_ini_path);
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

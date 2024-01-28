@@ -1,5 +1,5 @@
 # badgl engine
-making a terrible graphics "engine" to learn c and opengl.
+making a terrible graphics engine/framework to learn c and openGL.
 
 WIP (no documentation, have fun!)
 
@@ -15,8 +15,14 @@ press *Esc* to toggle keyboard and mouse input, *P* to toggle wireframe view, an
 
 - all compilers should *theoretically* work (gcc tested on linux and windows) 
 
-# compiling and running the example
+# compiling
 
-*Linux*: Required packages: `libxrandr-dev libglx-dev`. Run `cmake -S . -B build` to configure cmake, then `./build.sh`. Now you can run the example with `./run.sh`
+No matter how you choose to compile the library, the `shaders/` folder should be in the same directory as the executable.
 
-*Windows*: Build with `./build.bat`, then run with `./run.bat`. NOTE: if the MSVC compiler was used, you may need to run `start .\[Debug or Release]\game.exe` so that the working directory remains in build/example (or just don't use msvc lol).
+*Linux*: Required packages: `libxrandr-dev libglx-dev`. Run `cmake -S . -B build` to configure cmake, then `./build.sh`.
+
+*Windows*: Build with `./build.bat`. If using MinGW GCC compiler is available it will be used. If you want to use a specific compiler you need to edit the cmake command within build.bat, along with the Makefile type.
+
+# using the engine
+
+- If you are using your own resources (e.g. models, textures etc.), specify your paths relative to the executable.

@@ -2,14 +2,14 @@
 Source: https://polyhaven.com/a/alps_field
 Authors: Andreas Mischok
 
-[belfast.png]
-Source: https://polyhaven.com/a/belfast_sunset_puresky
-Authors: Dimitrios Savva, Greg Zaal, Jarod Guest
-
 [kurt/space.png]
 Source: https://opengameart.org/content/space-skybox-1
 Authors: kurtk84
 
-[earth_diffuse.png, earth_specular.png]
+[earth_day_diffuse.png, earth_night_diffuse.png, earth_specular.png]
 Source: https://www.solarsystemscope.com/textures
 Authors: NASA
+
+[chicken/chicken.obj]
+Source: https://opengameart.org/content/chicken-animated
+Authors: CDmir

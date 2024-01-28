@@ -1,6 +1,8 @@
 #ifndef BGL_LOG_H
 #define BGL_LOG_H
 
+#include "types.h"
+
 #ifdef BGL_NO_DEBUG
     #define BGL_LOG(type, msg, ...)
     #define BGL_LOG_NO_CTX(type, msg, ...)
@@ -24,6 +26,6 @@ typedef enum LogType
 
 void bgl_log_impl(LogType type, const char* msg, ...);
 
-void bgl_log_ctx_impl(LogType type, const char* msg, const char* file, int line, ...);
+void bgl_log_ctx_impl(LogType type, const char* msg, const char* file, i32 line, ...);
 
 #endif

@@ -7,9 +7,6 @@
 
 typedef enum MaterialFlags {
     NO_LIGHTING          = 1 << 0,
-    //HAS_DIFFUSE_TEXTURE  = 1 << 1, 
-    //HAS_SPECULAR_TEXTURE = 1 << 2, 
-    //HAS_NORMAL_TEXTURE   = 1 << 3,
     IS_LIGHT             = 1 << 1,
     USE_CUBEMAP_TEXTURES = 1 << 2, 
 } MaterialFlags;
