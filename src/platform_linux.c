@@ -22,8 +22,8 @@ static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
 
 void platform_get_executable_path(char* buffer, u32 length)
 {
-    BGL_ASSERT(readlink("/proc/self/exe", buffer, length) != -1,
-               "unable to get executable directory. errno: %d\n", errno);
+    bool success = readlink("/proc/self/exe", buffer, length) != -1;
+    BGL_ASSERT(success, "unable to get executable directory. errno: %d\n", errno);
 }
 
 bool platform_file_exists(const char* filename)

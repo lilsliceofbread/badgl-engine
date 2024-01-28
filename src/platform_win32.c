@@ -21,8 +21,8 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
 
 void platform_get_executable_path(char* buffer, u32 length)
 {
-    BGL_ASSERT(GetModuleFileNameA(NULL, buffer, (DWORD)length) != 0,
-               "unable to get executable directory. err: %lu\n", GetLastError());
+    bool success = GetModuleFileNameA(NULL, buffer, (DWORD)length) != 0;
+    BGL_ASSERT(success, "unable to get executable directory. err: %lu\n", GetLastError());
 }
 
 bool platform_file_exists(const char* filename)
@@ -61,7 +61,8 @@ void platform_toggle_vsync(bool on)
 void platform_reset_time(void)
 {
     QueryPerformanceFrequency(&win_ctx.os_freq);
-    BGL_ASSERT(win_ctx.os_freq.QuadPart != 0, "unable to get platform timer frequency. err: %lu\n", GetLastError());
+    bool success = win_ctx.os_freq.QuadPart != 0;
+    BGL_ASSERT(success, "unable to get platform timer frequency. err: %lu\n", GetLastError());
 
     win_ctx.platform_time_offset = platform_get_time();
 }

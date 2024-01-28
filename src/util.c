@@ -5,6 +5,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+// windows is fucking dumb
+#ifdef __linux__
+    #define GET_LAST_FILE_SEPARATOR(name) char* name = str_find_last_of(path, '/')
+#elif _WIN32
+    #define GET_LAST_FILE_SEPARATOR(name) char* last_slash = str_find_last_of(path, '/'); char* last_backslash = str_find_last_of(path, '\\'); char* name = last_slash > last_backslash ? last_slash : last_backslash
+#endif
+
 char* get_file_data(const char* filepath)
 {
     FILE* file;
@@ -50,7 +57,7 @@ char* str_find_last_of(const char* str, char c)
 
 void find_directory_from_path(char* buffer, u32 length, const char* path)
 {
-    char* last_char = str_find_last_of(path, FILEPATH_SEPARATOR);
+    GET_LAST_FILE_SEPARATOR(last_char);
     BGL_ASSERT(last_char != NULL, "invalid path %s\n", path);
     i32 offset = (i32)(last_char - path);
 
@@ -61,7 +68,7 @@ void find_directory_from_path(char* buffer, u32 length, const char* path)
 
 void find_file_from_path(char* buffer, u32 length, const char* path)
 {
-    char* last_char = str_find_last_of(path, FILEPATH_SEPARATOR);
+    GET_LAST_FILE_SEPARATOR(last_char);
     BGL_ASSERT(last_char != NULL, "invalid path %s\n", path);
 
     BGL_ASSERT(strlen(last_char) > 1, "path %s contains no file\n", path);
@@ -82,7 +89,7 @@ void prepend_executable_directory(char* buffer, u32 length, const char* path)
         return;
     }
     
-    snprintf(buffer, length, "%s%c%s", directory, FILEPATH_SEPARATOR, path);
+    snprintf(buffer, length, "%s/%s", directory, path);
 }
 
 bool array_contains(u32* array, u32 length, u32 val)

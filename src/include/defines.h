@@ -35,12 +35,8 @@
 
 #ifdef _WIN32
     #define BGL_EXPORT __declspec(dllexport)
-
-    #define FILEPATH_SEPARATOR '\\'
 #elif __linux__
     #define BGL_EXPORT
-
-    #define FILEPATH_SEPARATOR '/'
 #endif
 
 #ifdef __GNUC__
