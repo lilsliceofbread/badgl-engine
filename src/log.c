@@ -21,13 +21,16 @@ void bgl_log_impl(LogType type, const char* msg, ...)
             prefix = "ERROR";
             break; 
         case LOG_WARN:
-            output_stream = stdout;
+            output_stream = stderr;
             prefix = "WARN";
             break; 
         case LOG_INFO:
             output_stream = stdout;
             prefix = "INFO";
             break; 
+        default:
+            output_stream = stdout;
+            prefix = "UNKNOWN_LOG_TYPE";
     }
 
     // set colour for prefix

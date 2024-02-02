@@ -222,9 +222,9 @@ void game_add_models(void)
     shapes_uv_sphere(&models[0], 20, &materials[0], sphere_shader);
     shapes_uv_sphere(&models[1], 20, &materials[1], sphere_shader);
 
-    shapes_rectangular_plane(&models[2], 50.0f, 50.0f, 2, &materials[2], model_shader);
+    shapes_plane(&models[2], 50.0f, 50.0f, 2, &materials[2], model_shader);
     model_load(&models[3], "res/chicken/chicken.obj", model_shader);
-    shapes_rectangular_prism(&models[4], 1.5f, 2.0f, 3.0f, &materials[3], model_shader);
+    shapes_box(&models[4], 1.5f, 2.0f, 3.0f, &materials[3], model_shader);
     shapes_uv_sphere(&models[5], 20, &materials[4], sphere_shader);
 
     /* setting/updating transforms */
@@ -277,7 +277,7 @@ void game_add_lights(void)
     Model model;
     Transform transform;
 
-    shapes_rectangular_prism(&model, 1.0f, 1.0f, 1.0f, NULL, 0); // last 2 parameters are not used for lights, set to NULL and 0
+    shapes_box(&model, 1.0f, 1.0f, 1.0f, NULL, 0); // last 2 parameters are not used for lights, set to NULL and 0
 
     transform_reset(&transform);
     transform.euler = VEC3(45.0f, 30.0f, 45.0f); // can set euler and scale, but position will be set by scene_add_light

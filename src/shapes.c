@@ -141,7 +141,7 @@ void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader
                 tex_indices, material == NULL ? 0 : self->material.tex_count);
 }
 
-void shapes_rectangular_prism(Model* self, float width, float height, float depth, const Material* material, u32 shader_idx)
+void shapes_box(Model* self, float width, float height, float depth, const Material* material, u32 shader_idx)
 {
     u32* tex_indices = shape_setup(self, material, shader_idx);
     
@@ -264,7 +264,7 @@ void shapes_rectangular_prism(Model* self, float width, float height, float dept
                 tex_indices, material == NULL ? 0 : self->material.tex_count);
 }
 
-void shapes_rectangular_plane(Model* self, float width, float height, u32 res, const Material* material, u32 shader_idx)
+void shapes_plane(Model* self, float width, float height, u32 res, const Material* material, u32 shader_idx)
 {
     BGL_ASSERT(res >= 2, "%u too small of a resolution for rectangular plane\n", res);
 

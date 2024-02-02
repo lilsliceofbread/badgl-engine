@@ -18,6 +18,6 @@ void vao_unbind(void);
 
 void vao_attribute(GLuint index, GLint size, GLenum type, GLsizei stride, size_t offset);
 
-void vao_free(VAO self); // free gpu allocation
+void vao_free(VAO self);
 
 #endif

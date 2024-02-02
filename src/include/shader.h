@@ -6,11 +6,11 @@
 #include "glmath.h"
 #include "defines.h"
 
-#define MAX_UNIFORM_NAME 64
+#define MAX_UNIFORM_NAME 128 
 #define SHADER_UNIFORM_ALLOC_SIZE 8 
 
 typedef struct Uniform {
-    char name[MAX_UNIFORM_NAME]; // if you make a uniform name longer than 64 characters i don't like you
+    char name[MAX_UNIFORM_NAME];
     i32 location;
 } Uniform;
 
@@ -18,7 +18,7 @@ typedef struct Shader
 {
     u32 id;
     Uniform* uniforms;
-    u32 uniform_count; // found during shader comp
+    u32 uniform_count;
 } Shader;
 
 void shader_create(Shader* self, const char* vert_shader_src, const char* frag_shader_src);

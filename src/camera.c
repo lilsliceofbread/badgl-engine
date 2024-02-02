@@ -111,10 +111,10 @@ void camera_update(Camera* self, Renderer* rd)
         self->pos = vec3_sub(self->pos, step_vec);
     }
 
-    float cursor_x, cursor_y;
+    double cursor_x, cursor_y;
     rd_get_cursor_pos(rd, &cursor_x, &cursor_y);
 
-    if(!rd->mouse_should_update) // don't update rotation
+    if(!rd->mouse_should_update)
     {
         self->last_cursor_x = cursor_x;
         self->last_cursor_y = cursor_y;
@@ -122,20 +122,12 @@ void camera_update(Camera* self, Renderer* rd)
         return;
     }
 
-    self->yaw += self->sensitivity * (cursor_x - self->last_cursor_x); // x offset * sens = yaw
-    self->pitch += self->sensitivity * (self->last_cursor_y - cursor_y); // reversed y offset
+    self->yaw += self->sensitivity * (float)(cursor_x - self->last_cursor_x); // x offset * sens = yaw
+    self->pitch += self->sensitivity * (float)(self->last_cursor_y - cursor_y); // reversed y offset
     self->last_cursor_x = cursor_x;
     self->last_cursor_y = cursor_y;
 
-    // constrain pitch so you can't flip your "head"
-    if(self->pitch > 89.0f)
-    {
-        self->pitch = 89.0f;
-    } 
-    else if(self->pitch < -89.0f)
-    {
-        self->pitch = -89.0f;
-    }
+    self->pitch = CLAMP(self->pitch, -89.0f, 89.0f);
 
     camera_update_view(self);
 }

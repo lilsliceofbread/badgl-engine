@@ -101,10 +101,3 @@ bool array_contains(u32* array, u32 length, u32 val)
 
     return false;
 }
-
-void transform_reset(Transform* transform)
-{
-    transform->pos = VEC3(0.0f, 0.0f, 0.0f);
-    transform->euler = VEC3(0.0f, 0.0f, 0.0f);
-    transform->scale = VEC3(1.0f, 1.0f, 1.0f);
-}

@@ -1,11 +1,7 @@
 # badgl engine
 making a terrible graphics engine/framework to learn c and openGL.
 
-WIP (no documentation, have fun!)
-
-the example program should help to give some idea of the structure of the engine.
-
-press *Esc* to toggle keyboard and mouse input, *P* to toggle wireframe view, and *Q* to quit.
+WIP: this project is on break for some time
 
 # requirements
 
@@ -25,4 +21,8 @@ No matter how you choose to compile the library, the `shaders/` folder should be
 
 # using the engine
 
-- If you are using your own resources (e.g. models, textures etc.), specify your paths relative to the executable.
+- the example program should help to give some idea of the structure of the engine
+
+- press *Esc* to toggle keyboard and mouse input, *P* to toggle wireframe view, and *Q* to quit.
+
+- if you are using your own resources (e.g. models, textures etc.), specify your paths relative to the executable.

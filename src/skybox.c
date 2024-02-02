@@ -13,13 +13,13 @@ Model skybox_create(Renderer* rd, const char* cubemap_path)
     material_add_texture(&material, TEXTURE_DIFFUSE, cubemap_path);
     material.flags |= NO_LIGHTING;
 
-    shapes_rectangular_prism(&self, 2.0f, 2.0f, 2.0f, &material, rd->skybox_shader);
+    shapes_box(&self, 2.0f, 2.0f, 2.0f, &material, rd->skybox_shader);
     return self;
 }
 
 void skybox_draw(Model* self, Renderer* rd, Camera* cam)
 {
-    Shader* shader = rd_get_shader(rd, self->shader_idx);
+    Shader* shader = &rd->shaders[self->shader_idx];
 
     mat4 vp; // no translation allowed to keep skybox at consistent distance
     mat4 corrected_view = cam->view;

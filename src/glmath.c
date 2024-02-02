@@ -127,7 +127,7 @@ void vec2_norm(vec2* out)
     *out = vec2_scale(tmp, 1.0f / denom);
 }
 
-// inefficient lol, has to copy 2 whole matrices + no SIMD stuff
+// inefficient, has to copy 2 whole matrices + no SIMD stuff
 void mat4_mul(mat4* out, mat4 m1, mat4 m2)
 {
     out->m11 = m1.m11 * m2.m11 + m1.m12 * m2.m21 + m1.m13 * m2.m31 + m1.m14 * m2.m41;
@@ -290,17 +290,16 @@ void mat_perspective_fov(mat4* out, float fov, float aspect, float near, float f
 {
     *out = mat4_zero();
 
-    // calculating these beforehand is faster
     float s  = 1.0f / tanf(0.5f * fov); // 1 / half of the vertical fov
-    float zdenom = 1.0f / (far - near);
+    float zdenom = 1.0f / (far - near); // same as -1.0f / (near - far)
 
     // matrix diagonal
     out->m11 = s / aspect; // aspect and tan on denominator
     out->m22 = s;
-    out->m33 = -(far + near) * zdenom; // scaling z between 1 and -1 (once z/w)
+    out->m33 = -(far + near) * zdenom; // scaling z between w and -w
 
     // not on diagonal
-    out->m34 = (-2.0f * far * near) * zdenom; // scaling z between 1 and -1 (once z/w)
+    out->m34 = (-2.0f * far * near) * zdenom; // scaling z between w and -w
     out->m43 = -1.0f; // copy -z into w (flipped because opengl is in rh coords)
 }
 

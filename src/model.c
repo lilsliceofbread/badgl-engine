@@ -87,7 +87,7 @@ void model_update_transform(Model* self, const Transform* transform)
 
 void model_draw(Model* self, Renderer* rd, Camera* cam)
 {
-    Shader* shader = rd_get_shader(rd, self->shader_idx);
+    Shader* shader = &rd->shaders[self->shader_idx];
 
     mat4 mvp, model_view;
     mat4_mul(&model_view, cam->view, self->model);

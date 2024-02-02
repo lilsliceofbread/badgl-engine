@@ -43,7 +43,7 @@ void bo_bind(BO self);
 
 void bo_unbind(BO self);
 
-void bo_set_buffer(BO self, const void* data, size_t size, bool dynamic); // can't use dynamic rn
+void bo_set_buffer(BO self, const void* data, size_t size, bool dynamic);
 
 void bo_set_buffer_region(BO self, const void* data, i32 offset, size_t size);
 

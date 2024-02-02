@@ -184,11 +184,6 @@ u32 rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
     return self->shader_count - 1;
 }
 
-Shader* rd_get_shader(Renderer* self, u32 index)
-{
-    return &self->shaders[index];
-}
-
 void rd_set_wireframe(bool useWireframe)
 {
     if(useWireframe)
@@ -310,13 +305,13 @@ void rd_key_callback(GLFWwindow* win, i32 key, BGL_UNUSED i32 scancode, i32 acti
     }
 }
 
-void rd_get_cursor_pos(Renderer* self, float* cursor_x_out, float* cursor_y_out)
+void rd_get_cursor_pos(Renderer* self, double* cursor_x_out, double* cursor_y_out)
 {
     double xpos, ypos; // have to do this since glfw uses doubles
     glfwGetCursorPos(self->win, &xpos, &ypos);
     
-    *cursor_x_out = (float)xpos;
-    *cursor_y_out = (float)ypos;
+    *cursor_x_out = (double)xpos;
+    *cursor_y_out = (double)ypos;
 }
 
 void APIENTRY rd_debug_callback(BGL_UNUSED GLenum source, BGL_UNUSED GLenum type,  u32 id,
