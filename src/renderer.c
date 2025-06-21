@@ -15,19 +15,20 @@
 #include "texture.h"
 #include "util.h"
 
+#define BGL_RD_VERSION_STRLEN 24 // bit extra to make it multiple of 8
+
 /**
  * internal functions
- */
-void rd_configure_gl(Renderer* self);
+ */ void rd_configure_gl(Renderer* self);
 void rd_imgui_init(Renderer* self, const char* glsl_version);
 void rd_resize_callback(GLFWwindow* win, i32 width, i32 height);
 void rd_key_callback(GLFWwindow* win, i32 key, i32 scancode, i32 action, i32 mods);
-void rd_reallocate_shaders(Renderer* self, u32 new_count);
-void APIENTRY rd_debug_callback(GLenum source, GLenum type, u32 id,
-                                GLenum severity, GLsizei length,
+void APIENTRY rd_debug_callback(GLenum source, GLenum type, u32 id, GLenum severity, GLsizei length,
                                 const char *message, const void *user_param);
+void rd_get_version_major_minor(Renderer* self, i32* major, i32* minor);
+void rd_get_version_string(Renderer* self, char* buffer);
 
-void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, RendererFlags flags)
+void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, RendererFlags flags, const char* version)
 {
     self->width = width;
     self->height = height;
@@ -38,7 +39,12 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     self->delta_time = 0.0;
     self->last_time = 0.0;
     self->framecount = 0;
-    self->flags = flags & (RendererFlags)~(RD_INTERNAL_CURSOR_DISABLED | RD_INTERNAL_VSYNC_ENABLED); // set both to false by default
+    self->flags = flags & (RendererFlags)~(_BGL_RD_CURSOR_DISABLED | _BGL_RD_VSYNC_ENABLED); // set both to false by default
+
+    i32 major, minor;
+    BGL_ASSERT(strlen(version) >= 3, "invalid opengl version\n");
+    memcpy(self->version, version, 3);
+    rd_get_version_major_minor(self, &major, &minor);
 
     i32 ret = glfwInit();
     BGL_ASSERT(ret, "failed to init GLFW\n");
@@ -46,8 +52,8 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     #ifndef BGL_NO_DEBUG
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  
     #endif
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     
@@ -67,14 +73,16 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
 
     rd_configure_gl(self);
 
-    self->skybox_shader = self->flags & RD_USE_SKYBOX
-                                      ? rd_add_shader(self, "shaders/skybox.vert", "shaders/skybox.frag") : 0;
-    self->quad_shader   = self->flags & RD_USE_UI
-                                      ? rd_add_shader(self, "shaders/quad.vert", "shaders/quad.frag") : 0;
-    self->light_shader  = self->flags & RD_USE_LIGHTING
-                                      ? rd_add_shader(self, "shaders/light.vert", "shaders/light.frag") : 0;
+    self->skybox_shader = self->flags & BGL_RD_SKYBOX_OFF
+                                      ? 0 : rd_add_shader(self, "shaders/skybox.vert", "shaders/skybox.frag");
+    self->quad_shader   = self->flags & BGL_RD_UI_OFF
+                                      ? 0 : rd_add_shader(self, "shaders/quad.vert", "shaders/quad.frag");
+    self->light_shader  = self->flags & BGL_RD_LIGHTING_OFF
+                                      ? 0 : rd_add_shader(self, "shaders/light.vert", "shaders/light.frag");
 
-    rd_imgui_init(self, "#version 430 core");
+    char imgui_version[BGL_RD_VERSION_STRLEN];
+    rd_get_version_string(self, imgui_version);
+    rd_imgui_init(self, imgui_version);
 
     platform_reset_time();
 }
@@ -82,25 +90,27 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
 void rd_configure_gl(Renderer* self)
 {
     #ifndef BGL_NO_DEBUG
-        i32 flags;
-        glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
-        if(flags & GL_CONTEXT_FLAG_DEBUG_BIT)
-        {
-            glEnable(GL_DEBUG_OUTPUT);
-            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-            glDebugMessageCallback(rd_debug_callback, NULL);
-            glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
-        }
+    i32 flags, major, minor;
+    rd_get_version_major_minor(self, &major, &minor);
+
+    glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+    if(major == 4 && minor >= 3 && flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+    {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(rd_debug_callback, NULL);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+    }
     #endif
 
     if(platform_init_vsync())
     {
-        self->flags |= RD_INTERNAL_VSYNC_ENABLED;
+        self->flags |= _BGL_RD_VSYNC_ENABLED;
         platform_toggle_vsync(true);
     }
     else 
     {
-        BGL_LOG(LOG_INFO, "OpenGL vsync extension not enabled");
+        BGL_LOG_INFO("OpenGL vsync extension not enabled");
     }
 
     textures_init();
@@ -163,23 +173,12 @@ void rd_imgui_init(Renderer* self, const char* glsl_version)
     igStyleColorsDark(NULL);
 }
 
-void rd_reallocate_shaders(Renderer* self, u32 new_count)
-{
-    u32 shader_array_size = ALIGNED_SIZE(self->shader_count, RD_SHADER_ALLOC_SIZE);
-    if(new_count > shader_array_size)
-    {
-        u32 new_array_size = ALIGNED_SIZE(new_count, RD_SHADER_ALLOC_SIZE);
-
-        self->shaders = (Shader*)realloc(self->shaders, new_array_size * sizeof(Shader));
-        BGL_ASSERT(self->shaders != NULL, "shader array reallocation failed");
-        BGL_LOG(LOG_INFO, "shader array resize from %u to %u\n", shader_array_size, new_array_size);
-    }
-}
-
 u32 rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
 {
-    rd_reallocate_shaders(self, self->shader_count + 1);
-    shader_create(&self->shaders[self->shader_count++], vert_src, frag_src);
+    char version_str[BGL_RD_VERSION_STRLEN];
+    rd_get_version_string(self, version_str);
+    BLOCK_RESIZE_ARRAY(&self->shaders, Shader, self->shader_count, 1);
+    shader_create(&self->shaders[self->shader_count++], vert_src, frag_src, version_str);
 
     return self->shader_count - 1;
 }
@@ -205,7 +204,7 @@ void rd_begin_frame(Renderer* self)
     igNewFrame();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    double curr_time = platform_get_time();
+    f64 curr_time = platform_get_time();
     self->delta_time = curr_time - self->last_time;
     self->last_time = curr_time; 
 }
@@ -226,7 +225,7 @@ void rd_end_frame(Renderer* self)
         self->mouse_should_update = false;
         return;
     }
-    else if(self->flags & RD_INTERNAL_CURSOR_DISABLED)
+    else if(self->flags & _BGL_RD_CURSOR_DISABLED)
     {
         self->mouse_should_update = false;
         return;
@@ -251,7 +250,7 @@ void rd_free(Renderer* self)
     {
         shader_free(&self->shaders[i]);
     }
-    if(self->shaders != NULL) free(self->shaders);
+    if(self->shaders != NULL) BGL_FREE(self->shaders);
 
     char imgui_ini_path[1024];
     prepend_executable_directory(imgui_ini_path, 1024, "imgui.ini");
@@ -277,18 +276,14 @@ void rd_key_callback(GLFWwindow* win, i32 key, BGL_UNUSED i32 scancode, i32 acti
 {
     Renderer* rd = (Renderer*)glfwGetWindowUserPointer(win);
 
-    if(key == GLFW_KEY_Q && action == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(win, true);
-    }
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
-        if(rd->flags & RD_INTERNAL_CURSOR_DISABLED) // toggle between cursor locked vs usable
+        if(rd->flags & _BGL_RD_CURSOR_DISABLED) // toggle between cursor locked vs usable
         {
             glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             glfwSetCursorPos(win, rd->width / 2, rd->height / 2);
 
-            rd->flags &= (RendererFlags)~(RD_INTERNAL_CURSOR_DISABLED);
+            rd->flags &= (RendererFlags)~(_BGL_RD_CURSOR_DISABLED);
             rd->mouse_wait_update = 1; // mouse updates should wait 1 frame to prevent flicking
         }
         else
@@ -296,7 +291,7 @@ void rd_key_callback(GLFWwindow* win, i32 key, BGL_UNUSED i32 scancode, i32 acti
             glfwFocusWindow(win);
             glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-            rd->flags |= RD_INTERNAL_CURSOR_DISABLED;
+            rd->flags |= _BGL_RD_CURSOR_DISABLED;
         }
     }
     if(key == GLFW_KEY_P)
@@ -305,13 +300,9 @@ void rd_key_callback(GLFWwindow* win, i32 key, BGL_UNUSED i32 scancode, i32 acti
     }
 }
 
-void rd_get_cursor_pos(Renderer* self, double* cursor_x_out, double* cursor_y_out)
+void rd_get_cursor_pos(Renderer* self, f64* cursor_x_out, f64* cursor_y_out)
 {
-    double xpos, ypos; // have to do this since glfw uses doubles
-    glfwGetCursorPos(self->win, &xpos, &ypos);
-    
-    *cursor_x_out = (double)xpos;
-    *cursor_y_out = (double)ypos;
+    glfwGetCursorPos(self->win, cursor_x_out, cursor_y_out);
 }
 
 void APIENTRY rd_debug_callback(BGL_UNUSED GLenum source, BGL_UNUSED GLenum type,  u32 id,
@@ -320,14 +311,38 @@ void APIENTRY rd_debug_callback(BGL_UNUSED GLenum source, BGL_UNUSED GLenum type
 {
     if(id == 131185) return; // ignore this garbage
 
-    LogType log_type;
+    LogType log_type = BGL_LOG_INFO;
     switch (severity)
     {
-        case GL_DEBUG_SEVERITY_HIGH:         log_type = LOG_ERROR; break;
-        case GL_DEBUG_SEVERITY_MEDIUM:       log_type = LOG_WARN; break;
-        case GL_DEBUG_SEVERITY_LOW:          log_type = LOG_INFO; break;
-        case GL_DEBUG_SEVERITY_NOTIFICATION: log_type = LOG_INFO; break;
+        case GL_DEBUG_SEVERITY_HIGH:         log_type = BGL_LOG_ERROR; break;
+        case GL_DEBUG_SEVERITY_MEDIUM:       log_type = BGL_LOG_WARN; break;
+        case GL_DEBUG_SEVERITY_LOW:          log_type = BGL_LOG_INFO; break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION: log_type = BGL_LOG_INFO; break;
     }
 
-    BGL_LOG_NO_CTX(log_type, "OPENGLDEBUG ID - %d\nMESSAGE: %s\n\n", id, message);
+    BGL_LOG_NO_CTX(log_type, "OPENGLDEBUG ID - %d\n%s\n", id, message);
+}
+
+void rd_get_version_major_minor(Renderer* self, i32* major, i32* minor)
+{
+    char major_char = self->version[0];
+    char minor_char = self->version[2];
+    BGL_ASSERT(CHAR_IS_NUMBER(major_char) && CHAR_IS_NUMBER(minor_char), "invalid opengl version, missing numbers");
+    BGL_ASSERT(self->version[1] == '.', "invalid opengl version, missing dot");
+
+    *major = CHAR_TO_INT(major_char);    
+    *minor = CHAR_TO_INT(minor_char);    
+}
+
+/* assumes buffer is set to BGL_RD_VERSION_STRLEN. since i only use this twice, keeping as is */
+void rd_get_version_string(Renderer* self, char* buffer)
+{
+    /* index:                       0        9       */
+    const char* version_template = "#version xx0 core";
+    int major, minor;
+
+    rd_get_version_major_minor(self, &major, &minor);
+    memcpy(buffer, version_template, strlen(version_template));
+    buffer[9] = INT_TO_CHAR(major);
+    buffer[10] = INT_TO_CHAR(minor);
 }

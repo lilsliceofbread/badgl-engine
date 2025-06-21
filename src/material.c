@@ -11,16 +11,16 @@ static const char* material_members[] = { // ? mildly scuffed
     "material.shininess",
 };
 
-void material_create(Material* mat, bool is_cubemap_shader, vec3 ambient, vec3 diffuse, vec3 specular, float shininess)
+void material_create(Material* mat, bool is_cubemap_shader, vec3 ambient, vec3 diffuse, vec3 specular, f32 shininess)
 {
     mat->ambient = ambient;
     mat->diffuse = diffuse;
     mat->specular = specular;
     mat->shininess = shininess;
 
-    mat->flags = is_cubemap_shader ? USE_CUBEMAP_TEXTURES : 0;
+    mat->flags = is_cubemap_shader ? BGL_MATERIAL_USE_CUBEMAP_TEXTURES : 0;
 
-    mat->textures = (Texture*)malloc(2 * sizeof(Texture)); // diffuse and specular
+    mat->textures = (Texture*)BGL_MALLOC(2 * sizeof(Texture)); // diffuse and specular
     mat->tex_count = 2;
 
     texture_global_default_create(&mat->textures[0], TEXTURE_DIFFUSE, is_cubemap_shader);
@@ -31,7 +31,7 @@ void material_add_texture(Material* mat, TextureType type, const char* texture_p
 {
     if(mat->textures == NULL || mat->tex_count < 2)
     {
-        BGL_LOG(LOG_ERROR, "material textures have not been allocated");
+        BGL_LOG_ERROR("textures have not been allocated\n");
         return;
     }
 
@@ -54,11 +54,11 @@ void material_add_texture(Material* mat, TextureType type, const char* texture_p
 
     if(tex_to_replace == NULL) // not already created e.g. normal textures
     {
-        mat->textures = (Texture*)realloc(mat->textures, (mat->tex_count + 1) * sizeof(Texture));
+        mat->textures = (Texture*)BGL_REALLOC(mat->textures, (mat->tex_count + 1) * sizeof(Texture));
         tex_to_replace = &mat->textures[mat->tex_count++];
     }
 
-    if(mat->flags & USE_CUBEMAP_TEXTURES)
+    if(mat->flags & BGL_MATERIAL_USE_CUBEMAP_TEXTURES)
     {
         texture_cubemap_create(tex_to_replace, type, texture_path);
     }
@@ -80,19 +80,19 @@ void material_add_texture(Material* mat, TextureType type, const char* texture_p
 
 void material_set_uniforms(Material* mat, Shader* shader)
 {
-    if(mat->flags & NO_LIGHTING) return;
+    if(mat->flags & BGL_MATERIAL_NO_LIGHTING) return;
 
     shader_uniform_vec3(shader, material_members[0], &mat->ambient);
     shader_uniform_vec3(shader, material_members[1], &mat->diffuse);
     shader_uniform_vec3(shader, material_members[2], &mat->specular);
-    shader_uniform_float(shader, material_members[3], mat->shininess);
+    shader_uniform_f32(shader, material_members[3], mat->shininess);
 }
 
 void material_free(Material* mat)
 {
     if(mat->textures == NULL) 
     {
-        BGL_LOG(LOG_INFO, "no texture data on free\n");
+        BGL_LOG_INFO("no texture data on free\n");
         return;
     }
 
@@ -100,5 +100,5 @@ void material_free(Material* mat)
     {
         texture_free(&mat->textures[i]);
     }
-    free(mat->textures);
+    BGL_FREE(mat->textures);
 }

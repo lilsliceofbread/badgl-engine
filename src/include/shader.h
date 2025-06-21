@@ -21,7 +21,7 @@ typedef struct Shader
     u32 uniform_count;
 } Shader;
 
-void shader_create(Shader* self, const char* vert_shader_src, const char* frag_shader_src);
+void shader_create(Shader* self, const char* vert_shader_src, const char* frag_shader_src, const char* version_str);
 
 void shader_use(Shader* self);
 
@@ -31,7 +31,7 @@ void shader_uniform_mat4(Shader* self, const char* name, mat4* mat);
 void shader_uniform_vec4(Shader* self, const char* name, vec4* vec);
 void shader_uniform_vec3(Shader* self, const char* name, vec3* vec);
 void shader_uniform_vec2(Shader* self, const char* name, vec2* vec);
-void shader_uniform_float(Shader* self, const char* name, float f);
+void shader_uniform_f32(Shader* self, const char* name, f32 f);
 void shader_uniform_int(Shader* self, const char* name, i32 i);
 
 void shader_free(Shader* self);

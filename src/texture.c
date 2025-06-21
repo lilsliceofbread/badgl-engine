@@ -39,7 +39,7 @@ void texture_multi_image_cubemap_create(Texture* self, const char* generic_path)
 
 void textures_init(void) {
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_ctx.max_texture_units);
-    BGL_LOG_NO_CTX(LOG_INFO, "max texture units: %u\n", texture_ctx.max_texture_units);
+    BGL_LOG_INFO_NO_CTX("max texture units: %u\n", texture_ctx.max_texture_units);
 
     texture_default_create(&texture_ctx.texture_default, 255, 0);
     texture_default_cubemap_create(&texture_ctx.cubemap_default, 255, 0);
@@ -115,7 +115,7 @@ void texture_default_create(Texture* self, u8 brightness, TextureType type)
     self->type = type | TEXTURE_DEFAULT;
 
     memset(self->path, 0, MAX_PATH_LENGTH);
-    BGL_LOG(LOG_INFO, "created 1x1 default texture of id: %u\n", self->id);
+    BGL_LOG_INFO("created 1x1 default texture of id: %u\n", self->id);
 }
 
 void texture_default_cubemap_create(Texture* self, u8 brightness, TextureType type)
@@ -141,7 +141,7 @@ void texture_default_cubemap_create(Texture* self, u8 brightness, TextureType ty
     self->type = type | TEXTURE_DEFAULT | TEXTURE_CUBEMAP;
 
     memset(self->path, 0, MAX_PATH_LENGTH);
-    BGL_LOG(LOG_INFO, "created 1x1 default cubemap of id: %u\n", self->id);
+    BGL_LOG_INFO("created 1x1 default cubemap of id: %u\n", self->id);
 }
 
 void texture_cubemap_create(Texture* self, TextureType type, const char* path)

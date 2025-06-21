@@ -7,6 +7,10 @@
 #include "platform.h"
 #include "defines.h"
 
+#define CHAR_IS_NUMBER(c) (0x30 <= (c) && (c) <= 0x39)
+#define CHAR_TO_INT(c) (i32)((c) - 0x30)
+#define INT_TO_CHAR(i) (char)((i) + 0x30)
+
 char* get_file_data(const char* filepath);
 
 char* str_find_last_of(const char* str, char c);

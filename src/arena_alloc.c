@@ -8,8 +8,8 @@ Arena arena_create(size_t size)
 {
     Arena self;
 
-    self.raw_memory = (u8*)malloc(size + 1);
-    BGL_ASSERT(self.raw_memory != NULL, "malloc(%lu) failed", size);
+    self.raw_memory = (u8*)BGL_MALLOC(size + 1);
+    BGL_ASSERT(self.raw_memory != NULL, "allocation of size %lu failed", size);
 
     self.cursor = self.raw_memory;
     self.size = size;
@@ -24,9 +24,9 @@ void *arena_alloc(Arena* self, size_t size)
     u8* new_alloc = self->cursor;
     self->cursor += size;
 
-    /*  if cursor is any more than 1 past the end of memory block, we have used unallocated memory
-        e.g. A = allocated, U = unallocated, ^ = ptr
-        good: AAAAAA^ bad: AAAAAU^  */
+    /* if cursor is any more than 1 past the end of memory block, we have used unallocated memory
+       e.g. A = allocated, U = unallocated, ^ = ptr
+       good: AAAAAA^ bad: AAAAAU^ */
     size_t cursor_distance = (size_t)self->cursor - (size_t)self->raw_memory; 
     if(cursor_distance > self->size)
     {
@@ -39,7 +39,7 @@ void *arena_alloc(Arena* self, size_t size)
 
 void arena_free(Arena* self)
 {
-    free(self->raw_memory);
+    BGL_FREE(self->raw_memory);
     self->raw_memory = self->cursor = NULL; // prevent further use of the arena
     self->size = (size_t)0;
 }

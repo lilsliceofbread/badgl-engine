@@ -14,7 +14,7 @@
 static struct
 {
     LARGE_INTEGER os_freq;
-    double platform_time_offset;
+    f64 platform_time_offset;
 } win_ctx;
 
 static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
@@ -64,16 +64,17 @@ void platform_reset_time(void)
     bool success = win_ctx.os_freq.QuadPart != 0;
     BGL_ASSERT(success, "unable to get platform timer frequency. err: %lu\n", GetLastError());
 
+    win_ctx.platform_time_offset = 0.0;
     win_ctx.platform_time_offset = platform_get_time();
 }
 
-double platform_get_time(void)
+f64 platform_get_time(void)
 {
     LARGE_INTEGER os_time;
 
     QueryPerformanceCounter(&os_time);
 
-    double time = (double)os_time.QuadPart / (double)win_ctx.os_freq.QuadPart;
+    f64 time = (f64)os_time.QuadPart / (f64)win_ctx.os_freq.QuadPart;
     return time - win_ctx.platform_time_offset;
 }
 

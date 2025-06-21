@@ -1,0 +1,6 @@
+CompileFlags:
+  Add:
+    - "-I../../external/glad/include"
+    - "-I../../external/glfw/include"
+    - "-I../../external/cimgui"
+    - "-I../../external/assimp/include"

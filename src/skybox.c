@@ -11,7 +11,7 @@ Model skybox_create(Renderer* rd, const char* cubemap_path)
     vec3 tmp = VEC3(1.0f, 1.0f, 1.0f); // don't care about colour values
     material_create(&material, true, tmp, tmp, tmp, 1.0f);
     material_add_texture(&material, TEXTURE_DIFFUSE, cubemap_path);
-    material.flags |= NO_LIGHTING;
+    material.flags |= BGL_MATERIAL_NO_LIGHTING;
 
     shapes_box(&self, 2.0f, 2.0f, 2.0f, &material, rd->skybox_shader);
     return self;
@@ -27,10 +27,10 @@ void skybox_draw(Model* self, Renderer* rd, Camera* cam)
     mat4_mul(&vp, cam->proj, corrected_view);
 
     glCullFace(GL_FRONT); // since we are inside the box
-        shader_use(shader);
-        shader_uniform_mat4(shader, "mvp", &vp);
+    shader_use(shader);
+    shader_uniform_mat4(shader, "mvp", &vp);
 
-        mesh_draw(&self->meshes[0], shader, self->material.textures);
+    mesh_draw(&self->meshes[0], shader, self->material.textures);
     glCullFace(GL_BACK);
 }
 

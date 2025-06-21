@@ -13,25 +13,25 @@ typedef struct Camera
                 // don't need up in cam (not useful for movement)
     vec3 right; // right perpendicularly to cam
 
-    float pitch, yaw;
-    double last_cursor_x, last_cursor_y;
-    float speed;
-    float sensitivity;
+    f32 pitch, yaw;
+    f64 last_cursor_x, last_cursor_y;
+    f32 speed;
+    f32 sensitivity;
 
-    float fov;
-    float aspect_ratio;
-    float znear, zfar;
+    f32 fov;
+    f32 aspect_ratio;
+    f32 znear, zfar;
     mat4 view;
     mat4 proj;
 } Camera;
 
-Camera camera_create(vec3 start_pos, float start_pitch, float start_yaw, float speed, float sensitivity);
+Camera camera_create(vec3 start_pos, f32 start_pitch, f32 start_yaw, f32 speed, f32 sensitivity);
 
 void camera_update(Camera* self, Renderer* rd);
 
 void camera_update_view(Camera* self); // recalculate up/right vecs and view matrix based on pos/dir
 
-void camera_update_proj(Camera* self, float fov, float aspect_ratio, float znear, float zfar);
+void camera_update_proj(Camera* self, f32 fov, f32 aspect_ratio, f32 znear, f32 zfar);
 
 
 #endif

@@ -1,18 +1,9 @@
-- text rendering
-- remove glfw (input thread, etc.)
-- write obj parser (record)
-- emscripten?
+FEATURES
 - collisions (model_mat to world space, collider struct)
 - sound
-- proper Arenas and memory management
-- shader recompilation
-- find uniforms without repeats, combine shaders, include with parsing
+
+EVENTUAL/NEVER
 - optimise maths/matrix with SSE? (alignas())
-- tests?
-- UIRenderer
-- model separate loading & tex_indices (materials)
-- sphere conform to model standard
-- dynamic array
-- dir light and light in ubo
-- internal model shader
-- release assert/log replace 
+- simple component system?
+- remove glfw
+- emscripten?

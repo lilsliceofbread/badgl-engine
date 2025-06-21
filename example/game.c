@@ -37,7 +37,8 @@ void game_init(void)
     s.current_scene = 0;
     s.is_vsync_on = true;
 
-    rd_init(&s.rd, 1280, 720, "badgl demo", RD_USE_SKYBOX | RD_USE_UI | RD_USE_LIGHTING);
+    RendererFlags flags = 0; // use defaults - can disable lighting, skybox e.g. BGL_RD_SKYBOX_OFF | BGL_RD_UI_OFF | BGL_RD_LIGHTING_OFF
+    rd_init(&s.rd, 1280, 720, "badgl demo", flags, "4.2");
 
     loading_begin(); // a simple quad is drawn to the screen before loading
 
@@ -92,21 +93,21 @@ void game_run(void)
                 DirLight* dir_light = &scene->dir_light;
 
                 igText("position:");
-                igInputFloat("x", (float*)&light->pos.x, 0.5f, 0.5f, "%.1f", 0);
-                igInputFloat("y", (float*)&light->pos.y, 0.5f, 0.5f, "%.1f", 0);
-                igInputFloat("z", (float*)&light->pos.z, 0.5f, 0.5f, "%.1f", 0);
-                igColorEdit3("ambient", (float*)&light->ambient, 0);
-                igColorEdit3("diffuse", (float*)&light->diffuse, 0);
-                igColorEdit3("specular", (float*)&light->specular, 0);
-                igSliderFloat3("attenuation", (float*)&light->attenuation, 0.0f, 1.0f, "%.3f", 0);
+                igInputFloat("x", (f32*)&light->pos.x, 0.5f, 0.5f, "%.1f", 0);
+                igInputFloat("y", (f32*)&light->pos.y, 0.5f, 0.5f, "%.1f", 0);
+                igInputFloat("z", (f32*)&light->pos.z, 0.5f, 0.5f, "%.1f", 0);
+                igColorEdit3("ambient", (f32*)&light->ambient, 0);
+                igColorEdit3("diffuse", (f32*)&light->diffuse, 0);
+                igColorEdit3("specular", (f32*)&light->specular, 0);
+                igSliderFloat3("attenuation", (f32*)&light->attenuation, 0.0f, 1.0f, "%.3f", 0);
 
                 igDummy((ImVec2){1, 1}); // spacing
                 igText("directional light");
 
-                igSliderFloat3("direction", (float*)&dir_light->dir, -1.0f, 1.0f, "%.2f", 0);
-                igColorEdit3("ambient##1", (float*)&dir_light->ambient, 0);
-                igColorEdit3("diffuse##1", (float*)&dir_light->diffuse, 0);
-                igColorEdit3("specular##1", (float*)&dir_light->specular, 0);
+                igSliderFloat3("direction", (f32*)&dir_light->dir, -1.0f, 1.0f, "%.2f", 0);
+                igColorEdit3("ambient##1", (f32*)&dir_light->ambient, 0);
+                igColorEdit3("diffuse##1", (f32*)&dir_light->diffuse, 0);
+                igColorEdit3("specular##1", (f32*)&dir_light->specular, 0);
 
                 scene_update_lights(scene, &s.rd); // this updates light data and light graphics as well, because we are rendering this scene
             }
@@ -135,8 +136,8 @@ void loading_begin(void)
 
     rd_update_viewport(&s.rd); // glfw framebuffer size may not have updated yet so update renderer width/height
 
-    i32 size = (s.rd.width >= s.rd.height) ? s.rd.height >> 1 : s.rd.width >> 1;
-    rd_set_viewport((s.rd.width >> 1) - (size >> 1), (s.rd.height >> 1) - (size >> 1), size, size); // place loading in middle of screen
+    i32 size = (s.rd.width >= s.rd.height) ? s.rd.height / 2 : s.rd.width / 2;
+    rd_set_viewport((s.rd.width / 2) - (size / 2), (s.rd.height / 2) - (size / 2), size, size); // place loading in middle of screen
 
     quad_draw(&loading_screen, &s.rd);
     rd_swap_buffers(&s.rd);
@@ -150,8 +151,8 @@ void loading_end(void)
 
 void sphere_scene_update(Scene* scene)
 {
-    const float rotate_speed = 50.0f;
-    const float time = (float)platform_get_time();
+    const f32 rotate_speed = 50.0f;
+    const f32 time = (f32)platform_get_time();
 
     Transform sphere = scene->models[0].transform;
     sphere.euler = VEC3(0.0f, rotate_speed * time, 0.0f);

@@ -13,14 +13,14 @@
 
 typedef enum RendererFlags
 {
-    // * if enabled, will generate the respective shader for each
-    RD_USE_SKYBOX   = 1 << 0,
-    RD_USE_UI       = 1 << 1,
-    RD_USE_LIGHTING = 1 << 2,
+    /* if these flags are set, will not generate the respective shader for each */
+    BGL_RD_SKYBOX_OFF   = 1 << 0,
+    BGL_RD_UI_OFF       = 1 << 1,
+    BGL_RD_LIGHTING_OFF = 1 << 2,
 
-    // ! user should not modify these flags, internal use only
-    RD_INTERNAL_CURSOR_DISABLED = 1 << 3,
-    RD_INTERNAL_VSYNC_ENABLED = 1 << 4,
+    /* user should not modify these flags, internal use only */
+    _BGL_RD_CURSOR_DISABLED = 1 << 3,
+    _BGL_RD_VSYNC_ENABLED = 1 << 4,
 } RendererFlags;
 
 typedef struct Renderer 
@@ -34,11 +34,13 @@ typedef struct Renderer
     i32 mouse_wait_update;
     bool mouse_should_update; // * if this is true, anything relying on mouse should not update
 
-    double last_time, delta_time;
+    f64 last_time, delta_time;
     u64 framecount;
 
     ImGuiContext* imgui_ctx; 
     ImGuiIO* imgui_io; 
+
+    char version[3]; // x.y
 
     RendererFlags flags;
 } Renderer;
@@ -46,8 +48,9 @@ typedef struct Renderer
 /**
  * @brief initialise window, OpenGL and shaders
  * @param  flags: use any RendererFlag except those marked with RD_INTERNAL_ (which will be ignored)
+ * @param  version: opengl version in format "x.y" e.g. "3.3"
  */
-void rd_init(Renderer* rd, i32 width, i32 height, const char* win_title, RendererFlags flags);
+void rd_init(Renderer* rd, i32 width, i32 height, const char* win_title, RendererFlags flags, const char* version);
 
 /**
  * @brief  clear screen, update delta_time
@@ -99,10 +102,9 @@ void rd_set_wireframe(bool useWireframe);
  * @param  cursor_x_out: out parameter of cursor x pos
  * @param  cursor_y_out: out parameter of cursor y pos 
  */
-void rd_get_cursor_pos(Renderer* self, double* cursor_x_out, double* cursor_y_out);
+void rd_get_cursor_pos(Renderer* self, f64* cursor_x_out, f64* cursor_y_out);
 
 /**
- * TODO: change to use own key defines
  * @param  key: use GLFW key defines as key
  * @returns  bool
  */

@@ -15,7 +15,7 @@
 static struct
 {
     i32 platform_clock;
-    double platform_time_offset;
+    f64 platform_time_offset;
 } linux_ctx;
 
 static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
@@ -71,16 +71,17 @@ void platform_reset_time(void)
         }
     #endif
 
+    linux_ctx.platform_time_offset = 0.0;
     linux_ctx.platform_time_offset = platform_get_time();
 }
 
-double platform_get_time(void)
+f64 platform_get_time(void)
 {
     struct timespec os_time;
 
     clock_gettime(linux_ctx.platform_clock, &os_time);    
 
-    double time = (double)os_time.tv_sec + (double)(0.000000001 * (double)os_time.tv_nsec);
+    f64 time = (f64)os_time.tv_sec + (f64)(0.000000001 * (f64)os_time.tv_nsec);
     return time - linux_ctx.platform_time_offset;
 }
 

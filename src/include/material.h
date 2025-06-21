@@ -6,16 +6,16 @@
 #include "shader.h"
 
 typedef enum MaterialFlags {
-    NO_LIGHTING          = 1 << 0,
-    IS_LIGHT             = 1 << 1,
-    USE_CUBEMAP_TEXTURES = 1 << 2, 
+    BGL_MATERIAL_NO_LIGHTING          = 1 << 0,
+    BGL_MATERIAL_IS_LIGHT             = 1 << 1,
+    BGL_MATERIAL_USE_CUBEMAP_TEXTURES = 1 << 2, 
 } MaterialFlags;
 
 typedef struct Material {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
-    float shininess;
+    f32 shininess;
 
     MaterialFlags flags;
 
@@ -28,7 +28,7 @@ typedef struct Material {
  * @note   if you are using textures then the respective colours will be ignored
  * @param  is_cubemap_shader: if the object for this material uses cubemaps put true
  */
-void material_create(Material* mat, bool is_cubemap_shader, vec3 ambient, vec3 diffuse, vec3 specular, float shininess);
+void material_create(Material* mat, bool is_cubemap_shader, vec3 ambient, vec3 diffuse, vec3 specular, f32 shininess);
 
 /**
  * @brief  add texture to material

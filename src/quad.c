@@ -9,7 +9,7 @@ Quad quad_create(vec2 pos, vec2 size, const char* texture_path)
     self.ebo = ebo_create();
 
     // pos is bottom left
-    float vertices[] = {
+    f32 vertices[] = {
         pos.x,          pos.y,          0.0f,   0.0f, 0.0f,
         pos.x,          pos.y + size.y, 0.0f,   0.0f, 1.0f,
         pos.x + size.x, pos.y + size.y, 0.0f,   1.0f, 1.0f,
@@ -24,13 +24,13 @@ Quad quad_create(vec2 pos, vec2 size, const char* texture_path)
     vao_bind(self.vao);
 
     vbo_bind(self.vbo);
-    vbo_set_buffer(self.vbo, vertices, (size_t)4 * 5 * sizeof(float), false);
+    vbo_set_buffer(self.vbo, vertices, (size_t)4 * 5 * sizeof(f32), false);
 
     ebo_bind(self.ebo);
     ebo_set_buffer(self.ebo, indices, (size_t)6 * sizeof(u32), false);
 
-    vao_attribute(0, 3, GL_FLOAT, 5 * sizeof(float), 0); // vertex position
-    vao_attribute(1, 2, GL_FLOAT, 5 * sizeof(float), 3 * sizeof(float)); // vertex uv
+    vao_attribute(0, 3, GL_FLOAT, 5 * sizeof(f32), 0); // vertex position
+    vao_attribute(1, 2, GL_FLOAT, 5 * sizeof(f32), 3 * sizeof(f32)); // vertex uv
 
     vao_unbind();
 

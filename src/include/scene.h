@@ -11,11 +11,10 @@
 
 typedef void (*SceneUpdateFunc)();
 
-#define GLSL_MAX_LIGHTS 32 // TODO: create polyglot include for C and GLSL
-#define SCENE_MODEL_ALLOC_SIZE 4
+#define GLSL_MAX_LIGHTS 32
 
 typedef enum SceneFlags {
-    HAS_SKYBOX = 1 << 0,
+    BGL_SCENE_HAS_SKYBOX = 1 << 0,
 } SceneFlags;
 
 typedef struct Scene {

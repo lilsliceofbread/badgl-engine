@@ -38,16 +38,16 @@ void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader
 
     vert_count++;
 
-    const float inv_hori = 1.0f / (float)horizontals;
-    const float inv_vert = 1.0f / (float)verticals;
-    const float pi2 = 2.0f * GL_PI; // multiply 2 * PI before hand
+    const f32 inv_hori = 1.0f / (f32)horizontals;
+    const f32 inv_vert = 1.0f / (f32)verticals;
+    const f32 pi2 = 2.0f * GL_PI; // multiply 2 * PI before hand
     for(u32 i = 0; i < horizontals; i++) // latitudes (start after top vertex (i+1) and stop before bottom vertex (< not <=))
     {
         // only 1PI because horizontal stacks will only need to sweep half the circle (other half is just the reverse)
-        const float horizontal_angle = (float)(i + 1) * GL_PI * inv_hori;
+        const f32 horizontal_angle = (f32)(i + 1) * GL_PI * inv_hori;
 
-        const float sh = sinf(horizontal_angle);
-        const float y = cosf(horizontal_angle); // same for whole horizontal
+        const f32 radius = sinf(horizontal_angle);
+        const f32 y = cosf(horizontal_angle); // same for whole horizontal
 
         for(u32 j = 0; j < verticals; j++) // longitudes (< to stop before 2PI which is a repeat of 0)
         {
@@ -56,13 +56,13 @@ void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader
              * since opengl is right-handed this creates vertices clockwise
              * as the unit circle is reversed with +z going "down"
              */
-            float vertical_angle = (float)j * pi2 * inv_vert;
+            f32 vertical_angle = (f32)j * pi2 * inv_vert;
 
             vec3 pos;
             // calculate cartesian coords from spherical
-            pos.x = sh * cosf(vertical_angle);
+            pos.x = radius * cosf(vertical_angle);
             pos.y = y;
-            pos.z = sh * sinf(vertical_angle);
+            pos.z = radius * sinf(vertical_angle);
 
             vertex_buffer.pos[vert_count] = pos;
             vert_count++;
@@ -141,7 +141,7 @@ void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader
                 tex_indices, material == NULL ? 0 : self->material.tex_count);
 }
 
-void shapes_box(Model* self, float width, float height, float depth, const Material* material, u32 shader_idx)
+void shapes_box(Model* self, f32 width, f32 height, f32 depth, const Material* material, u32 shader_idx)
 {
     u32* tex_indices = shape_setup(self, material, shader_idx);
     
@@ -163,9 +163,9 @@ void shapes_box(Model* self, float width, float height, float depth, const Mater
 
     {
         // half width, height, depth
-        const float hw = 0.5f * width;
-        const float hh = 0.5f * height;
-        const float hd = 0.5f * depth;
+        const f32 hw = 0.5f * width;
+        const f32 hh = 0.5f * height;
+        const f32 hd = 0.5f * depth;
 
         // need to specify 24 vertices to allow normals to be flat
         const vec3 vertex_positions[] = {
@@ -264,7 +264,7 @@ void shapes_box(Model* self, float width, float height, float depth, const Mater
                 tex_indices, material == NULL ? 0 : self->material.tex_count);
 }
 
-void shapes_plane(Model* self, float width, float height, u32 res, const Material* material, u32 shader_idx)
+void shapes_plane(Model* self, f32 width, f32 height, u32 res, const Material* material, u32 shader_idx)
 {
     BGL_ASSERT(res >= 2, "%u too small of a resolution for rectangular plane\n", res);
 
@@ -288,22 +288,22 @@ void shapes_plane(Model* self, float width, float height, u32 res, const Materia
     normal.x = normal.z = 0.0f;
     normal.y = 1.0f;
 
-    float inv_res = 1.0f / (float)(res - 1);
-    float step_x = width * inv_res;
-    float step_z = height * inv_res;
+    f32 inv_res = 1.0f / (f32)(res - 1);
+    f32 step_x = width * inv_res;
+    f32 step_z = height * inv_res;
 
-    float top_left_x = -0.5f * width;
-    float top_left_z = -0.5f * height;
+    f32 top_left_x = -0.5f * width;
+    f32 top_left_z = -0.5f * height;
     for(u32 z = 0; z < res; z++)
     {
-        float curr_z = top_left_z + ((float)z * step_z);
+        f32 curr_z = top_left_z + ((f32)z * step_z);
 
         for(u32 x = 0; x < res; x++)
         {
             u32 idx = z * res + x;
 
             vec3 pos = VEC3(
-                top_left_x + ((float)x * step_x),
+                top_left_x + ((f32)x * step_x),
                 0.0f,
                 curr_z
             );
@@ -336,7 +336,7 @@ void shapes_plane(Model* self, float width, float height, u32 res, const Materia
 
 inline u32* shape_setup(Model* model, const Material* material, u32 shader_idx)
 {
-    model->meshes = (Mesh*)malloc(sizeof(Mesh));
+    model->meshes = (Mesh*)BGL_MALLOC(sizeof(Mesh));
     model->mesh_count = 1;
     model->shader_idx = shader_idx;
     if(material == NULL)
@@ -354,7 +354,7 @@ inline u32* shape_setup(Model* model, const Material* material, u32 shader_idx)
 
     // allow for variable amount of textures
     // these will always be contiguous for shapes so can use loop
-    u32* tex_indices = (u32*)malloc(model->material.tex_count * sizeof(u32));
+    u32* tex_indices = (u32*)BGL_MALLOC(model->material.tex_count * sizeof(u32));
     for(u32 i = 0; i < model->material.tex_count; i++)
     {
         tex_indices[i] = i;

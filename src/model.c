@@ -44,25 +44,23 @@ void model_load(Model* self, const char* path, u32 shader_idx)
                "loading model %s failed\n%s\n", full_path, aiGetErrorString());
 
     self->mesh_count = 0;
-    self->meshes = (Mesh*)malloc(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
+    self->meshes = (Mesh*)BGL_MALLOC(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
 
     model_process_node(self, scene->mRootNode, scene);
 
     aiReleaseImport(scene);
 
-
-
     for(u32 i = 0; i < self->material.tex_count; i++)
     {
-        Texture curr_tex = self->material.textures[i];
+        Texture tex = self->material.textures[i];
 
         // TODO: make use material functions instead
-        if(curr_tex.type & TEXTURE_DIFFUSE)
+        if(tex.type & TEXTURE_DIFFUSE)
         {
             self->material.ambient = VEC3(1.0f, 1.0f, 1.0f);
             self->material.diffuse = VEC3(1.0f, 1.0f, 1.0f);
         }
-        else if(curr_tex.type & TEXTURE_SPECULAR)
+        else if(tex.type & TEXTURE_SPECULAR)
         {
             self->material.specular = VEC3(1.0f, 1.0f, 1.0f);
         }
@@ -98,7 +96,7 @@ void model_draw(Model* self, Renderer* rd, Camera* cam)
     material_set_uniforms(&self->material, shader);
 
     shader_uniform_mat4(shader, "mvp", &mvp);
-    if(!(self->material.flags & (NO_LIGHTING | IS_LIGHT)))
+    if(!(self->material.flags & (BGL_MATERIAL_NO_LIGHTING | BGL_MATERIAL_IS_LIGHT)))
     {
         shader_uniform_mat4(shader, "model_view", &model_view);
         shader_uniform_mat4(shader, "model", &self->model);
@@ -154,7 +152,7 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
         total_indices += face.mNumIndices;
     }
 
-    const size_t total_mem_size = ((size_t)total_vertices * 8 * sizeof(float)) + ((size_t)total_indices * sizeof(u32));
+    const size_t total_mem_size = ((size_t)total_vertices * 8 * sizeof(f32)) + ((size_t)total_indices * sizeof(u32));
     arena = arena_create(total_mem_size);
 
     VertexBuffer vertex_buffer = {
@@ -220,13 +218,13 @@ Mesh model_process_mesh(Model* self, struct aiMesh* model_mesh, const struct aiS
     total_textures = diffuse_count + specular_count;
     if(total_textures)
     {
-        tex_indices = (u32*)calloc(total_textures, sizeof(u32));
+        tex_indices = (u32*)BGL_CALLOC(total_textures, sizeof(u32));
 
         memcpy(tex_indices, diff_indexes, diffuse_count * sizeof(u32));
         memcpy(tex_indices + diffuse_count, spec_indexes, specular_count * sizeof(u32));
 
-        free(diff_indexes);
-        free(spec_indexes);
+        BGL_FREE(diff_indexes);
+        BGL_FREE(spec_indexes);
     }
 
     mesh_create(&mesh, arena, vertex_buffer, total_vertices, indices, total_indices, tex_indices, total_textures);
@@ -240,7 +238,7 @@ u32* model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, 
     *tex_count_out = tex_count;
     if(tex_count == 0) return NULL;
 
-    u32* tex_indices = (u32*)calloc(tex_count, sizeof(u32)); // user of function must free themselves
+    u32* tex_indices = (u32*)BGL_CALLOC(tex_count, sizeof(u32)); // user of function must free themselves
 
     char img_path[1024 + MAX_PATH_LENGTH]; // suppress warnings for snprintf (dir + '/' + str.data)
     u32 add_tex_count = 0; // since we only resize if texture doesn't already exist
@@ -262,7 +260,7 @@ u32* model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, 
 
         // increase amount to add to tex_count and reallocate textures
         add_tex_count++;
-        self->material.textures = (Texture*)realloc(self->material.textures, (self->material.tex_count + add_tex_count) * sizeof(Texture));
+        self->material.textures = (Texture*)BGL_REALLOC(self->material.textures, (self->material.tex_count + add_tex_count) * sizeof(Texture));
         BGL_ASSERT(self->material.textures != NULL, "failed to realloc texture array\n");
 
         // create new texture
@@ -288,7 +286,7 @@ void model_free(Model* self)
         mesh_free(&self->meshes[i]);
     }
 
-    free(self->meshes);
+    BGL_FREE(self->meshes);
 
     material_free(&self->material);
 }

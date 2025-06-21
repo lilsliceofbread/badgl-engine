@@ -19,7 +19,7 @@ void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader
  * @brief  create axis-aligned box
  * @param  shader_idx:  index to shader in rd->shaders
  */
-void shapes_box(Model* self, float width, float height, float depth, const Material* material, u32 shader_idx);
+void shapes_box(Model* self, f32 width, f32 height, f32 depth, const Material* material, u32 shader_idx);
 
 /* will be perpendicular to x/z axis
    width along x-axis
@@ -31,6 +31,6 @@ void shapes_box(Model* self, float width, float height, float depth, const Mater
  * @param  res:  resolution
  * @param  shader_idx:  index to shader in rd->shaders
  */
-void shapes_plane(Model* self, float width, float height, u32 res, const Material* material, u32 shader_idx);
+void shapes_plane(Model* self, f32 width, f32 height, u32 res, const Material* material, u32 shader_idx);
 
 #endif

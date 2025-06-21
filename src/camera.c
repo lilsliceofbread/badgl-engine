@@ -5,14 +5,14 @@
 #include "defines.h"
 #include "glmath.h"
 
-Camera camera_create(vec3 start_pos, float start_pitch, float start_yaw, float speed, float sensitivity)
+Camera camera_create(vec3 start_pos, f32 start_pitch, f32 start_yaw, f32 speed, f32 sensitivity)
 {
     Camera self;
     self.pos = start_pos;
     self.yaw = start_yaw;
     self.pitch = start_pitch;
     self.last_cursor_x = 0.0f; // default value for starting
-    self.last_cursor_y = 0.0f;
+    self.last_cursor_y = 0.0f; // might be why angle jumps when starting
     self.speed = speed;
     self.sensitivity = sensitivity;
 
@@ -40,7 +40,7 @@ void camera_update_view(Camera* self)
     mat_look_at(&self->view, self->pos, self->dir, self->right);
 }
 
-void camera_update_proj(Camera* self, float fov, float aspect_ratio, float znear, float zfar)
+void camera_update_proj(Camera* self, f32 fov, f32 aspect_ratio, f32 znear, f32 zfar)
 {
     self->fov = fov;
     self->aspect_ratio = aspect_ratio;
@@ -48,19 +48,17 @@ void camera_update_proj(Camera* self, float fov, float aspect_ratio, float znear
     self->zfar = zfar;
 
     mat_perspective_fov(&self->proj, fov, aspect_ratio, znear, zfar);
-    //mat_perspective_frustrum(&self->proj, 0.01f, 100.0f, -0.1f, 0.1f, -0.1f, 0.1f);
-    //mat_orthographic_frustrum(&self->proj, 0.01f, 100.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 }
 
 void camera_update(Camera* self, Renderer* rd)
 {
-    const float aspect_ratio = (float)(rd->width) / (float)(rd->height);
+    const f32 aspect_ratio = (f32)(rd->width) / (f32)(rd->height);
     if(aspect_ratio != self->aspect_ratio)
     {
         camera_update_proj(self, self->fov, aspect_ratio, self->znear, self->zfar);
     }
 
-    const float cam_step = self->speed * (float)rd->delta_time;
+    const f32 cam_step = self->speed * (f32)rd->delta_time;
 
     // remove y component from "velocity" vecs to keep moving on flat plane
     vec3 flat_dir = VEC3( 
@@ -111,7 +109,7 @@ void camera_update(Camera* self, Renderer* rd)
         self->pos = vec3_sub(self->pos, step_vec);
     }
 
-    double cursor_x, cursor_y;
+    f64 cursor_x, cursor_y;
     rd_get_cursor_pos(rd, &cursor_x, &cursor_y);
 
     if(!rd->mouse_should_update)
@@ -122,8 +120,8 @@ void camera_update(Camera* self, Renderer* rd)
         return;
     }
 
-    self->yaw += self->sensitivity * (float)(cursor_x - self->last_cursor_x); // x offset * sens = yaw
-    self->pitch += self->sensitivity * (float)(self->last_cursor_y - cursor_y); // reversed y offset
+    self->yaw += self->sensitivity * (f32)(cursor_x - self->last_cursor_x); // x offset * sens = yaw
+    self->pitch += self->sensitivity * (f32)(self->last_cursor_y - cursor_y); // reversed y offset
     self->last_cursor_x = cursor_x;
     self->last_cursor_y = cursor_y;
 

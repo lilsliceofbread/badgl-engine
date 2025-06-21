@@ -41,7 +41,7 @@ void mesh_create(Mesh* self, Arena arena,
 
     vbo_bind(self->vbo);
 
-    size_t single_size = self->vert_count * sizeof(float);
+    size_t single_size = self->vert_count * sizeof(f32);
     vbo_set_buffer(self->vbo, NULL, single_size * vertex_size, false);
 
     vbo_set_buffer_region(self->vbo, vertex_buffer.pos, 0, 3 * single_size);
@@ -56,20 +56,18 @@ void mesh_create(Mesh* self, Arena arena,
     ebo_bind(self->ebo);
     ebo_set_buffer(self->ebo, &indices[0], ind_count * sizeof(u32), false);
 
-    vao_attribute(0, 3, GL_FLOAT, 3 * sizeof(float), 0);
-    if(use_normals) vao_attribute(1, 3, GL_FLOAT, 3 * sizeof(float), 3 * single_size);
+    vao_attribute(0, 3, GL_FLOAT, 3 * sizeof(f32), 0);
+    if(use_normals) vao_attribute(1, 3, GL_FLOAT, 3 * sizeof(f32), 3 * single_size);
 
     if(use_UVs) 
     {
         u32 index = 1 + (u32)use_normals; // if normals used then will be 2, otherwise 1
         size_t offset = use_normals ? 6 * single_size : 3 * single_size;
 
-        vao_attribute(index, 2, GL_FLOAT, 2 * sizeof(float), offset);
+        vao_attribute(index, 2, GL_FLOAT, 2 * sizeof(f32), offset);
     }
 
-    #ifndef BGL_NO_DEBUG
-        vao_unbind(); // shouldn't need this if code works properly lol
-    #endif
+    vao_unbind();
 
     // don't need this data anymore
     arena_free(&arena);
@@ -91,7 +89,9 @@ void mesh_draw(Mesh* self, Shader* shader, Texture* textures)
 
     vao_bind(self->vao);
     rd_draw_triangles(self->ind_count);
-    vao_unbind();
+    #ifndef BGL_NO_DEBUG
+        vao_unbind(); // shouldn't need this if code works properly lol
+    #endif
 
     texture_unit_active(0);
 }
@@ -100,7 +100,7 @@ void mesh_free(Mesh* self)
 {
     if(self->tex_indices != NULL)
     {
-        free(self->tex_indices);
+        BGL_FREE(self->tex_indices);
     }
     
     vao_free(self->vao);

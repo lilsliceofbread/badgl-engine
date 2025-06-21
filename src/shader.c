@@ -13,10 +13,15 @@
  * internal functions
  */
 u32 shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type, char* info_log_out, i32 log_size, i32* success_out);
-void shader_find_uniforms_in_source(Shader* self, const char* src_code); // UNIFORMS ARE REPEATED IF IN VERT + FRAG SHADER
-void shader_reallocate_uniforms(Shader* self, u32 new_count);
+void shader_find_uniforms_in_source(Shader* self, const char* src_code);
 
-void shader_create(Shader* self, const char* vert_shader_src, const char* frag_shader_src)
+// TODO: get file data first and then parse/edit shader file data
+// if 1 argument with ext .glsl then parse #type vertex and #type fragment into 2
+// if 2 arguments use extension to determine
+// if 3 arguments error for now
+// find #version and #include look at minecraft sodium source code (PARSE SHADER RECURSIVELY)
+// rewrite find_uniforms_in_source, lexer? can be refactored to use both or just remove it
+void shader_create(Shader* self, const char* vert_shader_src, const char* frag_shader_src, const char* version_str)
 {
     GLuint vert_shader, frag_shader, shader_program;
     i32 success;
@@ -48,7 +53,7 @@ void shader_create(Shader* self, const char* vert_shader_src, const char* frag_s
         i32 location = glGetUniformLocation(self->id, self->uniforms[i].name);
         if(location == -1)
         {
-            BGL_LOG(LOG_WARN, "uniform %s was not given a location\n", self->uniforms[i].name);
+            BGL_LOG_WARN("uniform %s was not given a location; shader sources: %s, %s\n", self->uniforms[i].name, vert_shader_src, frag_shader_src);
         }
         self->uniforms[i].location = location;
     }
@@ -75,7 +80,7 @@ u32 shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type
     glShaderSource(shader, 1, (const char* const*)&shader_src, NULL); // must cast to pointer to const pointer to const char
     glCompileShader(shader);
     shader_find_uniforms_in_source(self, shader_src);
-    free(shader_src);
+    BGL_FREE(shader_src);
 
     i32 comp_success;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &comp_success);
@@ -89,7 +94,7 @@ u32 shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type
     return shader;
 }
 
-// this will repeat uniforms if in both shaders
+// this will repeat uniforms if in both shaders (do both at same time to fix)
 // unable to use uniform structs, arrays, or uniform buffers
 void shader_find_uniforms_in_source(Shader* self, const char* src_code)
 {
@@ -131,7 +136,7 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
         strncpy(new_uniforms[new_uniform_count++].name, name, MAX_UNIFORM_NAME); 
     }
 
-    shader_reallocate_uniforms(self, self->uniform_count + new_uniform_count);
+    BLOCK_RESIZE_ARRAY(&self->uniforms, Uniform, self->uniform_count, new_uniform_count);
 
     for(u32 i = 0; i < new_uniform_count; i++)
     {
@@ -141,19 +146,6 @@ void shader_find_uniforms_in_source(Shader* self, const char* src_code)
     self->uniform_count += new_uniform_count;
 }
 
-void shader_reallocate_uniforms(Shader* self, u32 new_count)
-{
-    u32 uniform_array_size = ALIGNED_SIZE(self->uniform_count, SHADER_UNIFORM_ALLOC_SIZE);
-    if(new_count > uniform_array_size)
-    {
-        u32 new_array_size = ALIGNED_SIZE(new_count, SHADER_UNIFORM_ALLOC_SIZE);
-
-        self->uniforms = (Uniform*)realloc(self->uniforms, new_array_size * sizeof(Uniform));
-        BGL_ASSERT(self->uniforms != NULL, "uniform cache reallocation failed");
-        ////BGL_LOG(LOG_INFO, "uniform cache resize from %u to %u\n", uniform_array_size, new_array_size);
-    }
-}
-
 void shader_use(Shader* self)
 {
     glUseProgram(self->id);
@@ -161,19 +153,25 @@ void shader_use(Shader* self)
 
 i32 shader_find_uniform(Shader* self, const char* name)
 {
+    BGL_ASSERT(name != NULL, "uniform name cannot be NULL");
+
     for(u32 i = 0; i < self->uniform_count; i++)
     {
         Uniform curr = self->uniforms[i];
         if(strcmp(name, curr.name) == 0) return curr.location;
     }
 
-    ////BGL_LOG(LOG_INFO, "uniform %s not found. Caching...\n", name);
+    BGL_LOG_INFO("uniform %s not found. Caching...\n", name);
     i32 location = glGetUniformLocation(self->id, name);
 
-    shader_reallocate_uniforms(self, self->uniform_count + 1);
-    strncpy(self->uniforms[self->uniform_count].name, name, MAX_UNIFORM_NAME);
-    self->uniforms[self->uniform_count].location = location;
-    self->uniform_count++;
+    /* just in case there is a name longer, still allow to work but don't cache */
+    if(strlen(name) <= MAX_UNIFORM_NAME)
+    {
+        BLOCK_RESIZE_ARRAY(&self->uniforms, Uniform, self->uniform_count, 1);
+        strncpy(self->uniforms[self->uniform_count].name, name, MAX_UNIFORM_NAME);
+        self->uniforms[self->uniform_count].location = location;
+        self->uniform_count++;
+    }
 
     return location;
 }
@@ -181,28 +179,28 @@ i32 shader_find_uniform(Shader* self, const char* name)
 void shader_uniform_mat4(Shader* self, const char* name, mat4* mat)
 {
     i32 location = shader_find_uniform(self, name);
-    glUniformMatrix4fv(location, 1, GL_FALSE, (float*)mat->data); // * transposing matrix is false
+    glUniformMatrix4fv(location, 1, GL_FALSE, (f32*)mat->data); // * transposing matrix is false
 }
 
 void shader_uniform_vec4(Shader* self, const char* name, vec4* vec)
 {
     i32 location = shader_find_uniform(self, name);
-    glUniform4fv(location, 1, (float*)vec->data);
+    glUniform4fv(location, 1, (f32*)vec->data);
 }
 
 void shader_uniform_vec3(Shader* self, const char* name, vec3* vec)
 {
     i32 location = shader_find_uniform(self, name);
-    glUniform3fv(location, 1, (float*)vec->data);
+    glUniform3fv(location, 1, (f32*)vec->data);
 }
 
 void shader_uniform_vec2(Shader* self, const char* name, vec2* vec)
 {
     i32 location = shader_find_uniform(self, name);
-    glUniform2fv(location, 1, (float*)vec->data);
+    glUniform2fv(location, 1, (f32*)vec->data);
 }
 
-void shader_uniform_float(Shader* self, const char* name, float f)
+void shader_uniform_f32(Shader* self, const char* name, f32 f)
 {
     i32 location = shader_find_uniform(self, name);
     glUniform1f(location, f);
@@ -217,5 +215,5 @@ void shader_uniform_int(Shader* self, const char* name, i32 i)
 void shader_free(Shader* self)
 {
     glDeleteProgram(self->id);
-    free(self->uniforms);
+    BGL_FREE(self->uniforms);
 }

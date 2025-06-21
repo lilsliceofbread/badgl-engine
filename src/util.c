@@ -9,30 +9,32 @@
 #ifdef __linux__
     #define GET_LAST_FILE_SEPARATOR(name) char* name = str_find_last_of(path, '/')
 #elif _WIN32
-    #define GET_LAST_FILE_SEPARATOR(name) char* last_slash = str_find_last_of(path, '/'); char* last_backslash = str_find_last_of(path, '\\'); char* name = last_slash > last_backslash ? last_slash : last_backslash
+    #define GET_LAST_FILE_SEPARATOR(name)               \
+    char* last_slash = str_find_last_of(path, '/');     \
+    char* last_backslash = str_find_last_of(path, '\\');\
+    char* name = last_slash > last_backslash ? last_slash : last_backslash
 #endif
 
 char* get_file_data(const char* filepath)
 {
     FILE* file;
     file = fopen(filepath, "rb"); // windows will add carriage returns to \n in ftell count unless using binary read
-    if(file == NULL || fseek(file, 0, SEEK_END)) // file not open or fseek failed
+    if(file == NULL || fseek(file, 0, SEEK_END))
     {
         return NULL;
     }
 
-    // since we seeked the end of file, ftell will return the position of the EOF or the file size
-    i64 file_size = (i64)ftell(file);
+    i64 file_size = (i64)ftell(file); // ftell after seeking end gives file size
     if(file_size == -1)
     {
         return NULL;
     }
-    char* file_data = (char*)malloc((u32)file_size + 1); // +1 for the null terminator
+    char* file_data = (char*)BGL_MALLOC((u32)file_size + 1); // +1 for the null terminator
     
-    fseek(file, 0, SEEK_SET); // i think since already checked fseek before should be fine
-    if(file_data == NULL || fread(file_data, 1, (u32)file_size, file) != (u32)file_size)
+    fseek(file, 0, SEEK_SET);
+    if(file_data == NULL || fread(file_data, sizeof(char), (u32)file_size, file) != (u32)file_size)
     {
-        free(file_data);
+        BGL_FREE(file_data); // free on NULL does nothing
         return NULL;
     }
     file_data[file_size] = '\0';
@@ -41,12 +43,15 @@ char* get_file_data(const char* filepath)
     return file_data;
 }
 
+// returns NULL if str has no occurence of c
 char* str_find_last_of(const char* str, char c)
 {
+    if(str == NULL) return NULL;
+
     char* curr = (char*)str; // discarding const but not modifying the string
     char* latest_occurrence = NULL;
 
-    while(curr != NULL && *curr != '\0')
+    while(*curr != '\0')
     {
         if(*curr == c) latest_occurrence = curr;
         curr++;
@@ -69,9 +74,20 @@ void find_directory_from_path(char* buffer, u32 length, const char* path)
 void find_file_from_path(char* buffer, u32 length, const char* path)
 {
     GET_LAST_FILE_SEPARATOR(last_char);
-    BGL_ASSERT(last_char != NULL, "invalid path %s\n", path);
 
-    BGL_ASSERT(strlen(last_char) > 1, "path %s contains no file\n", path);
+    if(last_char == NULL)
+    {
+        strncpy(buffer, path, length);
+        buffer[length - 1] = '\0'; // just in case
+        return;
+    }
+
+    if(strlen(last_char) <= 1) // don't use ASSERT since this function is used in LOG
+    {
+        printf("find_file_from_path(): no file in path");
+        DEBUG_BREAK();
+    }
+
     strncpy(buffer, last_char + 1, length);
     buffer[length - 1] = '\0'; // just in case
 }

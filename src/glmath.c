@@ -3,12 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-float vec3_dot(vec3 v1, vec3 v2)
+f32 vec3_dot(vec3 v1, vec3 v2)
 {
     return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
 }
 
-vec3 vec3_scale(vec3 vec, float s)
+vec3 vec3_scale(vec3 vec, f32 s)
 {
     vec3 new_vec;
     new_vec.x = s * vec.x;
@@ -18,7 +18,7 @@ vec3 vec3_scale(vec3 vec, float s)
     return new_vec;
 }
 
-vec3 vec3_add_scalar(vec3 vec, float s)
+vec3 vec3_add_scalar(vec3 vec, f32 s)
 {
     vec3 new_vec;
     new_vec.x = vec.x + s;
@@ -51,7 +51,7 @@ vec3 vec3_sub(vec3 v1, vec3 v2)
 void vec3_norm(vec3* out)
 {
     vec3 tmp = *out;
-    float denom = sqrtf(vec3_dot(tmp, tmp));
+    f32 denom = sqrtf(vec3_dot(tmp, tmp));
 
     if(denom == 0.0f) // prevent divide by zero
     {
@@ -72,12 +72,12 @@ vec3 vec_cross(vec3 v1, vec3 v2)
     return new_vec;
 }
 
-float vec2_dot(vec2 v1, vec2 v2)
+f32 vec2_dot(vec2 v1, vec2 v2)
 {
     return v1.x * v2.x + v1.y * v2.y;
 }
 
-vec2 vec2_scale(vec2 vec, float s)
+vec2 vec2_scale(vec2 vec, f32 s)
 {
     vec2 new_vec;
     new_vec.x = s * vec.x;
@@ -86,7 +86,7 @@ vec2 vec2_scale(vec2 vec, float s)
     return new_vec;
 }
 
-vec2 vec2_add_scalar(vec2 vec, float s)
+vec2 vec2_add_scalar(vec2 vec, f32 s)
 {
     vec2 new_vec;
     new_vec.x = vec.x + s;
@@ -116,7 +116,7 @@ vec2 vec2_sub(vec2 v1, vec2 v2)
 void vec2_norm(vec2* out)
 {
     vec2 tmp = *out;
-    float denom = sqrtf(vec2_dot(tmp, tmp));
+    f32 denom = sqrtf(vec2_dot(tmp, tmp));
 
     if(denom == 0.0f) // prevent divide by zero
     {
@@ -209,8 +209,8 @@ void mat4_scale(mat4* out, vec3 s)
     mat4_mul(out, mat, *out);
 }
 
-// doesn't scale 4th column
-void mat4_scale_scalar(mat4* out, float s)
+// ! doesn't scale 4th column
+void mat4_scale_scalar(mat4* out, f32 s)
 {
     // optimised method (we know the result of matrix mul will be this)
     out->m11 *= s;
@@ -243,10 +243,10 @@ void mat4_trans(mat4* out, vec3 t)
     mat4_mul(out, mat, *out);
 }
 
-void mat4_rotate_x(mat4* out, float a) // not figuring out arbitrary axis rotation
+void mat4_rotate_x(mat4* out, f32 a) // not figuring out arbitrary axis rotation
 {
-    float c = cosf(a);
-    float s = sinf(a);
+    f32 c = cosf(a);
+    f32 s = sinf(a);
     mat4 mat = { // * appears transposed because opengl column major memory ordering
         1,  0,  0,  0,
         0,  c,  s,  0,
@@ -257,10 +257,10 @@ void mat4_rotate_x(mat4* out, float a) // not figuring out arbitrary axis rotati
     mat4_mul(out, mat, *out);
 }
 
-void mat4_rotate_y(mat4* out, float a)
+void mat4_rotate_y(mat4* out, f32 a)
 {
-    float c = cosf(a);
-    float s = sinf(a);
+    f32 c = cosf(a);
+    f32 s = sinf(a);
     mat4 mat = { // * appears transposed because opengl column major memory ordering
         c,  0, -s,  0,
         0,  1,  0,  0,
@@ -271,10 +271,10 @@ void mat4_rotate_y(mat4* out, float a)
     mat4_mul(out, mat, *out);
 }
 
-void mat4_rotate_z(mat4* out, float a)
+void mat4_rotate_z(mat4* out, f32 a)
 {
-    float c = cosf(a);
-    float s = sinf(a);
+    f32 c = cosf(a);
+    f32 s = sinf(a);
     mat4 mat = { // * appears transposed because opengl column major memory ordering
         c,  s,  0,  0,
         -s, c,  0,  0,
@@ -285,13 +285,13 @@ void mat4_rotate_z(mat4* out, float a)
     mat4_mul(out, mat, *out);
 }
 
-// calculate perspective matrix based on fov and aspect ratio
-void mat_perspective_fov(mat4* out, float fov, float aspect, float near, float far)
+// calculate symmetric perspective matrix based on fov and aspect ratio
+void mat_perspective_fov(mat4* out, f32 fov, f32 aspect, f32 near, f32 far)
 {
     *out = mat4_zero();
 
-    float s  = 1.0f / tanf(0.5f * fov); // 1 / half of the vertical fov
-    float zdenom = 1.0f / (far - near); // same as -1.0f / (near - far)
+    f32 s  = 1.0f / tanf(0.5f * fov); // 1 / half of the vertical fov
+    f32 zdenom = 1.0f / (far - near);
 
     // matrix diagonal
     out->m11 = s / aspect; // aspect and tan on denominator
@@ -303,16 +303,16 @@ void mat_perspective_fov(mat4* out, float fov, float aspect, float near, float f
     out->m43 = -1.0f; // copy -z into w (flipped because opengl is in rh coords)
 }
 
-// calculate perspective matrix based on frustrum values
-void mat_perspective_frustrum(mat4* out, float near, float far, float left, float right, float bottom, float top)
+// calculate asymmetric perspective matrix based on frustrum values
+void mat_perspective_frustrum(mat4* out, f32 near, f32 far, f32 left, f32 right, f32 bottom, f32 top)
 {
     *out = mat4_zero();
 
     // calculating these beforehand is faster
-    float xdenom = 1.0f / (right - left);
-    float ydenom = 1.0f / (top - bottom);
-    float zdenom = 1.0f / (far - near);
-    float near2 = 2.0f * near;
+    f32 xdenom = 1.0f / (right - left);
+    f32 ydenom = 1.0f / (top - bottom);
+    f32 zdenom = 1.0f / (far - near);
+    f32 near2 = 2.0f * near;
 
     // matrix diagonal
     out->m11 = near2 * xdenom;
@@ -330,14 +330,14 @@ void mat_perspective_frustrum(mat4* out, float near, float far, float left, floa
     out->m43 = -1.0f; 
 }
 
-void mat_orthographic_frustrum(mat4* out, float near, float far, float left, float right, float bottom, float top)
+void mat_orthographic_frustrum(mat4* out, f32 near, f32 far, f32 left, f32 right, f32 bottom, f32 top)
 {
     *out = mat4_zero();
 
     // calculating these beforehand is faster
-    float xdenom = 1.0f / (right - left);
-    float ydenom = 1.0f / (top - bottom);
-    float zdenom = 1.0f / (far - near);
+    f32 xdenom = 1.0f / (right - left);
+    f32 ydenom = 1.0f / (top - bottom);
+    f32 zdenom = 1.0f / (far - near);
 
     // matrix diagonal
     out->m11 = 2 * xdenom;
@@ -360,7 +360,7 @@ void mat_look_at(mat4* out, vec3 t, vec3 k, vec3 i)
     vec3_norm(&j);
 
     /**
-     * the inverse of the matrix which transforms you to the position/rotation of the player -> does the opposite so camera stays at center
+     * the inverse of the matrix which transforms you to the position/rotation of the player -> does the opposite because camera stays at center other objects move inverse
      * k is negative because opengl rh coords
      * the product of a rotation and translation matrix
      * i, j and k represent the "axes" of the space where the player is

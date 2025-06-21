@@ -1,4 +1,4 @@
-#version 430 core
+#version 420 core
 out vec4 frag_colour;
 
 in vec2 f_uv;
