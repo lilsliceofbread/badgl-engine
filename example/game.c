@@ -38,7 +38,7 @@ void game_init(void)
     s.is_vsync_on = true;
 
     RendererFlags flags = 0; // use defaults - can disable lighting, skybox e.g. BGL_RD_SKYBOX_OFF | BGL_RD_UI_OFF | BGL_RD_LIGHTING_OFF
-    rd_init(&s.rd, 1280, 720, "badgl demo", flags, "4.2");
+    rd_init(&s.rd, 1280, 720, "badgl demo", flags, "4.2"); // my pc has max opengl 4.2 so no debug output for me :(
 
     loading_begin(); // a simple quad is drawn to the screen before loading
 

@@ -7,7 +7,7 @@
 #include <string.h>
 #include "defines.h"
 #include "glmath.h"
-#include "util.h"
+#include "platform.h"
 #include "texture.h"
 #include "renderer.h"
 #include "light.h"
@@ -36,7 +36,7 @@ void model_load(Model* self, const char* path, u32 shader_idx)
     mat4_identity(&self->model);
 
     char full_path[1024];
-    prepend_executable_directory(full_path, 1024, path);
+    platform_prepend_executable_directory(full_path, 1024, path);
     find_directory_from_path(self->directory, MAX_PATH_LENGTH, full_path);
 
     const struct aiScene* scene = aiImportFile(full_path, aiProcess_Triangulate | aiProcess_FlipUVs);

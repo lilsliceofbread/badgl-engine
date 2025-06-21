@@ -79,12 +79,12 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
                                       ? 0 : rd_add_shader(self, "shaders/quad.vert", "shaders/quad.frag");
     self->light_shader  = self->flags & BGL_RD_LIGHTING_OFF
                                       ? 0 : rd_add_shader(self, "shaders/light.vert", "shaders/light.frag");
+    
+    platform_init();
 
     char imgui_version[BGL_RD_VERSION_STRLEN];
     rd_get_version_string(self, imgui_version);
     rd_imgui_init(self, imgui_version);
-
-    platform_reset_time();
 }
 
 void rd_configure_gl(Renderer* self)
@@ -163,8 +163,8 @@ void rd_imgui_init(Renderer* self, const char* glsl_version)
 
     // force imgui to use executable directory for imgui.ini
     self->imgui_io->IniFilename = NULL;
-    char imgui_ini_path[1024];
-    prepend_executable_directory(imgui_ini_path, 1024, "imgui.ini");
+    char imgui_ini_path[256];
+    platform_prepend_executable_directory(imgui_ini_path, 256, "imgui.ini");
     igLoadIniSettingsFromDisk(imgui_ini_path);
 
     ImGui_ImplGlfw_InitForOpenGL(self->win, true);
@@ -252,8 +252,8 @@ void rd_free(Renderer* self)
     }
     if(self->shaders != NULL) BGL_FREE(self->shaders);
 
-    char imgui_ini_path[1024];
-    prepend_executable_directory(imgui_ini_path, 1024, "imgui.ini");
+    char imgui_ini_path[256];
+    platform_prepend_executable_directory(imgui_ini_path, 256, "imgui.ini");
     igSaveIniSettingsToDisk(imgui_ini_path);
 
     ImGui_ImplOpenGL3_Shutdown();
@@ -339,10 +339,13 @@ void rd_get_version_string(Renderer* self, char* buffer)
 {
     /* index:                       0        9       */
     const char* version_template = "#version xx0 core";
-    int major, minor;
+    u32 length = (u32)strlen(version_template);
 
+    i32 major, minor;
     rd_get_version_major_minor(self, &major, &minor);
-    memcpy(buffer, version_template, strlen(version_template));
+    memcpy(buffer, version_template, length);
+    buffer[length] = '\0';
+
     buffer[9] = INT_TO_CHAR(major);
     buffer[10] = INT_TO_CHAR(minor);
 }

@@ -37,7 +37,7 @@ if (MSVC)
     set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS "/W4")
 else()
     set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS
-                                "-Wall -Wextra -Wconversion -Wpedantic -Wno-missing-braces")
+                                "-Wall -Wextra -Wconversion -Wpedantic -Wno-cast-function-type -Wno-missing-braces")
 endif()
 
 # update git submodules if necessary

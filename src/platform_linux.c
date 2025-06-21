@@ -11,14 +11,36 @@
 #include <string.h>
 #include <stdio.h>
 #include "defines.h"
+#include "util.h"
 
 static struct
 {
     i32 platform_clock;
     f64 platform_time_offset;
+    char directory[BGL_MAX_EXECUTABLE_DIR_LENGTH];
 } linux_ctx;
 
 static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
+
+void platform_init(void)
+{
+    char exe_path[BGL_MAX_EXECUTABLE_DIR_LENGTH];
+    platform_get_executable_path(exe_path, BGL_MAX_EXECUTABLE_DIR_LENGTH);
+    find_directory_from_path(linux_ctx.directory, BGL_MAX_EXECUTABLE_DIR_LENGTH, exe_path);
+    
+    platform_reset_time();
+}
+
+void platform_prepend_executable_directory(char* buffer, u32 length, const char* path)
+{
+    if(strstr(path, linux_ctx.directory)) // if already full path
+    {
+        strncpy(buffer, path, length);
+        return;
+    }
+    
+    snprintf(buffer, length, "%s/%s", linux_ctx.directory, path);
+}
 
 void platform_get_executable_path(char* buffer, u32 length)
 {

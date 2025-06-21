@@ -9,9 +9,9 @@
 #ifdef __linux__
     #define GET_LAST_FILE_SEPARATOR(name) char* name = str_find_last_of(path, '/')
 #elif _WIN32
-    #define GET_LAST_FILE_SEPARATOR(name)               \
-    char* last_slash = str_find_last_of(path, '/');     \
-    char* last_backslash = str_find_last_of(path, '\\');\
+    #define GET_LAST_FILE_SEPARATOR(name)                \
+    char* last_slash = str_find_last_of(path, '/');      \
+    char* last_backslash = str_find_last_of(path, '\\'); \
     char* name = last_slash > last_backslash ? last_slash : last_backslash
 #endif
 
@@ -43,7 +43,7 @@ char* get_file_data(const char* filepath)
     return file_data;
 }
 
-// returns NULL if str has no occurence of c
+/* returns NULL if str has no occurence of c */
 char* str_find_last_of(const char* str, char c)
 {
     if(str == NULL) return NULL;
@@ -90,22 +90,6 @@ void find_file_from_path(char* buffer, u32 length, const char* path)
 
     strncpy(buffer, last_char + 1, length);
     buffer[length - 1] = '\0'; // just in case
-}
-
-void prepend_executable_directory(char* buffer, u32 length, const char* path)
-{
-    // TODO: cache this
-    char exe_path[512];
-    char directory[512];
-    platform_get_executable_path(exe_path, 512);
-    find_directory_from_path(directory, 512, exe_path);
-    if(strstr(path, directory)) // if already full path
-    {
-        strncpy(buffer, path, length);
-        return;
-    }
-    
-    snprintf(buffer, length, "%s/%s", directory, path);
 }
 
 bool array_contains(u32* array, u32 length, u32 val)

@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "defines.h"
-#include "util.h"
+#include "platform.h"
 #include "renderer.h"
 
 /**
@@ -59,7 +59,7 @@ void texture_create(Texture* self, TextureType type, const char* path, bool use_
     BGL_PERFORMANCE_START();
 
     char full_path[1024];
-    prepend_executable_directory(full_path, 1024, path);
+    platform_prepend_executable_directory(full_path, 1024, path);
 
     glGenTextures(1, &self->id);
 
@@ -149,7 +149,7 @@ void texture_cubemap_create(Texture* self, TextureType type, const char* path)
     BGL_PERFORMANCE_START();
 
     char full_path[1024];
-    prepend_executable_directory(full_path, 1024, path);
+    platform_prepend_executable_directory(full_path, 1024, path);
 
     glGenTextures(1, &self->id);
     glBindTexture(GL_TEXTURE_CUBE_MAP, self->id);

@@ -4,7 +4,6 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include "glmath.h"
-#include "platform.h"
 #include "defines.h"
 
 #define CHAR_IS_NUMBER(c) (0x30 <= (c) && (c) <= 0x39)
@@ -18,7 +17,6 @@ char* str_find_last_of(const char* str, char c);
 // may truncate output string to size if size is smaller than required
 void find_directory_from_path(char* buffer, u32 length, const char* path);
 void find_file_from_path(char* buffer, u32 length, const char* path);
-void prepend_executable_directory(char* buffer, u32 length, const char* path);
 
 bool array_contains(u32* array, u32 length, u32 val);
 
