@@ -39,7 +39,7 @@ void texture_multi_image_cubemap_create(Texture* self, const char* generic_path)
 
 void textures_init(void) {
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_ctx.max_texture_units);
-    BGL_LOG_INFO_NO_CTX("max texture units: %u\n", texture_ctx.max_texture_units);
+    BGL_LOG_INFO_NO_CTX("max texture units: %u", texture_ctx.max_texture_units);
 
     texture_default_create(&texture_ctx.texture_default, 255, 0);
     texture_default_cubemap_create(&texture_ctx.cubemap_default, 255, 0);
@@ -66,7 +66,7 @@ void texture_create(Texture* self, TextureType type, const char* path, bool use_
     i32 width, height, num_channels;
     stbi_set_flip_vertically_on_load(true);
     u8* img_data = stbi_load(full_path, &width, &height, &num_channels, 4);
-    BGL_ASSERT(img_data, "could not load image %s\n", full_path);
+    BGL_ASSERT(img_data, "could not load image %s", full_path);
 
     glBindTexture(GL_TEXTURE_2D, self->id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);
@@ -115,7 +115,7 @@ void texture_default_create(Texture* self, u8 brightness, TextureType type)
     self->type = type | TEXTURE_DEFAULT;
 
     memset(self->path, 0, MAX_PATH_LENGTH);
-    BGL_LOG_INFO("created 1x1 default texture of id: %u\n", self->id);
+    BGL_LOG_INFO("created 1x1 default texture of id: %u", self->id);
 }
 
 void texture_default_cubemap_create(Texture* self, u8 brightness, TextureType type)
@@ -141,7 +141,7 @@ void texture_default_cubemap_create(Texture* self, u8 brightness, TextureType ty
     self->type = type | TEXTURE_DEFAULT | TEXTURE_CUBEMAP;
 
     memset(self->path, 0, MAX_PATH_LENGTH);
-    BGL_LOG_INFO("created 1x1 default cubemap of id: %u\n", self->id);
+    BGL_LOG_INFO("created 1x1 default cubemap of id: %u", self->id);
 }
 
 void texture_cubemap_create(Texture* self, TextureType type, const char* path)
@@ -184,7 +184,7 @@ void texture_bind(Texture* self)
 
 void texture_unit_active(u32 num)
 {
-    BGL_ASSERT((i32)num <= texture_ctx.max_texture_units - 1, " GL texture unit out of range\n");
+    BGL_ASSERT((i32)num <= texture_ctx.max_texture_units - 1, " GL texture unit out of range");
     glActiveTexture(GL_TEXTURE0 + num);
 }
 
@@ -198,7 +198,7 @@ const char* texture_type_get_str(TextureType type)
     if(type & TEXTURE_DIFFUSE) return "texture_diffuse";
     if(type & TEXTURE_SPECULAR) return "texture_specular";
     if(type & TEXTURE_NORMAL) return "texture_normal";
-    BGL_ASSERT(false, " invalid texture type %d\n", (i32)type);
+    BGL_ASSERT(false, " invalid texture type %d", (i32)type);
     return NULL;
 }
 
@@ -208,8 +208,8 @@ void texture_single_image_cubemap_create(Texture* self, const char* texture_path
     stbi_set_flip_vertically_on_load(false); // don't need to flip, not using uv coordinate space
     u8* img_data = stbi_load(texture_path, &width, &height, &num_channels, 4);
 
-    BGL_ASSERT(img_data, "could not load image %s\n", texture_path);
-    BGL_ASSERT((width * 3) == (height * 4), "image %s aspect ratio is incorrect\n", texture_path);
+    BGL_ASSERT(img_data, "could not load image %s", texture_path);
+    BGL_ASSERT((width * 3) == (height * 4), "image %s aspect ratio is incorrect", texture_path);
 
     i32 grid_size = width / 4;
 
@@ -274,7 +274,7 @@ void texture_multi_image_cubemap_create(Texture* self, const char* generic_path)
 
         stbi_set_flip_vertically_on_load(false); // don't need to flip, not using uv coordinate space
         u8* img_data = stbi_load(img_path, &width, &height, &num_channels, 4);
-        BGL_ASSERT(img_data, "could not load image %s\n", img_path);
+        BGL_ASSERT(img_data, "could not load image %s", img_path);
 
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + (GLenum)i, 0, GL_RGB,
                      width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);

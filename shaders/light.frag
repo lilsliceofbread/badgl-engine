@@ -12,5 +12,6 @@ uniform Material material;
 
 void main()
 {
-    frag_colour = vec4(material.diffuse, 1.0);
+    /* multiply diffuse by arbitrary value because it looks nicer */
+    frag_colour = vec4(2.0 * material.diffuse, 1.0);
 }

@@ -4,10 +4,11 @@
 
 #include <unistd.h>
 #include <sys/time.h>
+#include <sys/mman.h>
 #include <errno.h>
-#include <time.h>
 #include <GL/glx.h>
 #include <GL/glxext.h>
+#include <time.h>
 #include <string.h>
 #include <stdio.h>
 #include "defines.h"
@@ -31,6 +32,26 @@ void platform_init(void)
     platform_reset_time();
 }
 
+void* platform_virtual_alloc(u32 size)
+{
+    return mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+}
+
+void platform_physical_alloc(void* ptr, u32 size)
+{
+    mprotect(ptr, size, PROT_READ | PROT_WRITE);
+}
+
+void platform_physical_dealloc(void* ptr, u32 size)
+{
+    mprotect(ptr, size, PROT_NONE);
+}
+
+void platform_virtual_dealloc(void* ptr, u32 size)
+{
+    munmap(ptr, size);
+}
+
 void platform_prepend_executable_directory(char* buffer, u32 length, const char* path)
 {
     if(strstr(path, linux_ctx.directory)) // if already full path
@@ -45,7 +66,7 @@ void platform_prepend_executable_directory(char* buffer, u32 length, const char*
 void platform_get_executable_path(char* buffer, u32 length)
 {
     bool success = readlink("/proc/self/exe", buffer, length) != -1;
-    BGL_ASSERT(success, "unable to get executable directory. errno: %d\n", errno);
+    BGL_ASSERT(success, "unable to get executable directory. errno: %d", errno);
 }
 
 bool platform_file_exists(const char* filename)

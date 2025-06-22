@@ -7,7 +7,7 @@
 #include "renderer.h"
 #include "model.h"
 
-// * all models centred on (0, 0, 0) or model space
+/* all models centred on (0, 0, 0) or model space */
 
 /**
  * @param  res:  resolution
@@ -21,11 +21,11 @@ void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader
  */
 void shapes_box(Model* self, f32 width, f32 height, f32 depth, const Material* material, u32 shader_idx);
 
-/* will be perpendicular to x/z axis
+/* will be parallel to x/z axis plane
    width along x-axis
    height along z-axis */
 /**
- * @brief  create rectangular plane perpendicular to x/z axis
+ * @brief  create rectangular plane perpendicular to y axis
  * @param  width:  distance along x-axis
  * @param  height:  distance along z-axis
  * @param  res:  resolution

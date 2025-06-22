@@ -5,14 +5,14 @@
 #include <string.h>
 #include <stdlib.h>
 
-// windows is fucking dumb
+// windows is dumb
 #ifdef __linux__
-    #define GET_LAST_FILE_SEPARATOR(name) char* name = str_find_last_of(path, '/')
+    #define GET_LAST_FILE_SEPARATOR(name, path) char* name = str_find_last_of(path, '/')
 #elif _WIN32
-    #define GET_LAST_FILE_SEPARATOR(name)                \
-    char* last_slash = str_find_last_of(path, '/');      \
-    char* last_backslash = str_find_last_of(path, '\\'); \
-    char* name = last_slash > last_backslash ? last_slash : last_backslash
+    #define GET_LAST_FILE_SEPARATOR(name, path)                \
+    char* _last_slash = str_find_last_of(path, '/');      \
+    char* _last_backslash = str_find_last_of(path, '\\'); \
+    char* name = _last_slash > _last_backslash ? _last_slash : _last_backslash
 #endif
 
 char* get_file_data(const char* filepath)
@@ -62,34 +62,13 @@ char* str_find_last_of(const char* str, char c)
 
 void find_directory_from_path(char* buffer, u32 length, const char* path)
 {
-    GET_LAST_FILE_SEPARATOR(last_char);
+    GET_LAST_FILE_SEPARATOR(last_char, path);
     BGL_ASSERT(last_char != NULL, "invalid path %s\n", path);
     i32 offset = (i32)(last_char - path);
 
     u32 str_end = (u32)offset < length ? (u32)offset : length;
     strncpy(buffer, path, str_end); // copy up to final / into directory
     buffer[str_end] = '\0';
-}
-
-void find_file_from_path(char* buffer, u32 length, const char* path)
-{
-    GET_LAST_FILE_SEPARATOR(last_char);
-
-    if(last_char == NULL)
-    {
-        strncpy(buffer, path, length);
-        buffer[length - 1] = '\0'; // just in case
-        return;
-    }
-
-    if(strlen(last_char) <= 1) // don't use ASSERT since this function is used in LOG
-    {
-        printf("find_file_from_path(): no file in path");
-        DEBUG_BREAK();
-    }
-
-    strncpy(buffer, last_char + 1, length);
-    buffer[length - 1] = '\0'; // just in case
 }
 
 bool array_contains(u32* array, u32 length, u32 val)

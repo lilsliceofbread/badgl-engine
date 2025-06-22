@@ -42,12 +42,12 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     self->flags = flags & (RendererFlags)~(_BGL_RD_CURSOR_DISABLED | _BGL_RD_VSYNC_ENABLED); // set both to false by default
 
     i32 major, minor;
-    BGL_ASSERT(strlen(version) >= 3, "invalid opengl version\n");
+    BGL_ASSERT(strlen(version) >= 3, "invalid opengl version");
     memcpy(self->version, version, 3);
     rd_get_version_major_minor(self, &major, &minor);
 
     i32 ret = glfwInit();
-    BGL_ASSERT(ret, "failed to init GLFW\n");
+    BGL_ASSERT(ret, "failed to init GLFW");
 
     #ifndef BGL_NO_DEBUG
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  
@@ -59,7 +59,7 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     
     GLFWwindow* win = glfwCreateWindow(width, height, win_title, NULL, NULL);
     self->win = win;
-    BGL_ASSERT(win != NULL, "failed to open window\n");
+    BGL_ASSERT(win != NULL, "failed to open window");
 
     glfwMakeContextCurrent(win);
     glfwSetCursorPos(win, width / 2, height / 2);
@@ -69,7 +69,7 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     ret = gladLoadGL((GLADloadfunc)glfwGetProcAddress);
-    BGL_ASSERT(ret, "failed to init GLAD\n");
+    BGL_ASSERT(ret, "failed to init GLAD");
 
     rd_configure_gl(self);
 
@@ -320,7 +320,7 @@ void APIENTRY rd_debug_callback(BGL_UNUSED GLenum source, BGL_UNUSED GLenum type
         case GL_DEBUG_SEVERITY_NOTIFICATION: log_type = BGL_LOG_INFO; break;
     }
 
-    BGL_LOG_NO_CTX(log_type, "OPENGLDEBUG ID - %d\n%s\n", id, message);
+    BGL_LOG_NO_CTX(log_type, "OPENGLDEBUG ID - %d\n%s", id, message);
 }
 
 void rd_get_version_major_minor(Renderer* self, i32* major, i32* minor)

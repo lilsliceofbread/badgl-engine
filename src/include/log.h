@@ -1,8 +1,8 @@
 #ifndef BGL_LOG_H
 #define BGL_LOG_H
 
-#include "types.h"
 #include <string.h>
+#include "types.h"
 
 // theoretically this unholy macro should be optimised out in compilation
 #ifdef __linux__

@@ -5,7 +5,7 @@
 #include "camera.h"
 #include "model.h"
 #include "skybox.h"
-#include "arena_alloc.h"
+#include "arena.h"
 #include "glmath.h"
 #include "light.h"
 

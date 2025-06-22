@@ -24,7 +24,7 @@
     #endif
 
     #define BGL_PERFORMANCE_START() f64 bgl_internal_perf_start_time = platform_get_time()
-    #define BGL_PERFORMANCE_END(str) BGL_LOG_INFO("%s took %lfs\n", str, platform_get_time() - bgl_internal_perf_start_time) 
+    #define BGL_PERFORMANCE_END(str) BGL_LOG_INFO("%s took %lfs", str, platform_get_time() - bgl_internal_perf_start_time) 
 #endif
 
 #define BGL_MALLOC(size) malloc(size)
@@ -57,6 +57,8 @@
 
 #define BGL_RESIZE_BLOCK_SIZE 8
 
+#define ALIGNED_SIZE(size, alignment) (u32)( (size) + (alignment) - 1 - ( ((size) - 1) % (alignment) ) )
+
 /* resize array by block size if reached maximum size */
 #define BLOCK_RESIZE_ARRAY(ptr_address, type, count, increase) do { \
 u32 prev_max = ALIGNED_SIZE(count, BGL_RESIZE_BLOCK_SIZE);                       \
@@ -64,10 +66,12 @@ if(count + increase > prev_max)                                                 
 {                                                                                \
     u32 new_max = ALIGNED_SIZE(count + increase, BGL_RESIZE_BLOCK_SIZE);         \
     *(ptr_address) = (type*)BGL_REALLOC(*(ptr_address), new_max * sizeof(type)); \
-    BGL_ASSERT(*(ptr_address) != NULL, #type "s array reallocation failed\n");   \
-    BGL_LOG_INFO(#type "s array resize from %u to %u\n", prev_max, new_max);     \
+    BGL_ASSERT(*(ptr_address) != NULL, #type "s array reallocation failed");     \
+    BGL_LOG_INFO(#type "s array resize from %u to %u", prev_max, new_max);       \
 }} while(0)
 
-#define ALIGNED_SIZE(size, alignment) ((size) % (alignment) == 0) ? (size) : (size) + ((alignment) - ((size) % (alignment)))
+#define CHAR_IS_NUMBER(c) (0x30 <= (c) && (c) <= 0x39)
+#define CHAR_TO_INT(c) (i32)((c) - 0x30)
+#define INT_TO_CHAR(i) (char)((i) + 0x30)
 
 #endif

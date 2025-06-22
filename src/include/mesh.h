@@ -6,7 +6,7 @@
 #include "vao.h"
 #include "bo.h"
 #include "shader.h"
-#include "arena_alloc.h"
+#include "arena.h"
 
 typedef struct VertexBuffer
 {
@@ -25,11 +25,11 @@ typedef struct Mesh
     EBO ebo;
 } Mesh;
 
-// all vertices, indices and textures should be pre-allocated, and will be freed in mesh_free()
-void mesh_create(Mesh* self, Arena arena,
-               VertexBuffer vertex_buffer, u32 vert_count,
-               u32* indices, u32 ind_count,
-               u32* tex_indices, u32 tex_count);
+/* vertices and indices are freed by caller as they are not stored but tex_indices are stored by mesh and so freed by mesh */
+void mesh_create(Mesh* self,
+                 const VertexBuffer vertex_buffer, u32 vert_count,
+                 const u32* indices, u32 ind_count,
+                 u32* tex_indices, u32 tex_count);
 
 void mesh_draw(Mesh* self, Shader* shader, Texture* textures);
 

@@ -5,7 +5,6 @@
 #ifdef _WIN32
     #include <windows.h>
 #endif
-#include "util.h"
 #include "types.h"
 
 void log_impl(LogType type, const char* filename, i32 line, const char* msg, ...)
@@ -65,4 +64,5 @@ void log_impl(LogType type, const char* filename, i32 line, const char* msg, ...
     va_start(args, msg);
         vfprintf(output_stream, msg, args);
     va_end(args);
+    fprintf(output_stream, "\n");
 }

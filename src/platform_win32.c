@@ -30,6 +30,26 @@ void platform_init(void)
     platform_reset_time();
 }
 
+void* platform_virtual_alloc(u32 size)
+{
+    return VirtualAlloc(0, size, MEM_RESERVE, PAGE_NOACCESS);
+}
+
+void platform_physical_alloc(void* ptr, u32 size)
+{
+    VirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
+}
+
+void platform_physical_dealloc(void* ptr, u32 size)
+{
+    VirtualFree(ptr, size, MEM_DECOMMIT);
+}
+
+void platform_virtual_dealloc(void* ptr, u32 size)
+{
+    VirtualFree(ptr, 0, MEM_RELEASE);
+}
+
 void platform_prepend_executable_directory(char* buffer, u32 length, const char* path)
 {
     if(strstr(path, win_ctx.directory)) // if already full path
@@ -44,7 +64,7 @@ void platform_prepend_executable_directory(char* buffer, u32 length, const char*
 void platform_get_executable_path(char* buffer, u32 length)
 {
     bool success = GetModuleFileNameA(NULL, buffer, (DWORD)length) != 0;
-    BGL_ASSERT(success, "unable to get executable directory. err: %lu\n", GetLastError());
+    BGL_ASSERT(success, "unable to get executable directory. err: %lu", GetLastError());
 }
 
 bool platform_file_exists(const char* filename)
@@ -84,7 +104,7 @@ void platform_reset_time(void)
 {
     QueryPerformanceFrequency(&win_ctx.os_freq);
     bool success = win_ctx.os_freq.QuadPart != 0;
-    BGL_ASSERT(success, "unable to get platform timer frequency. err: %lu\n", GetLastError());
+    BGL_ASSERT(success, "unable to get platform timer frequency. err: %lu", GetLastError());
 
     win_ctx.platform_time_offset = 0.0;
     win_ctx.platform_time_offset = platform_get_time();

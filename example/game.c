@@ -2,15 +2,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include "glmath.h"
-#include "scene.h"
-#include "renderer.h"
-#include "camera.h"
-#include "util.h"
-#include "model.h"
-#include "platform.h"
-#include "shapes.h"
-#include "quad.h"
+#include "badgl.h"
 
 #define MAX_SCENES 5
 
@@ -18,9 +10,9 @@ static struct
 {
     Renderer rd;
     Scene scenes[MAX_SCENES];
+    u32 scene_count;
 
     u32 current_scene;
-    u32 scene_count;
     i32 light_index;
     bool is_vsync_on;
 } s; // game state

@@ -22,7 +22,7 @@ void scene_send_lights(Scene* self, Renderer* rd);
 
 void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
 {
-    BGL_ASSERT(sizeof(Light) == GLSL_LIGHT_SIZE, "platform struct packing/padding does not match GLSL. wtf?\n");
+    BGL_ASSERT(sizeof(Light) == GLSL_LIGHT_SIZE, "platform struct packing/padding does not match GLSL. wtf?");
 
     const f32 aspect_ratio = (f32)(rd->width) / (f32)(rd->height); // not casting these to f32 causes the aspect ratio to be rounded
     self->cam = camera_create(start_pos, start_euler.x, start_euler.y, MOVESPEED, SENSITIVITY);
@@ -79,7 +79,7 @@ void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model*
     BGL_ASSERT(light != NULL, "provided light is null");
     if(self->light_count >= GLSL_MAX_LIGHTS)
     {
-        BGL_LOG_WARN("cannot add light to scene; max lights reached\n");
+        BGL_LOG_WARN("cannot add light to scene; max lights reached");
         return;
     }
 

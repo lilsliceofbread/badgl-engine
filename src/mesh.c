@@ -7,14 +7,14 @@
 #include "vao.h"
 #include "renderer.h"
 #include "bo.h"
-#include "arena_alloc.h"
 
-void mesh_create(Mesh* self, Arena arena,
-               VertexBuffer vertex_buffer, u32 vert_count,
-               u32* indices, u32 ind_count,
-               u32* tex_indices, u32 tex_count)
+void mesh_create(Mesh* self,
+                 const VertexBuffer vertex_buffer, u32 vert_count,
+                 const u32* indices, u32 ind_count,
+                 u32* tex_indices, u32 tex_count)
 {
-    // preallocated
+    // TODO: fix this
+    /* tex_indices is allocated by caller */
     self->tex_indices = tex_indices;
     self->vert_count = vert_count;
     self->ind_count = ind_count;
@@ -68,9 +68,6 @@ void mesh_create(Mesh* self, Arena arena,
     }
 
     vao_unbind();
-
-    // don't need this data anymore
-    arena_free(&arena);
 }
 
 void mesh_draw(Mesh* self, Shader* shader, Texture* textures)

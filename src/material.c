@@ -31,7 +31,7 @@ void material_add_texture(Material* mat, TextureType type, const char* texture_p
 {
     if(mat->textures == NULL || mat->tex_count < 2)
     {
-        BGL_LOG_ERROR("textures have not been allocated\n");
+        BGL_LOG_ERROR("textures have not been allocated");
         return;
     }
 
@@ -92,7 +92,7 @@ void material_free(Material* mat)
 {
     if(mat->textures == NULL) 
     {
-        BGL_LOG_INFO("no texture data on free\n");
+        BGL_LOG_INFO("no texture data on free");
         return;
     }
 

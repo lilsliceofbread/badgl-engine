@@ -53,7 +53,7 @@ void shader_create(Shader* self, const char* vert_shader_src, const char* frag_s
         i32 location = glGetUniformLocation(self->id, self->uniforms[i].name);
         if(location == -1)
         {
-            BGL_LOG_WARN("uniform %s was not given a location; shader sources: %s, %s\n", self->uniforms[i].name, vert_shader_src, frag_shader_src);
+            BGL_LOG_WARN("uniform %s was not given a location; shader sources: %s, %s", self->uniforms[i].name, vert_shader_src, frag_shader_src);
         }
         self->uniforms[i].location = location;
     }
@@ -161,7 +161,7 @@ i32 shader_find_uniform(Shader* self, const char* name)
         if(strcmp(name, curr.name) == 0) return curr.location;
     }
 
-    BGL_LOG_INFO("uniform %s not found. Caching...\n", name);
+    BGL_LOG_INFO("uniform %s not found. Caching...", name);
     i32 location = glGetUniformLocation(self->id, name);
 
     /* just in case there is a name longer, still allow to work but don't cache */

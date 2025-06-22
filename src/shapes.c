@@ -3,33 +3,31 @@
 #include <stdlib.h>
 #include "defines.h"
 #include "util.h"
+#include "arena.h"
 
 extern inline u32* shape_setup(Model* model, const Material* material, u32 shader_idx);
 
 void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader_idx)
 {
-    BGL_ASSERT(res >= 2, "%u too small of a resolution for uv sphere\n", res);
+    BGL_ASSERT(res >= 2, "%u too small of a resolution for uv sphere", res);
 
     u32* tex_indices = shape_setup(self, material, shader_idx);
 
     u32 vert_count = 0, ind_count = 0;
 
     const u32 horizontals = res, verticals = 2 * res;
-    const size_t total_vertices = horizontals * verticals + 2;
-    const size_t total_indices = 6 * verticals * (horizontals - 1); // 6 indices per square, but top and bottom rings are triangles (3 per), so h - 2 + 1
+    const u32 total_vertices = horizontals * verticals + 2;
+    const u32 total_indices = 6 * verticals * (horizontals - 1); // 6 indices per square, but top and bottom rings are triangles (3 per), so h - 2 + 1
 
-    Arena mesh_arena = arena_create((total_vertices * 2 * sizeof(vec3)) + (total_indices * sizeof(u32)));
+    Arena scratch;
+    arena_create_sized(&scratch, (u32)((total_vertices * 2 * sizeof(vec3)) + (total_indices * sizeof(u32))));
 
     VertexBuffer vertex_buffer = {
-        .pos = (vec3*)arena_alloc(&mesh_arena, total_vertices * sizeof(vec3)),
+        .pos = (vec3*)arena_alloc(&scratch, total_vertices * sizeof(vec3)),
         .normal = NULL,
         .uv = NULL
     };
-    BGL_ASSERT(vertex_buffer.pos != NULL, "failed to allocate vertices\n");
-
-    u32* indices = (u32*)arena_alloc(&mesh_arena, total_indices * sizeof(u32));
-    BGL_ASSERT(indices != NULL, "failed to allocate indices\n");
-
+    u32* indices = (u32*)arena_alloc(&scratch, total_indices * sizeof(u32));
 
     // top vertex
     vertex_buffer.pos[0].x = 0.0f;
@@ -137,8 +135,10 @@ void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader
         ind_count += 3;
     }
 
-    mesh_create(&self->meshes[0], mesh_arena, vertex_buffer, vert_count, indices, ind_count,
+    mesh_create(&self->meshes[0], vertex_buffer, vert_count, indices, ind_count,
                 tex_indices, material == NULL ? 0 : self->material.tex_count);
+
+    arena_free(&scratch);
 }
 
 void shapes_box(Model* self, f32 width, f32 height, f32 depth, const Material* material, u32 shader_idx)
@@ -146,20 +146,18 @@ void shapes_box(Model* self, f32 width, f32 height, f32 depth, const Material* m
     u32* tex_indices = shape_setup(self, material, shader_idx);
     
     const u32 vert_count = 6 * 4;
-    const size_t vert_size = (size_t) vert_count * (2 * sizeof(vec3));
-    const size_t ind_size = 6 * 6 * sizeof(u32);
-    Arena arena = arena_create(vert_size + ind_size);
+    const u32 vert_size = vert_count * (2 * sizeof(vec3));
+    const u32 ind_count = 6 * 6;
+    const u32 ind_size = ind_count * sizeof(u32);
+
+    Arena scratch;
+    arena_create_sized(&scratch, vert_size + ind_size);
 
     VertexBuffer vertex_buffer = {
-        .pos = (vec3*)arena_alloc(&arena, vert_count * sizeof(vec3)),
-        .normal = (vec3*)arena_alloc(&arena, vert_count * sizeof(vec3)),
+        .pos = (vec3*)arena_alloc(&scratch, vert_count * sizeof(vec3)),
+        .normal = (vec3*)arena_alloc(&scratch, vert_count * sizeof(vec3)),
         .uv = NULL
     };
-    BGL_ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL,
-               "failed to allocate vertices\n");
-
-    u32* indices = (u32*)arena_alloc(&arena, ind_size);
-    BGL_ASSERT(indices != NULL, "failed to allocate indices\n");
 
     {
         // half width, height, depth
@@ -236,53 +234,52 @@ void shapes_box(Model* self, f32 width, f32 height, f32 depth, const Material* m
         memcpy(vertex_buffer.normal, vertex_normals, vert_count * sizeof(vec3));
     }
 
-    {
-        const u32 indices_tmp[] = {
-            0, 1, 2, // front
-            0, 2, 3,
+    const u32 indices[] = {
+        0, 1, 2, // front
+        0, 2, 3,
 
-            4, 5, 6, // top
-            4, 6, 7,
+        4, 5, 6, // top
+        4, 6, 7,
 
-            8, 9, 10, // back
-            8, 10, 11,
+        8, 9, 10, // back
+        8, 10, 11,
 
-            12, 13, 14, // bottom
-            12, 14, 15,
+        12, 13, 14, // bottom
+        12, 14, 15,
 
-            16, 17, 18, // right
-            16, 18, 19,
-            
-            20, 21, 22, // left
-            20, 22, 23
-        };
+        16, 17, 18, // right
+        16, 18, 19,
+        
+        20, 21, 22, // left
+        20, 22, 23
+    };
 
-        memcpy(indices, indices_tmp, ind_size);
-    }
-
-    mesh_create(&self->meshes[0], arena, vertex_buffer, vert_count, indices, 6 * 6,
+    mesh_create(&self->meshes[0], vertex_buffer, vert_count, indices, ind_count,
                 tex_indices, material == NULL ? 0 : self->material.tex_count);
+
+    arena_free(&scratch);
 }
 
 void shapes_plane(Model* self, f32 width, f32 height, u32 res, const Material* material, u32 shader_idx)
 {
-    BGL_ASSERT(res >= 2, "%u too small of a resolution for rectangular plane\n", res);
+    BGL_ASSERT(res >= 2, "%u too small of a resolution for rectangular plane", res);
 
     u32* tex_indices = shape_setup(self, material, shader_idx);
 
-    const size_t vert_size = res * res * sizeof(vec3);
-    const size_t ind_size = 6 * (res - 1) * (res - 1) * sizeof(u32);
-    Arena arena = arena_create((2 * vert_size) + ind_size); // 2 vertex attributes
+    const u32 vert_count = res * res;
+    const u32 vert_size = vert_count * sizeof(vec3);
+    const u32 ind_count = 6 * (res - 1) * (res - 1);
+    const u32 ind_size = ind_count * sizeof(u32);
+
+    Arena scratch;
+    arena_create_sized(&scratch, (2 * vert_size) + ind_size); // 2 vertex attributes
 
     VertexBuffer vertex_buffer = {
-        .pos = (vec3*)arena_alloc(&arena, vert_size),
-        .normal = (vec3*)arena_alloc(&arena, vert_size),
+        .pos = (vec3*)arena_alloc(&scratch, vert_size),
+        .normal = (vec3*)arena_alloc(&scratch, vert_size),
         .uv = NULL
     };
-    BGL_ASSERT(vertex_buffer.pos != NULL && vertex_buffer.normal != NULL, "failed to allocate vertices\n");
-
-    u32* indices = (u32*)arena_alloc(&arena, ind_size);
-    BGL_ASSERT(indices != NULL, "failed to allocate indices\n");
+    u32* indices = (u32*)arena_alloc(&scratch, ind_size);
 
     vec3 normal;
     normal.x = normal.z = 0.0f;
@@ -330,8 +327,10 @@ void shapes_plane(Model* self, f32 width, f32 height, u32 res, const Material* m
         }
     }
 
-    mesh_create(&self->meshes[0], arena, vertex_buffer, res * res, indices, 6 * (res - 1) * (res - 1),
+    mesh_create(&self->meshes[0], vertex_buffer, vert_count, indices, ind_count,
                 tex_indices, material == NULL ? 0 : self->material.tex_count);
+
+    arena_free(&scratch);
 }
 
 inline u32* shape_setup(Model* model, const Material* material, u32 shader_idx)
