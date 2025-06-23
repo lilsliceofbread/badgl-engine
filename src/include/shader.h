@@ -6,9 +6,8 @@
 #include "glmath.h"
 #include "defines.h"
 
+/* internal definitions */
 #define MAX_UNIFORM_NAME 128 
-#define SHADER_UNIFORM_ALLOC_SIZE 8 
-
 typedef struct Uniform {
     char name[MAX_UNIFORM_NAME];
     i32 location;
@@ -21,7 +20,11 @@ typedef struct Shader
     u32 uniform_count;
 } Shader;
 
-void shader_create(Shader* self, const char* vert_shader_src, const char* frag_shader_src, const char* version_str);
+/**
+ * @brief  pass in your shaders in any order, as long as there is all the required shaders
+ * @note   the shaders can either be all contained in one file separated by "#type vertex|fragment|geometry| or each in a separate file
+ */
+void shader_create(Shader* self, const char** shader_filepaths, u32 shader_count, const char* version_str);
 
 void shader_use(Shader* self);
 

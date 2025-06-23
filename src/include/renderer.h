@@ -9,8 +9,6 @@
 #include "defines.h"
 #include "shader.h"
 
-#define RD_SHADER_ALLOC_SIZE 4
-
 typedef enum RendererFlags
 {
     /* if these flags are set, will not generate the respective shader for each */

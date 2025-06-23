@@ -1,5 +1,5 @@
-#ifndef BGL_ARENA_ALLOC_H
-#define BGL_ARENA_ALLOC_H
+#ifndef BGL_ARENA_H
+#define BGL_ARENA_H
 
 /* idea from https://github.com/PixelRifts/c-codebase/blob/master/source/base/mem.c */
 
@@ -26,6 +26,10 @@ void arena_create_sized(Arena* arena, u32 size);
 
 u8* arena_alloc(Arena* self, u32 size);
 
+u8* arena_alloc_unaligned(Arena* self, u32 size);
+
 void arena_free(Arena* self);
+
+char* arena_read_file(Arena* self, const char* path, u32* file_size_out);
 
 #endif

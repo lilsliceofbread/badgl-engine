@@ -7,148 +7,204 @@
 #include "defines.h"
 #include "util.h"
 #include "glmath.h"
-#include "defines.h"
+#include "arena.h"
+
+// TODO:
+// check #type and #include
+// move into separate file
+// think of more tests
+// replace assert with BGL_LOG_ERROR -> return bool to allow program to continue running
+
+/* for include directive */
+#define MAX_SHADER_FILENAME 128 
+
+typedef struct ShaderParser
+{
+    const char* code;
+    const char* version_str;
+    /* token span */
+    u32 first;
+    u32 last;
+    enum 
+    {
+        TYPE_VERTEX = 0,
+        TYPE_FRAGMENT = 1,
+        TYPE_GEOMETRY = 2,
+        TYPE_NONE, // shaders are in separate files
+    } shader_type;
+
+    u8* prev_ptr;
+    u32 prev_alloc_size;
+    u8* ptr;
+    u32 prev_edit;
+} ShaderParser;
 
 /**
  * internal functions
  */
-u32 shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type, char* info_log_out, i32 log_size, i32* success_out);
-void shader_find_uniforms_in_source(Shader* self, const char* src_code);
+char* shader_process(Shader* self, ShaderParser* parser, Arena* scratch);
+void shader_parser_skip_whitespace(ShaderParser* parser);
+void shader_next_token(ShaderParser* parser);
+bool shader_token_strequal(ShaderParser* parser, const char* string);
+void shader_parser_alloc(ShaderParser* parser, Arena* scratch);
 
-// TODO: get file data first and then parse/edit shader file data
-// if 1 argument with ext .glsl then parse #type vertex and #type fragment into 2
-// if 2 arguments use extension to determine
-// if 3 arguments error for now
-// find #version and #include look at minecraft sodium source code (PARSE SHADER RECURSIVELY)
-// rewrite find_uniforms_in_source, lexer? can be refactored to use both or just remove it
-void shader_create(Shader* self, const char* vert_shader_src, const char* frag_shader_src, const char* version_str)
+void shader_process_uniform(Shader* self, ShaderParser* parser);
+void shader_process_type_directive(ShaderParser* parser);
+void shader_process_version_directive(ShaderParser* parser, Arena* scratch);
+void shader_process_include_directive(ShaderParser* parser, Arena* scratch);
+
+u32 shader_compile(const char* shader_code, GLenum shader_type);
+
+void shader_create(Shader* self, const char** shader_filepaths, u32 shader_count, const char* version_str)
 {
-    GLuint vert_shader, frag_shader, shader_program;
-    i32 success;
-    char info_log[512] = {0};
+    Arena scratch;
+    ShaderParser parser;
+    char* shader_code[3];
+    char* processed_shader_code[3] = {0}; // must be set to NULL
+    GLuint vert_shader, frag_shader, geom_shader, shader_program;
+
+    BGL_ASSERT(shader_filepaths != NULL, "shader_filepaths is NULL");
+    BGL_ASSERT(0 < shader_count && shader_count <= 3, "invalid amount of shaders %lu", shader_count);
 
     self->uniform_count = 0;
     self->uniforms = NULL;
 
-    vert_shader = shader_compile(self, vert_shader_src, GL_VERTEX_SHADER, info_log, sizeof(info_log), &success);
-    BGL_ASSERT(success, "vertex shader comp failed. Info Log:\n%s\n", info_log);
+    arena_create_sized(&scratch, MEGABYTES(1)); // surely big enough
 
-    frag_shader = shader_compile(self, frag_shader_src, GL_FRAGMENT_SHADER, info_log, sizeof(info_log), &success);
-    BGL_ASSERT(success, "fragment shader comp failed. info log:\n%s\n", info_log);
+    for(u32 i = 0; i < shader_count; i++)
+    {
+        const char* path = shader_filepaths[i];
+        BGL_ASSERT(path != NULL, "shader filepath %lu is NULL", i + 1);
+        const char* extension = str_find_last_of(path, '.');
+        BGL_ASSERT(extension != NULL, "shader file has no extension");
+
+        /* if extension is .glsl (all shaders in one file) also place in first index */
+        if(strcmp(extension, ".vert") == 0 || strcmp(extension, ".glsl") == 0)
+        {
+            shader_code[0] = arena_read_file(&scratch, path, NULL);
+        }
+        else if(strcmp(extension, ".frag") == 0)
+        {
+            shader_code[1] = arena_read_file(&scratch, path, NULL);
+        }
+        else if(strcmp(extension, ".geom") == 0)
+        {
+            shader_code[2] = arena_read_file(&scratch, path, NULL);
+        }
+        else
+        {
+            BGL_ASSERT(0, "invalid shader file extension %s", extension);
+        }
+    }
+
+    BGL_ASSERT(shader_code[0] != NULL, "missing shaders to create shader program");
+    
+    parser.first = parser.last = 0;
+    parser.version_str = version_str;
+    for(u32 i = 0; i < shader_count; i++)
+    {
+        parser.code = shader_code[i];
+        char* code = shader_process(self, &parser, &scratch);
+
+        /* deal with #type directives */
+        if(parser.shader_type != TYPE_NONE)
+        {
+            BGL_ASSERT(shader_count > 1, "#type directive used even though multiple shader paths were input. #type can only be used if one shader file is used");
+
+            BGL_ASSERT(processed_shader_code[parser.shader_type] == NULL, "second #type directive of same shader type");
+            processed_shader_code[parser.shader_type] = code;
+
+            if(parser.code[parser.last] != '\0') i--; // prevent from ending the loop if more of the file to come
+            continue;
+        }
+    
+        BGL_ASSERT(shader_count != 1, "one shader file provided, but no #type directive for multiple shaders in file");
+        processed_shader_code[i] = code;
+        parser.first = parser.last = 0;
+    }
+
+    BGL_ASSERT(processed_shader_code[0] != NULL, "missing vertex shader");
+    BGL_ASSERT(processed_shader_code[1] != NULL, "missing fragment shader");
+
+    ////BGL_LOG_INFO("vertex:\n%s", processed_shader_code[0]);
+    ////BGL_LOG_INFO("fragment:\n%s", processed_shader_code[1]);
+
+    vert_shader = shader_compile(processed_shader_code[0], GL_VERTEX_SHADER);
+
+    frag_shader = shader_compile(processed_shader_code[1], GL_FRAGMENT_SHADER);
 
     shader_program = glCreateProgram();
     self->id = shader_program;
 
     glAttachShader(shader_program, vert_shader);
     glAttachShader(shader_program, frag_shader);
+
+    if(shader_count == 3)
+    {
+        BGL_ASSERT(processed_shader_code[2] != NULL, "missing geometry shader");
+
+        geom_shader = shader_compile(processed_shader_code[2], GL_GEOMETRY_SHADER);
+        glAttachShader(shader_program, geom_shader);
+    }
+    else
+    {
+        if(processed_shader_code[2] != NULL) BGL_LOG_WARN("shader has geometry shader but shader count is <3, ignoring geometry shader");
+    }
+
     glLinkProgram(shader_program);
 
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-    glGetProgramInfoLog(shader_program, sizeof(info_log), NULL, info_log);
-    BGL_ASSERT(success, "shader program creation failed. info log:\n%s\n", info_log);
+    i32 linked;
+    char info_log[512] = {0};
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &linked);
+    if(!linked)
+    {
+        glGetProgramInfoLog(shader_program, sizeof(info_log), NULL, info_log);
+        BGL_ASSERT(false, "shader program creation failed. info log:\n%s", info_log);
+    }
 
-    // here because needs to be done after linking program
+    /* get locations here because needs to be done after linking program */
     for(u32 i = 0; i < self->uniform_count; i++)
     {
         i32 location = glGetUniformLocation(self->id, self->uniforms[i].name);
         if(location == -1)
         {
-            BGL_LOG_WARN("uniform %s was not given a location; shader sources: %s, %s", self->uniforms[i].name, vert_shader_src, frag_shader_src);
+            BGL_LOG_WARN("uniform %s was not given a location in program. name of one of the shader sources: %s", self->uniforms[i].name, shader_filepaths[0]);
         }
         self->uniforms[i].location = location;
     }
 
-    // can detach shaders as we don't need them anymore once program is linked
     glDetachShader(shader_program, vert_shader);
     glDetachShader(shader_program, frag_shader);
     glDeleteShader(vert_shader);
     glDeleteShader(frag_shader);
+    if(shader_count == 3)
+    {
+        glDetachShader(shader_program, geom_shader);
+        glDeleteShader(geom_shader);
+    }
+
+    arena_free(&scratch);
 }
 
-u32 shader_compile(Shader* self, const char* shader_filepath, GLenum shader_type, char* info_log_out, i32 log_size, i32* success_out)
+u32 shader_compile(const char* shader_code, GLenum shader_type)
 {
-    char* shader_src;
     GLuint shader;
-    *success_out = false;
-
-    shader_src = get_file_data(shader_filepath);
-
-    BGL_ASSERT(shader_src != NULL, "failed to get shader source\n");
+    char info_log[512] = {0};
 
     shader = glCreateShader(shader_type);
 
-    glShaderSource(shader, 1, (const char* const*)&shader_src, NULL); // must cast to pointer to const pointer to const char
+    glShaderSource(shader, 1, (const char* const*)&shader_code, NULL); // must cast to pointer to const pointer to const char
     glCompileShader(shader);
-    shader_find_uniforms_in_source(self, shader_src);
-    BGL_FREE(shader_src);
 
-    i32 comp_success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &comp_success);
-    if(!comp_success)
+    i32 compiled;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+    if(!compiled)
     {
-        glGetShaderInfoLog(shader, log_size, NULL, info_log_out);
-        return 0;
+        glGetShaderInfoLog(shader, 512, NULL, info_log);
+        BGL_ASSERT(false, "shader code compilation failed. info log:\n%s", info_log);
     }
 
-    *success_out = true;
     return shader;
-}
-
-// this will repeat uniforms if in both shaders (do both at same time to fix)
-// unable to use uniform structs, arrays, or uniform buffers
-void shader_find_uniforms_in_source(Shader* self, const char* src_code)
-{
-    u32 new_uniform_count = 0;
-    const char* temp = src_code;
-    Uniform new_uniforms[16] = {0}; // this definitely won't become a problem in future ;)
-
-    char name[MAX_UNIFORM_NAME];
-    while((temp = strstr(temp, "uniform"))) // strstr returns NULL when no match, ending loop
-    {
-        temp++; // stop strstr finding the same match again
-        char c;
-        i32 name_idx = 0;
-        bool skip_uniform = false;
-
-        for(i32 i = 0; (c = temp[i]) != ';'; i++) // while we haven't seen ;
-        {
-            // can't use switch because break keyword applies to it, requiring another if anyway
-            if(c == ' ') // reset name and continue (this is not the name)
-            {
-                name_idx = 0; // don't need to memset name since it will be null terminated later
-                continue;
-            }
-            else if(c == '[' || c == '{') // ignore ubos or uniform arrays (hopefully)
-            {
-                skip_uniform = true;
-                break;
-            }
-
-            name[name_idx++] = c;
-        }
-        
-        if(skip_uniform) 
-        {
-            continue;
-        }
-
-        name[name_idx] = '\0';
-        strncpy(new_uniforms[new_uniform_count++].name, name, MAX_UNIFORM_NAME); 
-    }
-
-    BLOCK_RESIZE_ARRAY(&self->uniforms, Uniform, self->uniform_count, new_uniform_count);
-
-    for(u32 i = 0; i < new_uniform_count; i++)
-    {
-        strncpy(self->uniforms[self->uniform_count + i].name, new_uniforms[i].name, MAX_UNIFORM_NAME);
-    }
-
-    self->uniform_count += new_uniform_count;
-}
-
-void shader_use(Shader* self)
-{
-    glUseProgram(self->id);
 }
 
 i32 shader_find_uniform(Shader* self, const char* name)
@@ -176,10 +232,247 @@ i32 shader_find_uniform(Shader* self, const char* name)
     return location;
 }
 
+void shader_use(Shader* self)
+{
+    glUseProgram(self->id);
+}
+
+void shader_free(Shader* self)
+{
+    glDeleteProgram(self->id);
+    BGL_FREE(self->uniforms);
+}
+
+// TODO: rewrite to go line by line, simpler and same speed because arenas?
+char* shader_process(Shader* self, ShaderParser* parser, Arena* scratch)
+{
+    char* processed_code = (char*)arena_alloc_unaligned(scratch, 0);
+    bool processed_type_directive = false;
+    parser->shader_type = TYPE_NONE;
+    parser->prev_ptr = (u8*)processed_code - 1; // bit scuffed but necessary for first allocation (for shader_parser_alloc)
+    parser->prev_alloc_size = 0;
+    parser->ptr = NULL;
+    parser->prev_edit = parser->first;
+
+    while(parser->code[parser->last] != '\0')
+    {
+        shader_next_token(parser);
+
+        if(shader_token_strequal(parser, "uniform"))
+        {
+            shader_process_uniform(self, parser);
+        }
+        else if(shader_token_strequal(parser, "#type"))
+        {
+            shader_parser_alloc(parser, scratch);
+
+            if(processed_type_directive)
+            {
+                parser->last = --parser->first; // move behind this token for next call    
+                return processed_code;
+            }
+
+            shader_process_type_directive(parser);
+            processed_type_directive = true;
+        }
+        else if(shader_token_strequal(parser, "#version"))
+        {
+            shader_parser_alloc(parser, scratch);
+            
+            shader_process_version_directive(parser, scratch);
+        }
+        else if(shader_token_strequal(parser, "#include"))
+        {
+            // TODO: recursive include parsing
+            shader_parser_alloc(parser, scratch);
+            
+            shader_process_include_directive(parser, scratch);
+        }
+    }
+
+    /* since we alloc from prev_edit to first - 1, go one past \0 to include the \0 in processed_code */
+    parser->first = parser->last + 1;
+    shader_parser_alloc(parser, scratch);
+    
+    return processed_code;
+}
+
+void shader_parser_skip_whitespace(ShaderParser* parser)
+{
+    const char* p = parser->code;
+    while(p[parser->first] == ' ' || p[parser->first] == '\t'
+       || p[parser->first] == '\r' || p[parser->first] == '\n')
+    {
+        parser->first++;
+    }
+}
+
+/* assumes tokens are separated by whitespace, which works for our purposes */
+void shader_next_token(ShaderParser* parser)
+{
+    const char* p = parser->code;
+
+    if(parser->first != 0)
+        parser->first = parser->last + 1;
+
+    shader_parser_skip_whitespace(parser);
+    parser->last = parser->first;
+
+    if(p[parser->first] == '\0')
+    {
+        return;
+    }
+
+    while(p[parser->last] != ' '  && p[parser->last] != '\t'
+       && p[parser->last] != '\r' && p[parser->last] != '\n'
+       )
+    {
+        parser->last++;
+        if(p[parser->last] == '\0') return; // avoid last-- to keep it on the \0
+    }
+    parser->last--; // last increment was whitespace so go back
+}
+
+bool shader_token_strequal(ShaderParser* parser, const char* string)
+{
+    if(parser->first == parser->last)
+        return false;
+
+    for(u32 i = parser->first; i <= parser->last; i++)
+    {
+        if(parser->code[i] != string[i - parser->first]) // also handles if string is too short
+            return false;
+    }
+
+    if(string[parser->last - parser->first + 1] != '\0') // string is too long
+        return false;
+
+    return true;
+}
+
+/* slightly hacky way of increasing size of string without reallocating using the arena */
+void shader_parser_alloc(ShaderParser* parser, Arena* scratch)
+{
+    if(parser->first == 0) return; // no need to alloc since allocing all from before first
+
+    u32 alloc_size = parser->first - parser->prev_edit; // alloc from prev_edit to before first char of token (-1 + 1)
+    parser->ptr = arena_alloc_unaligned(scratch, alloc_size);
+    BGL_ASSERT(parser->ptr == parser->prev_ptr + parser->prev_alloc_size, "new allocation for shader code is not contiguous with previous allocation");
+    parser->prev_ptr = parser->ptr;
+    parser->prev_alloc_size = alloc_size;
+
+    memcpy(parser->ptr, parser->code + parser->prev_edit, alloc_size);
+}
+
+void shader_process_uniform(Shader* self, ShaderParser* parser)
+{
+    Uniform uniform;
+
+    shader_next_token(parser);
+    // TODO: store type, use 32KB arena in Shader for allocation
+    shader_next_token(parser);
+
+    /* TODO: next part assumes immediate whitespace after semicolon, it may have a comment
+     * after or another uniform with no newline in between which messes this up */
+    u32 length = parser->last - parser->first;
+    if(length >= MAX_UNIFORM_NAME - 1) return; // consider \0
+
+    memcpy(uniform.name, parser->code + parser->first, length);
+    uniform.name[length] = '\0';
+
+    /* ignore duplicates from previously processed shaders */
+    for(u32 i = 0; i < self->uniform_count; i++)
+    {
+        if(strcmp(uniform.name, self->uniforms[i].name) == 0)
+            return;
+    }
+
+    BLOCK_RESIZE_ARRAY(&self->uniforms, Uniform, self->uniform_count, 1);
+    self->uniforms[self->uniform_count++] = uniform;
+}
+
+void shader_process_type_directive(ShaderParser* parser)
+{
+    shader_next_token(parser);
+
+    if(shader_token_strequal(parser, "vertex"))
+    {
+        parser->shader_type = TYPE_VERTEX;
+    }
+    else if(shader_token_strequal(parser, "fragment"))
+    {
+        parser->shader_type = TYPE_FRAGMENT;
+    }
+    else if(shader_token_strequal(parser, "geometry"))
+    {
+        parser->shader_type = TYPE_GEOMETRY;
+    }
+    else
+    {
+        BGL_ASSERT(false, "invalid #type directive");
+    }
+
+    parser->prev_edit = parser->last + 1; // skip this line
+}
+
+void shader_process_version_directive(ShaderParser* parser, Arena* scratch)
+{
+    u32 length = (u32)strlen(parser->version_str);
+
+    /* assume directive ends at newline and nothing after, reasonable assumption */
+    const char* p = parser->code;
+    while(p[parser->last] != '\n') // skip to newline
+    {
+        BGL_ASSERT(p[parser->last] != '\0', "#version directive at end of file, why?");
+        parser->last++;
+    }
+
+    parser->ptr = arena_alloc_unaligned(scratch, length); 
+    BGL_ASSERT(parser->ptr == parser->prev_ptr + parser->prev_alloc_size + 1, "new allocation for shader code is not contiguous with previous allocation");
+    parser->prev_ptr = parser->ptr;
+    parser->prev_alloc_size = length;
+
+    memcpy(parser->ptr, parser->version_str, length);
+
+    parser->prev_edit = parser->last; // include newline
+    parser->first = parser->last; // handle case where #include is at start of file (make first != 0 for shader_next_token)
+}
+
+void shader_process_include_directive(ShaderParser* parser, Arena* scratch)
+{
+    // TODO: recursive include parsing
+    char filename[MAX_SHADER_FILENAME] = {0};
+    u32 file_size;
+    shader_next_token(parser);
+
+    char first = parser->code[parser->first];
+    char last = parser->code[parser->last];
+    u32 length = parser->last - parser->first - 1; // - 2 + 1
+
+    BGL_ASSERT(first == '\"' || first == '<', "#include directive missing first \" or <");
+    BGL_ASSERT(last == '\"' || last == '>', "#include directive missing last \" or <");
+    BGL_ASSERT(length <= MAX_SHADER_FILENAME - 1,
+               "#include directive filename is too long: %lu > ", length, MAX_SHADER_FILENAME - 1); // consider \0
+
+    memcpy(filename, parser->code + parser->first + 1, length);
+    filename[length] = '\0';
+
+    /* alloc file contiguous with previous stuff */
+    parser->ptr = (u8*)arena_read_file(scratch, filename, &file_size);
+    BGL_ASSERT(parser->ptr == parser->prev_ptr + parser->prev_alloc_size + 1, "new allocation for shader code is not contiguous with previous allocation");
+    parser->prev_ptr = parser->ptr;
+    parser->prev_alloc_size = file_size; // NOTE: POTENTIAL POINT OF ERROR
+
+    parser->prev_edit = parser->last + 1;
+    parser->first = parser->last; // handle case where #include is at start of file (make first != 0 for shader_next_token)
+}
+
+
+
 void shader_uniform_mat4(Shader* self, const char* name, mat4* mat)
 {
     i32 location = shader_find_uniform(self, name);
-    glUniformMatrix4fv(location, 1, GL_FALSE, (f32*)mat->data); // * transposing matrix is false
+    glUniformMatrix4fv(location, 1, GL_FALSE, (f32*)mat->data); // transposing matrix is false
 }
 
 void shader_uniform_vec4(Shader* self, const char* name, vec4* vec)
@@ -210,10 +503,4 @@ void shader_uniform_int(Shader* self, const char* name, i32 i)
 {
     i32 location = shader_find_uniform(self, name);
     glUniform1i(location, i);
-}
-
-void shader_free(Shader* self)
-{
-    glDeleteProgram(self->id);
-    BGL_FREE(self->uniforms);
 }

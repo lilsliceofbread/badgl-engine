@@ -23,8 +23,8 @@
         #define DEBUG_BREAK() __debugbreak()
     #endif
 
-    #define BGL_PERFORMANCE_START() f64 bgl_internal_perf_start_time = platform_get_time()
-    #define BGL_PERFORMANCE_END(str) BGL_LOG_INFO("%s took %lfs", str, platform_get_time() - bgl_internal_perf_start_time) 
+    #define BGL_PERFORMANCE_START() f64 _bgl_perf_start_time = platform_get_time()
+    #define BGL_PERFORMANCE_END(str) BGL_LOG_INFO("%s took %lfs", str, platform_get_time() - _bgl_perf_start_time) 
 #endif
 
 #define BGL_MALLOC(size) malloc(size)
@@ -57,7 +57,7 @@
 
 #define BGL_RESIZE_BLOCK_SIZE 8
 
-#define ALIGNED_SIZE(size, alignment) (u32)( (size) + (alignment) - 1 - ( ((size) - 1) % (alignment) ) )
+#define ALIGNED_SIZE(size, alignment) (u32)( (size) + (alignment) - 1 - ( ((size) + (alignment) - 1) % (alignment) ) )
 
 /* resize array by block size if reached maximum size */
 #define BLOCK_RESIZE_ARRAY(ptr_address, type, count, increase) do { \

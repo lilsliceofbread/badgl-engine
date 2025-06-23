@@ -177,8 +177,11 @@ u32 rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
 {
     char version_str[BGL_RD_VERSION_STRLEN];
     rd_get_version_string(self, version_str);
+
     BLOCK_RESIZE_ARRAY(&self->shaders, Shader, self->shader_count, 1);
-    shader_create(&self->shaders[self->shader_count++], vert_src, frag_src, version_str);
+    // TODO: remove this
+    const char* shader_srcs[] = {vert_src, frag_src};
+    shader_create(&self->shaders[self->shader_count++], shader_srcs, 2, version_str);
 
     return self->shader_count - 1;
 }
