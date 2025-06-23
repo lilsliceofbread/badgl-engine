@@ -155,8 +155,9 @@ void game_add_models(void)
 {
     /* create shaders for our models */
 
-    u32 model_shader = rd_add_shader(&s.rd, "shaders/model.vert", "shaders/model.frag");
-    u32 sphere_shader = rd_add_shader(&s.rd, "shaders/sphere.vert", "shaders/sphere.frag");
+    const char* shader_filepaths[] = {"shaders/model.vert", "shaders/model.frag", "shaders/sphere.vert", "shaders/sphere.frag"};
+    u32 model_shader = rd_add_shader(&s.rd, &shader_filepaths[0], 2);
+    u32 sphere_shader = rd_add_shader(&s.rd, &shader_filepaths[2], 2);
 
     Material materials[5] = {0}; 
     Model models[6] = {0};

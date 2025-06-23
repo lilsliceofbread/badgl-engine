@@ -10,7 +10,7 @@
 #include "arena.h"
 
 // TODO:
-// check #type and #include
+// check #include
 // move into separate file
 // think of more tests
 // replace assert with BGL_LOG_ERROR -> return bool to allow program to continue running
@@ -50,8 +50,9 @@ void shader_parser_alloc(ShaderParser* parser, Arena* scratch);
 
 void shader_process_uniform(Shader* self, ShaderParser* parser);
 void shader_process_type_directive(ShaderParser* parser);
-void shader_process_version_directive(ShaderParser* parser, Arena* scratch);
+void shader_process_version_directive(ShaderParser* parser);
 void shader_process_include_directive(ShaderParser* parser, Arena* scratch);
+void shader_add_version_directive(ShaderParser* parser, Arena* scratch);
 
 u32 shader_compile(const char* shader_code, GLenum shader_type);
 
@@ -109,7 +110,7 @@ void shader_create(Shader* self, const char** shader_filepaths, u32 shader_count
         /* deal with #type directives */
         if(parser.shader_type != TYPE_NONE)
         {
-            BGL_ASSERT(shader_count > 1, "#type directive used even though multiple shader paths were input. #type can only be used if one shader file is used");
+            BGL_ASSERT(shader_count == 1, "#type directive used even though multiple shader paths were input. #type can only be used if one shader file is used");
 
             BGL_ASSERT(processed_shader_code[parser.shader_type] == NULL, "second #type directive of same shader type");
             processed_shader_code[parser.shader_type] = code;
@@ -249,45 +250,54 @@ char* shader_process(Shader* self, ShaderParser* parser, Arena* scratch)
     char* processed_code = (char*)arena_alloc_unaligned(scratch, 0);
     bool processed_type_directive = false;
     parser->shader_type = TYPE_NONE;
-    parser->prev_ptr = (u8*)processed_code - 1; // bit scuffed but necessary for first allocation (for shader_parser_alloc)
+    parser->prev_ptr = (u8*)processed_code;
     parser->prev_alloc_size = 0;
     parser->ptr = NULL;
     parser->prev_edit = parser->first;
 
+    shader_add_version_directive(parser, scratch);
+
+    shader_next_token(parser);
+    parser->first--; // hack to prevent first character from being skipped
     while(parser->code[parser->last] != '\0')
     {
-        shader_next_token(parser);
-
         if(shader_token_strequal(parser, "uniform"))
         {
             shader_process_uniform(self, parser);
         }
         else if(shader_token_strequal(parser, "#type"))
         {
-            shader_parser_alloc(parser, scratch);
-
             if(processed_type_directive)
             {
-                parser->last = --parser->first; // move behind this token for next call    
+                /* hacky way of allocating 1 more character for \0 */
+                parser->first++;
+                shader_parser_alloc(parser, scratch);
+                parser->first--;
+
+                parser->ptr[parser->prev_alloc_size - 1] = '\0';
+
+                parser->last = parser->first; // go to start of #type directive for next call
                 return processed_code;
             }
 
+            shader_parser_alloc(parser, scratch);
             shader_process_type_directive(parser);
             processed_type_directive = true;
         }
         else if(shader_token_strequal(parser, "#version"))
         {
+            BGL_LOG_WARN("don't set version, the code will set it itself, deleting the line");
             shader_parser_alloc(parser, scratch);
-            
-            shader_process_version_directive(parser, scratch);
+            shader_process_version_directive(parser);
         }
         else if(shader_token_strequal(parser, "#include"))
         {
             // TODO: recursive include parsing
             shader_parser_alloc(parser, scratch);
-            
             shader_process_include_directive(parser, scratch);
         }
+
+        shader_next_token(parser);
     }
 
     /* since we alloc from prev_edit to first - 1, go one past \0 to include the \0 in processed_code */
@@ -312,8 +322,7 @@ void shader_next_token(ShaderParser* parser)
 {
     const char* p = parser->code;
 
-    if(parser->first != 0)
-        parser->first = parser->last + 1;
+    parser->first = parser->last + 1;
 
     shader_parser_skip_whitespace(parser);
     parser->last = parser->first;
@@ -362,6 +371,19 @@ void shader_parser_alloc(ShaderParser* parser, Arena* scratch)
     parser->prev_alloc_size = alloc_size;
 
     memcpy(parser->ptr, parser->code + parser->prev_edit, alloc_size);
+}
+
+void shader_add_version_directive(ShaderParser* parser, Arena* scratch)
+{
+    u32 length = (u32)strlen(parser->version_str);
+
+    parser->ptr = arena_alloc_unaligned(scratch, length + 1); 
+    BGL_ASSERT(parser->ptr == parser->prev_ptr + parser->prev_alloc_size, "new allocation for shader code is not contiguous with previous allocation");
+    parser->prev_ptr = parser->ptr;
+    parser->prev_alloc_size = length + 1;
+
+    memcpy(parser->ptr, parser->version_str, length);
+    parser->ptr[length] = '\n';
 }
 
 void shader_process_uniform(Shader* self, ShaderParser* parser)
@@ -413,12 +435,11 @@ void shader_process_type_directive(ShaderParser* parser)
     }
 
     parser->prev_edit = parser->last + 1; // skip this line
+    parser->first = parser->last;
 }
 
-void shader_process_version_directive(ShaderParser* parser, Arena* scratch)
+void shader_process_version_directive(ShaderParser* parser)
 {
-    u32 length = (u32)strlen(parser->version_str);
-
     /* assume directive ends at newline and nothing after, reasonable assumption */
     const char* p = parser->code;
     while(p[parser->last] != '\n') // skip to newline
@@ -427,15 +448,8 @@ void shader_process_version_directive(ShaderParser* parser, Arena* scratch)
         parser->last++;
     }
 
-    parser->ptr = arena_alloc_unaligned(scratch, length); 
-    BGL_ASSERT(parser->ptr == parser->prev_ptr + parser->prev_alloc_size + 1, "new allocation for shader code is not contiguous with previous allocation");
-    parser->prev_ptr = parser->ptr;
-    parser->prev_alloc_size = length;
-
-    memcpy(parser->ptr, parser->version_str, length);
-
     parser->prev_edit = parser->last; // include newline
-    parser->first = parser->last; // handle case where #include is at start of file (make first != 0 for shader_next_token)
+    parser->first = parser->last; // handle case where #version is at start of file (make first != 0 for shader_next_token)
 }
 
 void shader_process_include_directive(ShaderParser* parser, Arena* scratch)
@@ -459,15 +473,13 @@ void shader_process_include_directive(ShaderParser* parser, Arena* scratch)
 
     /* alloc file contiguous with previous stuff */
     parser->ptr = (u8*)arena_read_file(scratch, filename, &file_size);
-    BGL_ASSERT(parser->ptr == parser->prev_ptr + parser->prev_alloc_size + 1, "new allocation for shader code is not contiguous with previous allocation");
+    BGL_ASSERT(parser->ptr == parser->prev_ptr + parser->prev_alloc_size, "new allocation for shader code is not contiguous with previous allocation");
     parser->prev_ptr = parser->ptr;
     parser->prev_alloc_size = file_size; // NOTE: POTENTIAL POINT OF ERROR
 
     parser->prev_edit = parser->last + 1;
     parser->first = parser->last; // handle case where #include is at start of file (make first != 0 for shader_next_token)
 }
-
-
 
 void shader_uniform_mat4(Shader* self, const char* name, mat4* mat)
 {

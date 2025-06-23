@@ -73,12 +73,14 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
 
     rd_configure_gl(self);
 
+    const char* shader_filepaths[] = {"shaders/skybox.glsl", "shaders/quad.glsl", "shaders/light.glsl"};
+
     self->skybox_shader = self->flags & BGL_RD_SKYBOX_OFF
-                                      ? 0 : rd_add_shader(self, "shaders/skybox.vert", "shaders/skybox.frag");
+                                      ? 0 : rd_add_shader(self, &shader_filepaths[0], 1);
     self->quad_shader   = self->flags & BGL_RD_UI_OFF
-                                      ? 0 : rd_add_shader(self, "shaders/quad.vert", "shaders/quad.frag");
+                                      ? 0 : rd_add_shader(self, &shader_filepaths[1], 1);
     self->light_shader  = self->flags & BGL_RD_LIGHTING_OFF
-                                      ? 0 : rd_add_shader(self, "shaders/light.vert", "shaders/light.frag");
+                                      ? 0 : rd_add_shader(self, &shader_filepaths[2], 1);
     
     platform_init();
 
@@ -173,15 +175,14 @@ void rd_imgui_init(Renderer* self, const char* glsl_version)
     igStyleColorsDark(NULL);
 }
 
-u32 rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src)
+u32 rd_add_shader(Renderer* self, const char** shader_filepaths, u32 shader_count)
 {
     char version_str[BGL_RD_VERSION_STRLEN];
     rd_get_version_string(self, version_str);
 
     BLOCK_RESIZE_ARRAY(&self->shaders, Shader, self->shader_count, 1);
-    // TODO: remove this
-    const char* shader_srcs[] = {vert_src, frag_src};
-    shader_create(&self->shaders[self->shader_count++], shader_srcs, 2, version_str);
+    // TODO: make shader_create return bool if failed and check
+    shader_create(&self->shaders[self->shader_count++], shader_filepaths, shader_count, version_str);
 
     return self->shader_count - 1;
 }

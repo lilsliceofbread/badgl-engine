@@ -62,11 +62,10 @@ void rd_end_frame(Renderer* self);
 
 /**
  * @note paths should be relative to executable
- * @param  vert_src: path to vertex shader
- * @param  frag_src: path to fragment shader
+ * @param  shader_filepaths: paths to each shader, must contain vertex and fragment shader, geometry shader optional
  * @returns index to shader in rd->shaders
  */
-u32 rd_add_shader(Renderer* self, const char* vert_src, const char* frag_src);
+u32 rd_add_shader(Renderer* self, const char** shader_filepaths, u32 shader_count);
 
 /**
  * @returns bool
