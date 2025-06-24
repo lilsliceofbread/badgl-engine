@@ -34,7 +34,7 @@ void game_init(void)
 
     loading_begin(); // a simple quad is drawn to the screen before loading
 
-    vec3 start_pos = VEC3(0.0f, 1.0f, 3.0f);
+    vec3 start_pos = VEC3(0.0f, 1.0f, 3.0f); // x, y, z
     vec2 start_euler = VEC2(0.0f, -90.0f); // pitch then yaw
 
     scene_create(&s.scenes[s.scene_count++], &s.rd, start_pos, start_euler);
@@ -155,9 +155,14 @@ void game_add_models(void)
 {
     /* create shaders for our models */
 
+    u32 model_shader, sphere_shader;
     const char* shader_filepaths[] = {"shaders/model.vert", "shaders/model.frag", "shaders/sphere.vert", "shaders/sphere.frag"};
-    u32 model_shader = rd_add_shader(&s.rd, &shader_filepaths[0], 2);
-    u32 sphere_shader = rd_add_shader(&s.rd, &shader_filepaths[2], 2);
+    if(!rd_add_shader(&s.rd, &shader_filepaths[0], 2, &model_shader) || !rd_add_shader(&s.rd, &shader_filepaths[2], 2, &sphere_shader))
+    {
+        BGL_LOG_ERROR("cannot continue without shaders, ending game");
+        game_end();
+        exit(-1);
+    }
 
     Material materials[5] = {0}; 
     Model models[6] = {0};

@@ -1,14 +1,7 @@
+#include "include/defines.glsl"
+#include "include/phong_types.glsl"
+
 layout (location = 0) in vec3 v_pos;
-
-#define MAX_LIGHTS 32
-
-struct Light {
-    vec4 pos;
-    vec4 ambient;
-    vec4 diffuse;
-    vec4 specular;
-    vec4 attenuation; // attenuation constants - quadratic, linear, constant
-};
 
 out VsOut {
     vec3 world_pos;
@@ -19,7 +12,7 @@ out VsOut {
 
 layout(std140, binding = 0) uniform Lights
 {
-    Light light_buffer[MAX_LIGHTS];
+    Light light_buffer[BGL_GLSL_MAX_LIGHTS];
     int light_count;
 };
 uniform mat4 mvp;

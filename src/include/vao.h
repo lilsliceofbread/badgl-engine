@@ -1,7 +1,7 @@
 #ifndef BGL_VAO_H
 #define BGL_VAO_H
 
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include <stddef.h>
 #include "defines.h"
 

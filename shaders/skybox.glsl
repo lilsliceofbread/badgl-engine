@@ -13,13 +13,16 @@ void main()
     vec4 corrected_pos = mvp * vec4(v_pos, 1.0);
     gl_Position = corrected_pos.xyww; // ensure all NDC z values are 1.0
 }
+
 #type fragment
+#include "include/defines.glsl"
+
 out vec4 frag_colour;
 
 in vec3 f_pos;
 
-uniform samplerCube texture_diffuse;
-uniform samplerCube texture_specular; // TODO: make it so that this is not necessary
+uniform samplerCube BGL_GLSL_TEXTURE_DIFFUSE;
+//uniform samplerCube BGL_GLSL_TEXTURE_SPECULAR;
 
 void main()
 {

@@ -91,3 +91,32 @@ char* arena_read_file(Arena* self, const char* path, u32* file_size_out)
     fclose(file);
     return file_data;
 }
+
+char* arena_read_file_unterminated_unaligned(Arena* self, const char* path, u32* file_size_out)
+{
+    FILE* file;
+    if(file_size_out != NULL) *file_size_out = 0;
+    file = fopen(path, "rb"); // windows will add carriage returns to \n in ftell count unless using binary read
+    if(file == NULL || fseek(file, 0, SEEK_END))
+    {
+        return NULL;
+    }
+
+    i64 file_size = (i64)ftell(file); // ftell after seeking end gives file size
+    if(file_size == -1)
+    {
+        return NULL;
+    }
+    char* file_data = (char*)arena_alloc_unaligned(self, (u32)file_size);
+    
+    fseek(file, 0, SEEK_SET);
+    if(file_data == NULL || fread(file_data, sizeof(char), (u32)file_size, file) != (u32)file_size)
+    {
+        BGL_FREE(file_data); // free on NULL does nothing
+        return NULL;
+    }
+    if(file_size_out != NULL) *file_size_out = (u32)file_size;
+
+    fclose(file);
+    return file_data;
+}

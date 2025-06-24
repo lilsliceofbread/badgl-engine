@@ -1,8 +1,7 @@
 #ifndef BGL_TEXTURE_H
 #define BGL_TEXTURE_H
 
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
 #include "defines.h"
 
 #define MAX_PATH_LENGTH 128

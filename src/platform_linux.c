@@ -16,8 +16,8 @@
 
 static struct
 {
-    i32 platform_clock;
-    f64 platform_time_offset;
+    i32 clock;
+    f64 time_offset;
     char directory[BGL_MAX_EXECUTABLE_DIR_LENGTH];
 } linux_ctx;
 
@@ -105,27 +105,27 @@ void platform_toggle_vsync(bool on)
 
 void platform_reset_time(void)
 {
-    linux_ctx.platform_clock = CLOCK_REALTIME;
+    linux_ctx.clock = CLOCK_REALTIME;
     #ifdef _POSIX_MONOTONIC_CLOCK
         struct timespec tmp;
         if(clock_gettime(CLOCK_MONOTONIC, &tmp) == 0)
         {
-            linux_ctx.platform_clock = CLOCK_MONOTONIC;
+            linux_ctx.clock = CLOCK_MONOTONIC;
         }
     #endif
 
-    linux_ctx.platform_time_offset = 0.0;
-    linux_ctx.platform_time_offset = platform_get_time();
+    linux_ctx.time_offset = 0.0;
+    linux_ctx.time_offset = platform_get_time();
 }
 
 f64 platform_get_time(void)
 {
     struct timespec os_time;
 
-    clock_gettime(linux_ctx.platform_clock, &os_time);    
+    clock_gettime(linux_ctx.clock, &os_time);    
 
     f64 time = (f64)os_time.tv_sec + (f64)(0.000000001 * (f64)os_time.tv_nsec);
-    return time - linux_ctx.platform_time_offset;
+    return time - linux_ctx.time_offset;
 }
 
 #endif

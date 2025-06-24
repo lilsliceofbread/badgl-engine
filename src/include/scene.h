@@ -8,10 +8,9 @@
 #include "arena.h"
 #include "glmath.h"
 #include "light.h"
+#include "defines.glsl"
 
 typedef void (*SceneUpdateFunc)();
-
-#define GLSL_MAX_LIGHTS 32
 
 typedef enum SceneFlags {
     BGL_SCENE_HAS_SKYBOX = 1 << 0,
@@ -24,8 +23,9 @@ typedef struct Scene {
     u32 model_count;
     Model skybox;
 
-    Light lights[GLSL_MAX_LIGHTS];
-    u32 light_models[GLSL_MAX_LIGHTS];
+    // TODO: move into it's own light manager thingy?
+    Light lights[BGL_GLSL_MAX_LIGHTS];
+    u32 light_models[BGL_GLSL_MAX_LIGHTS];
     i32 light_count;
     UBO light_ubo;
     DirLight dir_light;
@@ -52,6 +52,7 @@ void scene_set_skybox(Scene* self, Renderer* rd, const char* cubemap_path);
 void scene_set_update_callback(Scene* self, SceneUpdateFunc func);
 
 /**
+ * @brief add model to scene. scene handles freeing of models from this point, do not free yourself.
  * @returns the index of the model in scene->models
  */
 u32 scene_add_model(Scene* self, const Model* model);

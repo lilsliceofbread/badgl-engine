@@ -47,14 +47,12 @@ char* get_file_data(const char* filepath)
 char* str_find_last_of(const char* str, char c)
 {
     if(str == NULL) return NULL;
-
-    char* curr = (char*)str; // discarding const but not modifying the string
     char* latest_occurrence = NULL;
 
-    while(*curr != '\0')
+    while(*str != '\0')
     {
-        if(*curr == c) latest_occurrence = curr;
-        curr++;
+        if(*str == c) latest_occurrence = (char*)str; // discarding const
+        str++;
     }
 
     return latest_occurrence;

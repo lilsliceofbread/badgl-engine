@@ -3,9 +3,9 @@
 
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "cimgui.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h> // TODO: move into platform?
 
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
 #include "defines.h"
 #include "shader.h"
 
@@ -24,13 +24,13 @@ typedef enum RendererFlags
 typedef struct Renderer 
 {
     Shader* shaders;
-    u32 skybox_shader, quad_shader, light_shader;
+    u32 skybox_shader, quad_shader, light_shader; // light shader is the shader for the model associated with light
     u32 shader_count;
     i32 width, height;
     GLFWwindow* win;
 
     i32 mouse_wait_update;
-    bool mouse_should_update; // * if this is true, anything relying on mouse should not update
+    bool mouse_should_update; // * if this is true, anything relying on mouse should not update TODO: fix this
 
     f64 last_time, delta_time;
     u64 framecount;
@@ -61,11 +61,14 @@ void rd_begin_frame(Renderer* self);
 void rd_end_frame(Renderer* self);
 
 /**
- * @note paths should be relative to executable
- * @param  shader_filepaths: paths to each shader, must contain vertex and fragment shader, geometry shader optional
- * @returns index to shader in rd->shaders
+ * @brief  pass in your shaders in any order, as long as there is all the required shaders
+ * @note   the shaders can either be all contained in one file separated by "#type vertex|fragment|geometry| or each in a separate file
+ * @note   #includes should be specified relative to the specific file
+ * @param  shader_filepaths: paths to each shader relative to executable, must contain vertex and fragment shader, geometry shader optional
+ * @param  shader_out: returns shader_index in rd->shaders array
+ * @returns bool denoting if shader was created or failed
  */
-u32 rd_add_shader(Renderer* self, const char** shader_filepaths, u32 shader_count);
+bool rd_add_shader(Renderer* self, const char** shader_filepaths, u32 shader_count, u32* shader_out);
 
 /**
  * @returns bool

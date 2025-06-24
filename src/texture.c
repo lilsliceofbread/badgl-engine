@@ -20,6 +20,8 @@
 #include "platform.h"
 #include "renderer.h"
 
+#include "defines.glsl"
+
 /**
  * these variables are only set once by textures_init so it's probably fine
  * to them as static global; gets more complicated include this in some state like the Renderer
@@ -195,10 +197,10 @@ void texture_free(Texture* self)
 
 const char* texture_type_get_str(TextureType type)
 {
-    if(type & TEXTURE_DIFFUSE) return "texture_diffuse";
-    if(type & TEXTURE_SPECULAR) return "texture_specular";
-    if(type & TEXTURE_NORMAL) return "texture_normal";
-    BGL_ASSERT(false, " invalid texture type %d", (i32)type);
+    if(type & TEXTURE_DIFFUSE) return MACRO_TO_STR(BGL_GLSL_TEXTURE_DIFFUSE);
+    if(type & TEXTURE_SPECULAR) return MACRO_TO_STR(BGL_GLSL_TEXTURE_SPECULAR);
+    if(type & TEXTURE_NORMAL) return MACRO_TO_STR(BGL_GLSL_TEXTURE_NORMAL);
+    BGL_ASSERT(false, "invalid texture type %d", (i32)type);
     return NULL;
 }
 

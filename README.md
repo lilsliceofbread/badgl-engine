@@ -2,7 +2,11 @@
 
 a ~~bad~~ opengl graphics engine/framework in c
 
+uses glfw & glad, stb_image, cimgui, and assimp
+
 # requirements
+
+- c standard 23
 
 - CMake
 

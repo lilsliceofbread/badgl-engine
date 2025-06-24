@@ -26,10 +26,15 @@ void arena_create_sized(Arena* arena, u32 size);
 
 u8* arena_alloc(Arena* self, u32 size);
 
-u8* arena_alloc_unaligned(Arena* self, u32 size);
-
 void arena_free(Arena* self);
 
 char* arena_read_file(Arena* self, const char* path, u32* file_size_out);
+
+
+
+/* probably don't use these, only used for shader parser */
+u8* arena_alloc_unaligned(Arena* self, u32 size);
+
+char* arena_read_file_unterminated_unaligned(Arena* self, const char* path, u32* file_size_out);
 
 #endif

@@ -1,8 +1,6 @@
 #ifndef BGL_CAMERA_H
 #define BGL_CAMERA_H
 
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
 #include "glmath.h"
 #include "renderer.h"
 
@@ -32,6 +30,5 @@ void camera_update(Camera* self, Renderer* rd);
 void camera_update_view(Camera* self); // recalculate up/right vecs and view matrix based on pos/dir
 
 void camera_update_proj(Camera* self, f32 fov, f32 aspect_ratio, f32 znear, f32 zfar);
-
 
 #endif

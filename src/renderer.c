@@ -19,7 +19,8 @@
 
 /**
  * internal functions
- */ void rd_configure_gl(Renderer* self);
+ */
+void rd_configure_gl(Renderer* self);
 void rd_imgui_init(Renderer* self, const char* glsl_version);
 void rd_resize_callback(GLFWwindow* win, i32 width, i32 height);
 void rd_key_callback(GLFWwindow* win, i32 key, i32 scancode, i32 action, i32 mods);
@@ -45,6 +46,7 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     BGL_ASSERT(strlen(version) >= 3, "invalid opengl version");
     memcpy(self->version, version, 3);
     rd_get_version_major_minor(self, &major, &minor);
+    BGL_ASSERT(major == 4 && (2 <= minor && minor <= 6), "opengl versions supported: 4.2 - 4.6 (allows setting of ubo binding in shader)");
 
     i32 ret = glfwInit();
     BGL_ASSERT(ret, "failed to init GLFW");
@@ -59,7 +61,7 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     
     GLFWwindow* win = glfwCreateWindow(width, height, win_title, NULL, NULL);
     self->win = win;
-    BGL_ASSERT(win != NULL, "failed to open window");
+    BGL_ASSERT(win != NULL, "failed to open window. is your opengl version supported on your machine?");
 
     glfwMakeContextCurrent(win);
     glfwSetCursorPos(win, width / 2, height / 2);
@@ -68,19 +70,20 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     glfwSetFramebufferSizeCallback(win, rd_resize_callback);
     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    ret = gladLoadGL((GLADloadfunc)glfwGetProcAddress);
+    ret = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     BGL_ASSERT(ret, "failed to init GLAD");
 
     rd_configure_gl(self);
 
     const char* shader_filepaths[] = {"shaders/skybox.glsl", "shaders/quad.glsl", "shaders/light.glsl"};
 
-    self->skybox_shader = self->flags & BGL_RD_SKYBOX_OFF
-                                      ? 0 : rd_add_shader(self, &shader_filepaths[0], 1);
-    self->quad_shader   = self->flags & BGL_RD_UI_OFF
-                                      ? 0 : rd_add_shader(self, &shader_filepaths[1], 1);
-    self->light_shader  = self->flags & BGL_RD_LIGHTING_OFF
-                                      ? 0 : rd_add_shader(self, &shader_filepaths[2], 1);
+    self->skybox_shader = self->quad_shader = self->light_shader = 0;
+    if(!(self->flags & BGL_RD_SKYBOX_OFF))
+        BGL_ASSERT_NO_MSG(rd_add_shader(self, &shader_filepaths[0], 1, &self->skybox_shader));
+    if(!(self->flags & BGL_RD_UI_OFF))
+        BGL_ASSERT_NO_MSG(rd_add_shader(self, &shader_filepaths[1], 1, &self->quad_shader));
+    if(!(self->flags & BGL_RD_LIGHTING_OFF))
+        BGL_ASSERT_NO_MSG(rd_add_shader(self, &shader_filepaths[2], 1, &self->light_shader));
     
     platform_init();
 
@@ -175,16 +178,18 @@ void rd_imgui_init(Renderer* self, const char* glsl_version)
     igStyleColorsDark(NULL);
 }
 
-u32 rd_add_shader(Renderer* self, const char** shader_filepaths, u32 shader_count)
+bool rd_add_shader(Renderer* self, const char** shader_filepaths, u32 shader_count, u32* shader_out)
 {
+    *shader_out = 0;
     char version_str[BGL_RD_VERSION_STRLEN];
     rd_get_version_string(self, version_str);
 
     BLOCK_RESIZE_ARRAY(&self->shaders, Shader, self->shader_count, 1);
-    // TODO: make shader_create return bool if failed and check
-    shader_create(&self->shaders[self->shader_count++], shader_filepaths, shader_count, version_str);
+    bool ret = shader_create(&self->shaders[self->shader_count++], shader_filepaths, shader_count, version_str);
 
-    return self->shader_count - 1;
+    *shader_out = self->shader_count - 1;
+
+    return ret;
 }
 
 void rd_set_wireframe(bool useWireframe)

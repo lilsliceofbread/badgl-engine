@@ -12,19 +12,19 @@
 #endif
 
 #ifdef BGL_NO_DEBUG
-    #define DEBUG_BREAK() exit(-1)
+    #define BGL_EXIT() exit(-1)
 
     #define BGL_PERFORMANCE_START()
     #define BGL_PERFORMANCE_END(str)
 #else
     #ifdef __linux__
-        #define DEBUG_BREAK() __builtin_trap()
+        #define BGL_EXIT() __builtin_trap()
     #elif _WIN32
-        #define DEBUG_BREAK() __debugbreak()
+        #define BGL_EXIT() __debugbreak()
     #endif
 
     #define BGL_PERFORMANCE_START() f64 _bgl_perf_start_time = platform_get_time()
-    #define BGL_PERFORMANCE_END(str) BGL_LOG_INFO("%s took %lfs", str, platform_get_time() - _bgl_perf_start_time) 
+    #define BGL_PERFORMANCE_END(str) BGL_LOG_INFO("%s took %.3lfms", str, (platform_get_time() - _bgl_perf_start_time) * 1000.0) 
 #endif
 
 #define BGL_MALLOC(size) malloc(size)
@@ -38,7 +38,15 @@
     if(!(cond))                            \
     {                                      \
         BGL_LOG_ERROR(msg, ##__VA_ARGS__); \
-        DEBUG_BREAK();                     \
+        BGL_EXIT();                        \
+    }                                      \
+}
+
+#define BGL_ASSERT_NO_MSG(cond)            \
+{                                          \
+    if(!(cond))                            \
+    {                                      \
+        BGL_EXIT();                        \
     }                                      \
 }
 
@@ -73,5 +81,10 @@ if(count + increase > prev_max)                                                 
 #define CHAR_IS_NUMBER(c) (0x30 <= (c) && (c) <= 0x39)
 #define CHAR_TO_INT(c) (i32)((c) - 0x30)
 #define INT_TO_CHAR(i) (char)((i) + 0x30)
+
+/* expand macro and convert to string */
+#define _MACRO_TO_STR(macro) #macro
+#define MACRO_TO_STR(macro) _MACRO_TO_STR(macro)
+
 
 #endif

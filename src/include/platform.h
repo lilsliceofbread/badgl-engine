@@ -5,9 +5,14 @@
 
 #define BGL_MAX_EXECUTABLE_DIR_LENGTH 512
 
-void platform_init(void);
+#ifdef _WIN32
+#define PLATFORM_FILE_SEPARATOR '\\'
+#else
+#define PLATFORM_FILE_SEPARATOR '/'
+#endif
 
-/* idea from https://github.com/PixelRifts/c-codebase/blob/master/source/os/impl/win32_os.c */
+
+void platform_init(void);
 
 void* platform_virtual_alloc(u32 size); // allocate in virtual address space
 

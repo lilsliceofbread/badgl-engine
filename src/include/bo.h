@@ -1,7 +1,7 @@
 #ifndef BGL_BO_H
 #define BGL_BO_H
 
-#include <glad/gl.h>
+#include <glad/glad.h>
 #include <stddef.h>
 #include "defines.h"
 

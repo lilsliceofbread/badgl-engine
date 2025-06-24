@@ -1,8 +1,6 @@
 #ifndef BGL_SHADER_H
 #define BGL_SHADER_H
 
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
 #include "glmath.h"
 #include "defines.h"
 
@@ -21,10 +19,12 @@ typedef struct Shader
 } Shader;
 
 /**
- * @brief  pass in your shaders in any order, as long as there is all the required shaders
+ * @brief  creates a shader program. pass in your shaders in any order, as long as there is all the required shaders
  * @note   the shaders can either be all contained in one file separated by "#type vertex|fragment|geometry| or each in a separate file
+ * @note   #includes should be specified relative to the specific file
+ * @returns bool denoting if the shader program was created successfully
  */
-void shader_create(Shader* self, const char** shader_filepaths, u32 shader_count, const char* version_str);
+bool shader_create(Shader* self, const char** shader_filepaths, u32 shader_count, const char* version_str);
 
 void shader_use(Shader* self);
 

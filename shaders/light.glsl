@@ -9,14 +9,9 @@ void main()
 }
 
 #type fragment
-out vec4 frag_colour;
+#include "include/phong_types.glsl"
 
-struct Material {
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-    float shininess;
-};
+out vec4 frag_colour;
 
 uniform Material material;
 

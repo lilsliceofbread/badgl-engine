@@ -25,9 +25,7 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 
 set(IMGUI_STATIC "yes")
 
-file(GLOB_RECURSE BADGL_SRCS CONFIGURE_DEPENDS
-     "src/*.c"
-     external/glad/src/gl.c)
+file(GLOB_RECURSE BADGL_SRCS CONFIGURE_DEPENDS "src/*.c")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_definitions( -DBGL_NO_DEBUG )
@@ -73,13 +71,16 @@ add_library(cimgui ${CIMGUI_SRCS})
 target_include_directories(cimgui PUBLIC ${cimgui}/imgui PUBLIC external/glfw/include)
 target_compile_definitions(cimgui PRIVATE IMGUI_IMPL_API=extern\ \"C\")
 
-add_library(${PROJECT_NAME} ${BADGL_SRCS})
+add_library(${PROJECT_NAME} ${BADGL_SRCS} "external/glad/src/glad.c")
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 23)
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD_REQUIRED ON)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC -DCIMGUI_USE_OPENGL3 -DCIMGUI_USE_GLFW)
 target_compile_definitions(${PROJECT_NAME} PRIVATE IMGUI_IMPL_API=\ )
 
 target_include_directories(${PROJECT_NAME} 
                             PUBLIC src/include
+                            PUBLIC shaders/include
                             PUBLIC external/stb
                             PUBLIC external/glfw/include 
                             PUBLIC external/glad/include 

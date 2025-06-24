@@ -43,7 +43,7 @@ void quad_draw(Quad* self, Renderer* rd)
 {
     shader_use(&rd->shaders[rd->quad_shader]);
 
-    texture_bind(&self->texture);
+    texture_bind(&self->texture); // only one texture so no need to use uniform to associate with sampler n stuff
 
     glDisable(GL_DEPTH_TEST);
         vao_bind(self->vao);

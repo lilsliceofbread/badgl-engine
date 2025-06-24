@@ -5,8 +5,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <io.h>
-#include "glad/gl.h"
+#include <glad/glad.h>
 #include "wglext.h"
+
 #include <stdio.h>
 #include <string.h>
 #include "defines.h"
@@ -14,8 +15,8 @@
 
 static struct
 {
-    LARGE_INTEGER os_freq;
-    f64 platform_time_offset;
+    LARGE_INTEGER freq;
+    f64 time_offset;
     char directory[BGL_MAX_EXECUTABLE_DIR_LENGTH];
 } win_ctx;
 
@@ -102,12 +103,12 @@ void platform_toggle_vsync(bool on)
 
 void platform_reset_time(void)
 {
-    QueryPerformanceFrequency(&win_ctx.os_freq);
-    bool success = win_ctx.os_freq.QuadPart != 0;
+    QueryPerformanceFrequency(&win_ctx.freq);
+    bool success = win_ctx.freq.QuadPart != 0;
     BGL_ASSERT(success, "unable to get platform timer frequency. err: %lu", GetLastError());
 
-    win_ctx.platform_time_offset = 0.0;
-    win_ctx.platform_time_offset = platform_get_time();
+    win_ctx.time_offset = 0.0;
+    win_ctx.time_offset = platform_get_time();
 }
 
 f64 platform_get_time(void)
@@ -116,8 +117,8 @@ f64 platform_get_time(void)
 
     QueryPerformanceCounter(&os_time);
 
-    f64 time = (f64)os_time.QuadPart / (f64)win_ctx.os_freq.QuadPart;
-    return time - win_ctx.platform_time_offset;
+    f64 time = (f64)os_time.QuadPart / (f64)win_ctx.freq.QuadPart;
+    return time - win_ctx.time_offset;
 }
 
 #endif

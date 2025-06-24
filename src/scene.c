@@ -3,13 +3,11 @@
 #include "defines.h"
 #include "shapes.h"
 #include "model.h"
+#include "defines.glsl" // constants shared between c and glsl
 
 #define DEFAULT_FOV 90.0f
 #define DEFAULT_ZNEAR 0.01f
 #define DEFAULT_ZFAR 100.0f
-
-#define GLSL_LIGHT_SIZE 80
-#define GLSL_INT_SIZE 4
 
 #define MOVESPEED 5.0f // hardcoded for now
 #define SENSITIVITY 0.1f
@@ -22,8 +20,6 @@ void scene_send_lights(Scene* self, Renderer* rd);
 
 void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
 {
-    BGL_ASSERT(sizeof(Light) == GLSL_LIGHT_SIZE, "platform struct packing/padding does not match GLSL. wtf?");
-
     const f32 aspect_ratio = (f32)(rd->width) / (f32)(rd->height); // not casting these to f32 causes the aspect ratio to be rounded
     self->cam = camera_create(start_pos, start_euler.x, start_euler.y, MOVESPEED, SENSITIVITY);
     camera_update_proj(&self->cam, DEFAULT_FOV, aspect_ratio, DEFAULT_ZNEAR, DEFAULT_ZFAR);
@@ -43,7 +39,7 @@ void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
 
     self->light_ubo = ubo_create();
 
-    u32 light_ubo_size = GLSL_MAX_LIGHTS * sizeof(Light) + GLSL_INT_SIZE;
+    u32 light_ubo_size = BGL_GLSL_MAX_LIGHTS * sizeof(Light) + BGL_GLSL_INT_SIZE;
     ubo_bind(self->light_ubo);
     ubo_set_buffer(self->light_ubo, NULL, light_ubo_size, true); // configure buffer size
     ubo_unbind(self->light_ubo);
@@ -77,7 +73,7 @@ void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model*
     if(rd->flags & BGL_RD_LIGHTING_OFF) return;
 
     BGL_ASSERT(light != NULL, "provided light is null");
-    if(self->light_count >= GLSL_MAX_LIGHTS)
+    if(self->light_count >= BGL_GLSL_MAX_LIGHTS)
     {
         BGL_LOG_WARN("cannot add light to scene; max lights reached");
         return;
@@ -179,10 +175,10 @@ void scene_update_light_model(Scene* self, u32 index)
 
 void scene_update_light_data(Scene* self)
 {
-    const u32 light_buf_size = GLSL_MAX_LIGHTS * sizeof(Light);
+    const u32 light_buf_size = BGL_GLSL_MAX_LIGHTS * sizeof(Light);
     ubo_bind(self->light_ubo);
     ubo_set_buffer_region(self->light_ubo, self->lights,       0,                   light_buf_size);
-    ubo_set_buffer_region(self->light_ubo, &self->light_count, (i32)light_buf_size, GLSL_INT_SIZE);
+    ubo_set_buffer_region(self->light_ubo, &self->light_count, (i32)light_buf_size, BGL_GLSL_INT_SIZE);
     ubo_unbind(self->light_ubo);
 
     for(i32 i = 0; i < self->light_count; i++)
@@ -195,7 +191,7 @@ void scene_send_lights(Scene* self, Renderer* rd)
 {
     if(rd->flags & BGL_RD_LIGHTING_OFF) return;
 
-    ubo_bind_buffer_range(self->light_ubo, 0, 0, GLSL_MAX_LIGHTS * sizeof(Light) + GLSL_INT_SIZE); // hardcoded for now
+    ubo_bind_buffer_range(self->light_ubo, 0, 0, BGL_GLSL_MAX_LIGHTS * sizeof(Light) + BGL_GLSL_INT_SIZE); // TODO: remove hardcoding of location/index
 
     // TODO: add dir_light to ubo so as to not do this garbage (the light which has pos of 0, 0, 0)
     /* updating dir_light for all shaders */
