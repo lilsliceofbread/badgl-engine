@@ -34,10 +34,12 @@ typedef struct Model
 
 /**
  * @brief  load model from file (.obj)
+ * @param  scratch:  arena for doing temp work in. arena is reset back to its initial position before returning
  * @param  path:  path relative to executable
  * @param  shader_idx:  index to shader in rd->shaders
+ * @returns bool denoting if model load was successful
  */
-void model_load(Model* self, const char* path, u32 shader_idx);
+bool model_load(Model* self, Arena* scratch, const char* path, u32 shader_idx);
 
 /**
  * @brief  update model transform and matrix

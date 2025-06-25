@@ -14,6 +14,7 @@ extern "C" {
 #include "platform.h"
 #include "shapes.h"
 #include "quad.h"
+#include "arena.h"
 
 #ifdef __cplusplus
 }

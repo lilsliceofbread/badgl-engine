@@ -26,28 +26,29 @@ static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
 void platform_init(void)
 {
     char exe_path[BGL_MAX_EXECUTABLE_DIR_LENGTH];
+    memset(exe_path, 0, BGL_MAX_EXECUTABLE_DIR_LENGTH);
     platform_get_executable_path(exe_path, BGL_MAX_EXECUTABLE_DIR_LENGTH);
     find_directory_from_path(linux_ctx.directory, BGL_MAX_EXECUTABLE_DIR_LENGTH, exe_path);
     
     platform_reset_time();
 }
 
-void* platform_virtual_alloc(u32 size)
+void* platform_virtual_alloc(u64 size)
 {
     return mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 }
 
-void platform_physical_alloc(void* ptr, u32 size)
+void platform_physical_alloc(void* ptr, u64 size)
 {
     mprotect(ptr, size, PROT_READ | PROT_WRITE);
 }
 
-void platform_physical_dealloc(void* ptr, u32 size)
+void platform_physical_dealloc(void* ptr, u64 size)
 {
     mprotect(ptr, size, PROT_NONE);
 }
 
-void platform_virtual_dealloc(void* ptr, u32 size)
+void platform_virtual_dealloc(void* ptr, u64 size)
 {
     munmap(ptr, size);
 }

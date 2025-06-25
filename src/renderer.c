@@ -75,15 +75,19 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
 
     rd_configure_gl(self);
 
+    Arena arena;
+    arena_create_sized(&arena, MEGABYTES(1)); // definitely big enough for these files
     const char* shader_filepaths[] = {"shaders/skybox.glsl", "shaders/quad.glsl", "shaders/light.glsl"};
 
     self->skybox_shader = self->quad_shader = self->light_shader = 0;
     if(!(self->flags & BGL_RD_SKYBOX_OFF))
-        BGL_ASSERT_NO_MSG(rd_add_shader(self, &shader_filepaths[0], 1, &self->skybox_shader));
+        BGL_ASSERT_NO_MSG(rd_add_shader(self, &arena, &shader_filepaths[0], 1, &self->skybox_shader));
     if(!(self->flags & BGL_RD_UI_OFF))
-        BGL_ASSERT_NO_MSG(rd_add_shader(self, &shader_filepaths[1], 1, &self->quad_shader));
+        BGL_ASSERT_NO_MSG(rd_add_shader(self, &arena, &shader_filepaths[1], 1, &self->quad_shader));
     if(!(self->flags & BGL_RD_LIGHTING_OFF))
-        BGL_ASSERT_NO_MSG(rd_add_shader(self, &shader_filepaths[2], 1, &self->light_shader));
+        BGL_ASSERT_NO_MSG(rd_add_shader(self, &arena, &shader_filepaths[2], 1, &self->light_shader));
+
+    arena_free(&arena);
     
     platform_init();
 
@@ -178,14 +182,14 @@ void rd_imgui_init(Renderer* self, const char* glsl_version)
     igStyleColorsDark(NULL);
 }
 
-bool rd_add_shader(Renderer* self, const char** shader_filepaths, u32 shader_count, u32* shader_out)
+bool rd_add_shader(Renderer* self, Arena *scratch, const char** shader_filepaths, u32 shader_count, u32* shader_out)
 {
     *shader_out = 0;
     char version_str[BGL_RD_VERSION_STRLEN];
     rd_get_version_string(self, version_str);
 
     BLOCK_RESIZE_ARRAY(&self->shaders, Shader, self->shader_count, 1);
-    bool ret = shader_create(&self->shaders[self->shader_count++], shader_filepaths, shader_count, version_str);
+    bool ret = shader_create(&self->shaders[self->shader_count++], scratch, shader_filepaths, shader_count, version_str);
 
     *shader_out = self->shader_count - 1;
 

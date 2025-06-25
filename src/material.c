@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char* material_members[] = { // ? mildly scuffed
+static const char* material_members[] = {
     "material.ambient",
     "material.diffuse",
     "material.specular",

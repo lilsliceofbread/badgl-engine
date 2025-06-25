@@ -1,14 +1,12 @@
 #include "include/defines.glsl"
+
+/* need to define this for phong_lighting.glsl so it uses vec3 for tex coords instead of vec2 */
+#define tex_coord_t vec3
 #include "include/phong_types.glsl"
 
 out vec4 frag_colour;
 
-in VsOut {
-    vec3 world_pos;
-    vec3 pos;
-    vec3 normal;
-    vec3 tex_coord;
-} fs_in;
+in VSOut vs_out;
 
 layout(std140, binding = 0) uniform Lights
 {
@@ -25,5 +23,6 @@ uniform samplerCube BGL_GLSL_TEXTURE_SPECULAR;
 
 void main()
 {
-    frag_colour = vec4(compute_phong_light(), 1.0);
+    vec3 phong = compute_phong_light(vs_out.normal, vs_out.frag_pos, vs_out.world_pos, vs_out.tex_coord, light_buffer, light_count, dir_light);
+    frag_colour = vec4(phong, 1.0);
 }

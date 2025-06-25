@@ -61,14 +61,15 @@ void rd_begin_frame(Renderer* self);
 void rd_end_frame(Renderer* self);
 
 /**
- * @brief  pass in your shaders in any order, as long as there is all the required shaders
+ * @brief  add shader program to renderer. pass in your GLSL shader code in any order, as long as there is all the required shaders
  * @note   the shaders can either be all contained in one file separated by "#type vertex|fragment|geometry| or each in a separate file
  * @note   #includes should be specified relative to the specific file
+ * @param  scratch:  arena for doing temp work in. arena is reset back to its initial position before returning
  * @param  shader_filepaths: paths to each shader relative to executable, must contain vertex and fragment shader, geometry shader optional
  * @param  shader_out: returns shader_index in rd->shaders array
  * @returns bool denoting if shader was created or failed
  */
-bool rd_add_shader(Renderer* self, const char** shader_filepaths, u32 shader_count, u32* shader_out);
+bool rd_add_shader(Renderer* self, Arena* scratch, const char** shader_filepaths, u32 shader_count, u32* shader_out);
 
 /**
  * @returns bool
@@ -76,7 +77,7 @@ bool rd_add_shader(Renderer* self, const char** shader_filepaths, u32 shader_cou
 bool rd_win_should_close(Renderer* self);
 
 /**
- * @brief  manually update the glViewport to match the window (sometimes glfw doesn't automatically do this so if you need to, use this)
+ * @brief  manually update the glViewport to match the window (sometimes it doesn't happen automatically so if you need to, use this)
  */
 void rd_update_viewport(Renderer* self);
 

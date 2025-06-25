@@ -23,8 +23,8 @@
 #include "defines.glsl"
 
 /**
- * these variables are only set once by textures_init so it's probably fine
- * to them as static global; gets more complicated include this in some state like the Renderer
+ * these variables are only set once by textures_init so it's probably fine to set them as static;
+ * gets more complicated include this in some state like the Renderer
  */
 static struct
 {

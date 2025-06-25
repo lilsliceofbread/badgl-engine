@@ -27,7 +27,7 @@ void skip_whitespace(ShaderParser* parser);
 void next_token(ShaderParser* parser);
 bool token_strequal(ShaderParser* parser, const char* string);
 
-bool parser_alloc(ShaderParser* parser, Arena* scratch, u32 size);
+bool parser_alloc(ShaderParser* parser, Arena* scratch, u64 size);
 bool add_version_directive(ShaderParser* parser, Arena* scratch);
 void process_uniform(ShaderParser* parser, Shader* shader);
 bool process_type_directive(ShaderParser* parser);
@@ -110,10 +110,7 @@ void next_token(ShaderParser* parser)
     skip_whitespace(parser);
     parser->last = parser->first;
 
-    if(p[parser->first] == '\0')
-    {
-        return;
-    }
+    if(p[parser->first] == '\0') return;
 
     while(p[parser->last] != ' '  && p[parser->last] != '\t'
        && p[parser->last] != '\r' && p[parser->last] != '\n'
@@ -130,7 +127,7 @@ bool token_strequal(ShaderParser* parser, const char* string)
     if(parser->first == parser->last)
         return false;
 
-    for(u32 i = parser->first; i <= parser->last; i++)
+    for(u64 i = parser->first; i <= parser->last; i++)
     {
         if(parser->code[i] != string[i - parser->first]) // also handles if string is too short
             return false;
@@ -143,7 +140,7 @@ bool token_strequal(ShaderParser* parser, const char* string)
 }
 
 /* slightly hacky way of increasing size of string without reallocating using the arena */
-bool parser_alloc(ShaderParser* parser, Arena* scratch, u32 size)
+bool parser_alloc(ShaderParser* parser, Arena* scratch, u64 size)
 {
     if(parser->first == 0) return true; // no need to alloc since allocing all from before first
 
@@ -158,7 +155,7 @@ bool parser_alloc(ShaderParser* parser, Arena* scratch, u32 size)
 
 bool add_version_directive(ShaderParser* parser, Arena* scratch)
 {
-    u32 length = (u32)strlen(parser->version_str);
+    u64 length = (u64)strlen(parser->version_str);
 
     parser->ptr = arena_alloc_unaligned(scratch, length + 1); 
     PARSER_ASSERT(parser->ptr == parser->prev_ptr + parser->prev_alloc_size, "new allocation for shader code is not contiguous with previous allocation");
@@ -180,7 +177,7 @@ void process_uniform(ShaderParser* parser, Shader* shader)
 
     /* next part assumes immediate whitespace after semicolon, it may have a comment
      * after or another uniform with no newline in between which messes this up */
-    u32 length = parser->last - parser->first;
+    u64 length = parser->last - parser->first;
     if(length >= MAX_UNIFORM_NAME - 1) return; // consider \0
 
     memcpy(uniform.name, parser->code + parser->first, length);
@@ -243,7 +240,7 @@ bool process_include_directive(ShaderParser* parser, Arena* scratch)
     // TODO: recursive include parsing
     char filepath[MAX_SHADER_FILEPATH] = {0};
     find_directory_from_path(filepath, MAX_SHADER_FILEPATH, parser->path); // specify includes relative to path
-    u32 dir_length = (u32)strlen(filepath);
+    u64 dir_length = (u64)strlen(filepath);
     PARSER_ASSERT(dir_length < MAX_SHADER_FILEPATH - 1, // consider \0
                "directory for shader files in  #include directive is too long. to fix, increase MAX_SHADER_FILEPATH in shader_parser.c");
     filepath[dir_length] = PLATFORM_FILE_SEPARATOR;
@@ -252,8 +249,8 @@ bool process_include_directive(ShaderParser* parser, Arena* scratch)
 
     char first = parser->code[parser->first];
     char last = parser->code[parser->last];
-    u32 name_length = parser->last - parser->first - 1; // - 2 + 1
-    u32 length = dir_length + name_length + 1; // added slash
+    u64 name_length = parser->last - parser->first - 1; // - 2 + 1
+    u64 length = dir_length + name_length + 1; // added slash
 
     PARSER_ASSERT((first == '\"' && last == '\"') || (first == '<' && last == '>'),
                "#include directive missing one or both quotes or braces (\"\" or <>)");
@@ -264,7 +261,7 @@ bool process_include_directive(ShaderParser* parser, Arena* scratch)
     filepath[length] = '\0';
 
     /* alloc file contiguous with previous stuff */
-    u32 file_size;
+    u64 file_size;
     parser->ptr = (u8*)arena_read_file_unterminated_unaligned(scratch, filepath, &file_size);
 
     PARSER_ASSERT(parser->ptr != NULL, "could not open #include file %s. is the path correct?", filepath);

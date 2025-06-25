@@ -8,7 +8,11 @@
 #include "arena.h"
 #include "glmath.h"
 #include "light.h"
+
 #include "defines.glsl"
+
+/* uv sphere resolution for default light model */
+#define BGL_LIGHT_SPHERE_RES 8
 
 typedef void (*SceneUpdateFunc)();
 
@@ -42,9 +46,10 @@ typedef struct Scene {
 void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler);
 
 /**
+ * @param  scratch:  arena for doing temp work in. arena is reset back to its initial position before returning.
  * @param  cubemap_path: path to skybox cubemap (for more info about format of path and cubemap read texture_cubemap_create)
  */
-void scene_set_skybox(Scene* self, Renderer* rd, const char* cubemap_path);
+void scene_set_skybox(Scene* self, Arena* scratch, Renderer* rd, const char* cubemap_path);
 
 /**
  * @param  func: the function to call in scene_update (this function must take only one parameter, a Scene*)
@@ -52,17 +57,24 @@ void scene_set_skybox(Scene* self, Renderer* rd, const char* cubemap_path);
 void scene_set_update_callback(Scene* self, SceneUpdateFunc func);
 
 /**
- * @brief add model to scene. scene handles freeing of models from this point, do not free yourself.
+ * @brief add model to scene. scene copies the inputted model, if heap allocated must free yourself
  * @returns the index of the model in scene->models
  */
 u32 scene_add_model(Scene* self, const Model* model);
 
 /**
- * @param  model: an optional model that is aligned with the light and has the same material (pass NULL to use default sphere)
+ * @brief adds light to scene. scene copies the inputted light and model. if heap allocated, must free yourself
+ * @param  scratch:  if a specific model is specified this is not necessary and can be set to NULL. arena for doing temp work in. arena is reset back to its initial position before returning.
+ * @param  model: an optional model that is aligned with the light and has the same material (pass NULL to create default sphere, must provide an arena)
+ * @returns bool denoting if light was successfully added
  */
-void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model* model);
+bool scene_add_light(Scene* self, Arena* scratch, Renderer* rd, const Light* light, const Model* model);
 
-void scene_set_dir_light(Scene* self, const DirLight* light);
+/**
+ * @brief adds a directional light to scene. scene copies the inputted light. if heap allocated, must free yourself
+ * @returns bool denoting if light was successfully added
+ */
+bool scene_set_dir_light(Scene* self, const DirLight* light);
 
 /**
  * @brief  a function which updates the light data and syncs it with the GPU

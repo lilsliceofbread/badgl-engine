@@ -7,7 +7,7 @@
 
 extern inline u32* shape_setup(Model* model, const Material* material, u32 shader_idx);
 
-void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader_idx)
+void shapes_uv_sphere(Model* self, Arena* scratch, u32 res, const Material* material, u32 shader_idx)
 {
     BGL_ASSERT(res >= 2, "%u too small of a resolution for uv sphere", res);
 
@@ -19,15 +19,12 @@ void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader
     const u32 total_vertices = horizontals * verticals + 2;
     const u32 total_indices = 6 * verticals * (horizontals - 1); // 6 indices per square, but top and bottom rings are triangles (3 per), so h - 2 + 1
 
-    Arena scratch;
-    arena_create_sized(&scratch, (u32)((total_vertices * 2 * sizeof(vec3)) + (total_indices * sizeof(u32))));
-
     VertexBuffer vertex_buffer = {
-        .pos = (vec3*)arena_alloc(&scratch, total_vertices * sizeof(vec3)),
+        .pos = (vec3*)arena_alloc(scratch, total_vertices * sizeof(vec3)),
         .normal = NULL,
         .uv = NULL
     };
-    u32* indices = (u32*)arena_alloc(&scratch, total_indices * sizeof(u32));
+    u32* indices = (u32*)arena_alloc(scratch, total_indices * sizeof(u32));
 
     // top vertex
     vertex_buffer.pos[0].x = 0.0f;
@@ -138,24 +135,19 @@ void shapes_uv_sphere(Model* self, u32 res, const Material* material, u32 shader
     mesh_create(&self->meshes[0], vertex_buffer, vert_count, indices, ind_count,
                 tex_indices, material == NULL ? 0 : self->material.tex_count);
 
-    arena_free(&scratch);
+    arena_collapse(scratch, (u8*)vertex_buffer.pos); // reset arena to before allocation
 }
 
-void shapes_box(Model* self, f32 width, f32 height, f32 depth, const Material* material, u32 shader_idx)
+void shapes_box(Model* self, Arena* scratch, f32 width, f32 height, f32 depth, const Material* material, u32 shader_idx)
 {
     u32* tex_indices = shape_setup(self, material, shader_idx);
     
     const u32 vert_count = 6 * 4;
-    const u32 vert_size = vert_count * (2 * sizeof(vec3));
     const u32 ind_count = 6 * 6;
-    const u32 ind_size = ind_count * sizeof(u32);
-
-    Arena scratch;
-    arena_create_sized(&scratch, vert_size + ind_size);
 
     VertexBuffer vertex_buffer = {
-        .pos = (vec3*)arena_alloc(&scratch, vert_count * sizeof(vec3)),
-        .normal = (vec3*)arena_alloc(&scratch, vert_count * sizeof(vec3)),
+        .pos = (vec3*)arena_alloc(scratch, vert_count * sizeof(vec3)),
+        .normal = (vec3*)arena_alloc(scratch, vert_count * sizeof(vec3)),
         .uv = NULL
     };
 
@@ -257,10 +249,10 @@ void shapes_box(Model* self, f32 width, f32 height, f32 depth, const Material* m
     mesh_create(&self->meshes[0], vertex_buffer, vert_count, indices, ind_count,
                 tex_indices, material == NULL ? 0 : self->material.tex_count);
 
-    arena_free(&scratch);
+    arena_collapse(scratch, (u8*)vertex_buffer.pos);
 }
 
-void shapes_plane(Model* self, f32 width, f32 height, u32 res, const Material* material, u32 shader_idx)
+void shapes_plane(Model* self, Arena* scratch, f32 width, f32 height, u32 res, const Material* material, u32 shader_idx)
 {
     BGL_ASSERT(res >= 2, "%u too small of a resolution for rectangular plane", res);
 
@@ -271,15 +263,12 @@ void shapes_plane(Model* self, f32 width, f32 height, u32 res, const Material* m
     const u32 ind_count = 6 * (res - 1) * (res - 1);
     const u32 ind_size = ind_count * sizeof(u32);
 
-    Arena scratch;
-    arena_create_sized(&scratch, (2 * vert_size) + ind_size); // 2 vertex attributes
-
     VertexBuffer vertex_buffer = {
-        .pos = (vec3*)arena_alloc(&scratch, vert_size),
-        .normal = (vec3*)arena_alloc(&scratch, vert_size),
+        .pos = (vec3*)arena_alloc(scratch, vert_size),
+        .normal = (vec3*)arena_alloc(scratch, vert_size),
         .uv = NULL
     };
-    u32* indices = (u32*)arena_alloc(&scratch, ind_size);
+    u32* indices = (u32*)arena_alloc(scratch, ind_size);
 
     vec3 normal;
     normal.x = normal.z = 0.0f;
@@ -330,7 +319,7 @@ void shapes_plane(Model* self, f32 width, f32 height, u32 res, const Material* m
     mesh_create(&self->meshes[0], vertex_buffer, vert_count, indices, ind_count,
                 tex_indices, material == NULL ? 0 : self->material.tex_count);
 
-    arena_free(&scratch);
+    arena_collapse(scratch, (u8*)vertex_buffer.pos);
 }
 
 inline u32* shape_setup(Model* model, const Material* material, u32 shader_idx)

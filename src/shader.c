@@ -8,18 +8,16 @@
 #include "glmath.h"
 #include "arena.h"
 
-/* size of virtual memory allocation of arena for shader processing */
-#define SHADER_ARENA_SIZE MEGABYTES(1) // surely big enough
 #define INFO_LOG_SIZE 512 
 
 #define CREATION_ASSERT(cond, msg, ...) \
-{                                          \
-    if(!(cond))                            \
-    {                                      \
-        BGL_LOG_ERROR(msg, ##__VA_ARGS__); \
-        arena_free(&scratch);              \
-        return false;                      \
-    }                                      \
+{                                                \
+    if(!(cond))                                  \
+    {                                            \
+        BGL_LOG_ERROR(msg, ##__VA_ARGS__);       \
+        arena_collapse(scratch, arena_init_pos); \
+        return false;                            \
+    }                                            \
 }
 
 /**
@@ -27,23 +25,21 @@
  */
 bool shader_compile(const char* shader_code, GLenum shader_type, u32* shader_out);
 
-bool shader_create(Shader* self, const char** shader_filepaths, u32 shader_count, const char* version_str)
+bool shader_create(Shader* self, Arena* scratch, const char** shader_filepaths, u32 shader_count, const char* version_str)
 {
     BGL_PERFORMANCE_START();
 
-    Arena scratch;
     ShaderParser parser;
     char* shader_code[3];
     char* processed_shader_code[3] = {0}; // must be set to NULL
     GLuint vert_shader, frag_shader, geom_shader, shader_program;
+    u8* arena_init_pos = arena_alloc(scratch, 0);
 
     CREATION_ASSERT(shader_filepaths != NULL, "shader_filepaths is NULL");
     CREATION_ASSERT(0 < shader_count && shader_count <= 3, "invalid amount of shaders %lu", shader_count);
 
     self->uniform_count = 0;
     self->uniforms = NULL;
-
-    arena_create_sized(&scratch, SHADER_ARENA_SIZE);
 
     for(u32 i = 0; i < shader_count; i++)
     {
@@ -55,15 +51,15 @@ bool shader_create(Shader* self, const char** shader_filepaths, u32 shader_count
         /* if extension is .glsl (all shaders in one file) also place in first index */
         if(strcmp(extension, ".vert") == 0 || strcmp(extension, ".glsl") == 0)
         {
-            shader_code[0] = arena_read_file(&scratch, path, NULL);
+            shader_code[0] = arena_read_file(scratch, path, NULL);
         }
         else if(strcmp(extension, ".frag") == 0)
         {
-            shader_code[1] = arena_read_file(&scratch, path, NULL);
+            shader_code[1] = arena_read_file(scratch, path, NULL);
         }
         else if(strcmp(extension, ".geom") == 0)
         {
-            shader_code[2] = arena_read_file(&scratch, path, NULL);
+            shader_code[2] = arena_read_file(scratch, path, NULL);
         }
         else
         {
@@ -79,7 +75,7 @@ bool shader_create(Shader* self, const char** shader_filepaths, u32 shader_count
     {
         parser.path = shader_filepaths[i];
         parser.code = shader_code[i];
-        char* code = shader_process(&parser, self, &scratch);
+        char* code = shader_process(&parser, self, scratch);
         CREATION_ASSERT(code != NULL, "shader program not created");
 
         /* deal with #type directives */
@@ -154,7 +150,7 @@ bool shader_create(Shader* self, const char** shader_filepaths, u32 shader_count
         glDeleteShader(geom_shader);
     }
 
-    arena_free(&scratch);
+    arena_collapse(scratch, arena_init_pos);
     BGL_PERFORMANCE_END("shader program creation");
     return true;
 }

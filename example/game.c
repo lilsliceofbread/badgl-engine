@@ -17,18 +17,21 @@ static struct
     bool is_vsync_on;
 } s; // game state
 
-void game_add_models(void);
-void game_add_lights(void);
+void game_add_models(Arena* arena);
+void game_add_lights(Arena* arena);
 void loading_begin(void);
 void loading_end(void);
 void sphere_scene_update(Scene* scene);
 
-void game_init(void)
+void game_init()
 {
     s.scene_count = 0;
     s.current_scene = 0;
     s.is_vsync_on = true;
 
+    Arena arena;
+    arena_create(&arena); // create arena for loading data
+                          
     RendererFlags flags = 0; // use defaults - can disable lighting, skybox e.g. BGL_RD_SKYBOX_OFF | BGL_RD_UI_OFF | BGL_RD_LIGHTING_OFF
     rd_init(&s.rd, 1280, 720, "badgl demo", flags, "4.2"); // my pc has max opengl 4.2 so no debug output for me :(
 
@@ -38,14 +41,16 @@ void game_init(void)
     vec2 start_euler = VEC2(0.0f, -90.0f); // pitch then yaw
 
     scene_create(&s.scenes[s.scene_count++], &s.rd, start_pos, start_euler);
-    scene_set_skybox(&s.scenes[0], &s.rd, "res/kurt/space.png");
+    scene_set_skybox(&s.scenes[0], &arena, &s.rd, "res/kurt/space.png");
     scene_set_update_callback(&s.scenes[0], (SceneUpdateFunc)sphere_scene_update);
 
     scene_create(&s.scenes[s.scene_count++], &s.rd, start_pos, start_euler);
-    scene_set_skybox(&s.scenes[1], &s.rd, "res/hills.png");
+    scene_set_skybox(&s.scenes[1], &arena, &s.rd, "res/hills.png");
 
-    game_add_models();
-    game_add_lights();
+    game_add_models(&arena);
+    game_add_lights(&arena);
+
+    arena_free(&arena); // free arena - done with loading
 
     scene_switch(&s.scenes[s.current_scene], &s.rd); // call this when switching to a new scene
 
@@ -151,13 +156,14 @@ void sphere_scene_update(Scene* scene)
     model_update_transform(&scene->models[0], &sphere); // TODO: use some identifier for models in scene? strings?
 }
 
-void game_add_models(void)
+void game_add_models(Arena* arena)
 {
     /* create shaders for our models */
 
     u32 model_shader, sphere_shader;
     const char* shader_filepaths[] = {"shaders/model.vert", "shaders/model.frag", "shaders/sphere.vert", "shaders/sphere.frag"};
-    if(!rd_add_shader(&s.rd, &shader_filepaths[0], 2, &model_shader) || !rd_add_shader(&s.rd, &shader_filepaths[2], 2, &sphere_shader))
+    if(!rd_add_shader(&s.rd, arena, &shader_filepaths[0], 2, &model_shader)
+    || !rd_add_shader(&s.rd, arena, &shader_filepaths[2], 2, &sphere_shader))
     {
         BGL_LOG_ERROR("cannot continue without shaders, ending game");
         game_end();
@@ -218,13 +224,13 @@ void game_add_models(void)
 
     /* creating models */
 
-    shapes_uv_sphere(&models[0], 20, &materials[0], sphere_shader);
-    shapes_uv_sphere(&models[1], 20, &materials[1], sphere_shader);
+    shapes_uv_sphere(&models[0], arena, 20, &materials[0], sphere_shader);
+    shapes_uv_sphere(&models[1], arena, 20, &materials[1], sphere_shader);
 
-    shapes_plane(&models[2], 50.0f, 50.0f, 2, &materials[2], model_shader);
-    model_load(&models[3], "res/chicken/chicken.obj", model_shader);
-    shapes_box(&models[4], 1.5f, 2.0f, 3.0f, &materials[3], model_shader);
-    shapes_uv_sphere(&models[5], 20, &materials[4], sphere_shader);
+    shapes_plane(&models[2], arena, 50.0f, 50.0f, 2, &materials[2], model_shader);
+    model_load(&models[3], arena, "res/chicken/chicken.obj", model_shader);
+    shapes_box(&models[4], arena, 1.5f, 2.0f, 3.0f, &materials[3], model_shader);
+    shapes_uv_sphere(&models[5], arena, 20, &materials[4], sphere_shader);
 
     /* setting/updating transforms */
 
@@ -241,7 +247,7 @@ void game_add_models(void)
     scene_add_model(&s.scenes[1], &models[5]);
 }
 
-void game_add_lights(void)
+void game_add_lights(Arena* arena)
 {
     Light lights[3];
     DirLight dir_light;
@@ -276,7 +282,7 @@ void game_add_lights(void)
     Model model;
     Transform transform;
 
-    shapes_box(&model, 1.0f, 1.0f, 1.0f, NULL, 0); // last 2 parameters are not used for lights, set to NULL and 0
+    shapes_box(&model, arena, 1.0f, 1.0f, 1.0f, NULL, 0); // last 2 parameters are not used for lights, set to NULL and 0
 
     transform_reset(&transform);
     transform.euler = VEC3(45.0f, 30.0f, 45.0f); // can set euler and scale, but position will be set by scene_add_light
@@ -285,10 +291,10 @@ void game_add_lights(void)
 
     /* adding lights to scene */
 
-    scene_add_light(&s.scenes[0], &s.rd, &lights[0], NULL);
+    scene_add_light(&s.scenes[0], arena, &s.rd, &lights[0], NULL);
 
-    scene_add_light(&s.scenes[1], &s.rd, &lights[1], NULL);
-    scene_add_light(&s.scenes[1], &s.rd, &lights[2], &model);
+    scene_add_light(&s.scenes[1], arena, &s.rd, &lights[1], NULL);
+    scene_add_light(&s.scenes[1], NULL, &s.rd, &lights[2], &model);
     scene_set_dir_light(&s.scenes[1], &dir_light);
 
     /* update lights */

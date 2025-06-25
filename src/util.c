@@ -5,11 +5,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-// windows is dumb
 #ifdef __linux__
     #define GET_LAST_FILE_SEPARATOR(name, path) char* name = str_find_last_of(path, '/')
 #elif _WIN32
-    #define GET_LAST_FILE_SEPARATOR(name, path)                \
+    #define GET_LAST_FILE_SEPARATOR(name, path)           \
     char* _last_slash = str_find_last_of(path, '/');      \
     char* _last_backslash = str_find_last_of(path, '\\'); \
     char* name = _last_slash > _last_backslash ? _last_slash : _last_backslash
@@ -62,9 +61,9 @@ void find_directory_from_path(char* buffer, u32 length, const char* path)
 {
     GET_LAST_FILE_SEPARATOR(last_char, path);
     BGL_ASSERT(last_char != NULL, "invalid path %s\n", path);
-    i32 offset = (i32)(last_char - path);
+    u64 offset = (u64)(last_char - path);
 
-    u32 str_end = (u32)offset < length ? (u32)offset : length;
+    u64 str_end = offset < length ? offset : (u64)length;
     strncpy(buffer, path, str_end); // copy up to final / into directory
     buffer[str_end] = '\0';
 }

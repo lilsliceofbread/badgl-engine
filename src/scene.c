@@ -45,11 +45,11 @@ void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
     ubo_unbind(self->light_ubo);
 }
 
-void scene_set_skybox(Scene* self, Renderer* rd, const char* cubemap_path)
+void scene_set_skybox(Scene* self, Arena* scratch, Renderer* rd, const char* cubemap_path)
 {
     if(cubemap_path != NULL && !(rd->flags & BGL_RD_SKYBOX_OFF))
     {
-        self->skybox = skybox_create(rd, cubemap_path);
+        skybox_create(&self->skybox, scratch, rd, cubemap_path);
         self->flags |= BGL_SCENE_HAS_SKYBOX;
     }
 }
@@ -68,15 +68,18 @@ u32 scene_add_model(Scene* self, const Model* model)
     return self->model_count - 1;
 }
 
-void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model* model)
+bool scene_add_light(Scene* self, Arena* scratch, Renderer* rd, const Light* light, const Model* model)
 {
-    if(rd->flags & BGL_RD_LIGHTING_OFF) return;
-
-    BGL_ASSERT(light != NULL, "provided light is null");
+    if(rd->flags & BGL_RD_LIGHTING_OFF) return false;
+    if(light == NULL)
+    {
+        BGL_LOG_ERROR("provided light to add is null");
+        return false;
+    }
     if(self->light_count >= BGL_GLSL_MAX_LIGHTS)
     {
-        BGL_LOG_WARN("cannot add light to scene; max lights reached");
-        return;
+        BGL_LOG_ERROR("cannot add light to scene; max lights reached");
+        return false;
     }
 
     u32 model_idx;
@@ -89,7 +92,17 @@ void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model*
         Model sphere;
         Transform transform;
 
-        shapes_uv_sphere(&sphere, 15, NULL, 0);
+        if(scratch == NULL)
+        {
+            BGL_LOG_WARN("no arena passed to scene_add_light, even though a model was not specified. creating one");
+            arena_create_sized(scratch, KILOBYTES(8));
+            shapes_uv_sphere(&sphere, scratch, BGL_LIGHT_SPHERE_RES, NULL, 0);
+            arena_free(scratch);
+        }
+        else
+        {
+            shapes_uv_sphere(&sphere, scratch, BGL_LIGHT_SPHERE_RES, NULL, 0);
+        }
 
         transform_reset(&transform);
         transform.scale = VEC3(0.3f, 0.3f, 0.3f);
@@ -104,13 +117,20 @@ void scene_add_light(Scene* self, Renderer* rd, const Light* light, const Model*
 
     self->models[model_idx].shader_idx = rd->light_shader; // enforce shader as light shader
     self->models[model_idx].material.flags |= BGL_MATERIAL_IS_LIGHT;
+
+    return true;
 }
 
-void scene_set_dir_light(Scene* self, const DirLight* light)
+bool scene_set_dir_light(Scene* self, const DirLight* light)
 {
-    BGL_ASSERT(light != NULL, "provided dir_light is null");
+    if(light == NULL)
+    {
+        BGL_LOG_ERROR("provided dir_light to add is null");
+        return false;
+    }
 
     self->dir_light = *light;
+    return true;
 }
 
 void scene_update_lights(Scene* self, Renderer* rd)
@@ -159,7 +179,7 @@ void scene_free(Scene* self)
 
 void scene_update_light_model(Scene* self, u32 index)
 {
-    BGL_ASSERT(index < (u32)self->light_count, "light index exceeds end of light buffer");
+    BGL_ASSERT(index < (u32)self->light_count, "light index given to update light model exceeds end of light buffer"); // internal func so assert here instead of return
 
     Light* light = &self->lights[index];
     Model* light_model = &self->models[self->light_models[index]];

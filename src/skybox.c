@@ -4,17 +4,15 @@
 #include <string.h>
 #include "shapes.h"
 
-Model skybox_create(Renderer* rd, const char* cubemap_path)
+void skybox_create(Model* self, Arena* scratch, Renderer* rd, const char* cubemap_path)
 {
-    Model self;
     Material material;
-    vec3 tmp = VEC3(1.0f, 1.0f, 1.0f); // don't care about colour values
-    material_create(&material, true, tmp, tmp, tmp, 1.0f);
+    vec3 white = VEC3(1.0f, 1.0f, 1.0f); // don't care about colour values
+    material_create(&material, true, white, white, white, 1.0f);
     material_add_texture(&material, TEXTURE_DIFFUSE, cubemap_path);
     material.flags |= BGL_MATERIAL_NO_LIGHTING;
 
-    shapes_box(&self, 2.0f, 2.0f, 2.0f, &material, rd->skybox_shader);
-    return self;
+    shapes_box(self, scratch, 2.0f, 2.0f, 2.0f, &material, rd->skybox_shader);
 }
 
 void skybox_draw(Model* self, Renderer* rd, Camera* cam)

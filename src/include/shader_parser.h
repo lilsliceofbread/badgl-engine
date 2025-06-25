@@ -21,12 +21,12 @@ typedef struct ShaderParser
     /* for allocating sections of the shader as we pass through the file */
     u8* ptr;
     u8* prev_ptr;
-    u32 prev_alloc_size;
-    u32 prev_edit;
+    u64 prev_alloc_size;
+    u64 prev_edit;
 
     /* token span */
-    u32 first;
-    u32 last;
+    u64 first;
+    u64 last;
     enum 
     {
         TYPE_VERTEX = 0,

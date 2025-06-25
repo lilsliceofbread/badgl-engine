@@ -25,28 +25,29 @@ static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
 void platform_init(void)
 {
     char exe_path[BGL_MAX_EXECUTABLE_DIR_LENGTH];
+    memset(exe_path, 0, BGL_MAX_EXECUTABLE_DIR_LENGTH);
     platform_get_executable_path(exe_path, BGL_MAX_EXECUTABLE_DIR_LENGTH);
     find_directory_from_path(win_ctx.directory, BGL_MAX_EXECUTABLE_DIR_LENGTH, exe_path);
     
     platform_reset_time();
 }
 
-void* platform_virtual_alloc(u32 size)
+void* platform_virtual_alloc(u64 size)
 {
     return VirtualAlloc(0, size, MEM_RESERVE, PAGE_NOACCESS);
 }
 
-void platform_physical_alloc(void* ptr, u32 size)
+void platform_physical_alloc(void* ptr, u64 size)
 {
     VirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
 }
 
-void platform_physical_dealloc(void* ptr, u32 size)
+void platform_physical_dealloc(void* ptr, u64 size)
 {
     VirtualFree(ptr, size, MEM_DECOMMIT);
 }
 
-void platform_virtual_dealloc(void* ptr, u32 size)
+void platform_virtual_dealloc(void* ptr, u64 size)
 {
     VirtualFree(ptr, 0, MEM_RELEASE);
 }

@@ -1,6 +1,6 @@
 #include "light.h"
 
-static const char* dir_members[] = {
+static const char* dir_members[] = { // TODO: fix somehow?
     "dir_light.dir",
     "dir_light.ambient",
     "dir_light.diffuse",

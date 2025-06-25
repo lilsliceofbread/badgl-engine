@@ -16,12 +16,12 @@
 /**
  * internal functions
  */
-void model_add_mesh(Model* self, Mesh mesh, u32 total_meshes);
-void model_process_node(Model* self, Arena* arena, struct aiNode* node, const struct aiScene* scene);
-Mesh model_process_mesh(Model* self, Arena* arena, struct aiMesh* mesh, const struct aiScene* scene);
-u32* model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, u32* tex_count_out);
+bool model_add_mesh(Model* self, Mesh* mesh, u32 total_meshes);
+bool model_process_node(Model* self, Arena* arena, struct aiNode* node, const struct aiScene* scene);
+bool model_process_mesh(Model* self, Arena* arena, struct aiMesh* mesh, const struct aiScene* scene, Mesh* mesh_out);
+bool model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, u32** tex_indices_out, u32* tex_count_out);
 
-void model_load(Model* self, const char* path, u32 shader_idx)
+bool model_load(Model* self, Arena* scratch, const char* path, u32 shader_idx)
 {
     BGL_PERFORMANCE_START();
 
@@ -41,20 +41,28 @@ void model_load(Model* self, const char* path, u32 shader_idx)
     find_directory_from_path(self->directory, MAX_PATH_LENGTH, full_path);
 
     const struct aiScene* scene = aiImportFile(full_path, aiProcess_Triangulate | aiProcess_FlipUVs);
-    BGL_ASSERT(scene && scene->mRootNode && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE),
-               "loading model %s failed\n%s", full_path, aiGetErrorString());
+    if(scene == NULL || scene->mRootNode == NULL || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE))
+    {
+        BGL_LOG_ERROR("loading model %s failed. assimp error:\n%s", full_path, aiGetErrorString());
+        return false;
+    }
 
     self->mesh_count = 0;
     self->meshes = (Mesh*)BGL_MALLOC(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
 
-    Arena scratch;
-    arena_create(&scratch);
+    u8* init_pos = arena_alloc(scratch, 0);
 
-    model_process_node(self, &scratch, scene->mRootNode, scene);
+    bool success = model_process_node(self, scratch, scene->mRootNode, scene);
 
-    arena_free(&scratch);
+    arena_collapse(scratch, init_pos);
 
     aiReleaseImport(scene);
+
+    if(!success)
+    {
+        BGL_LOG_ERROR("loading model %s failed\n");
+        return false;
+    }
 
     for(u32 i = 0; i < self->material.tex_count; i++)
     {
@@ -73,6 +81,7 @@ void model_load(Model* self, const char* path, u32 shader_idx)
     }
 
     BGL_PERFORMANCE_END("loading model");
+    return true;
 }
 
 void model_update_transform(Model* self, const Transform* transform)
@@ -93,6 +102,7 @@ void model_draw(Model* self, Renderer* rd, Camera* cam)
 {
     Shader* shader = &rd->shaders[self->shader_idx];
 
+    // TODO: calculate normal matrix here instead of in shader
     mat4 mvp, model_view;
     mat4_mul(&model_view, cam->view, self->model);
     mat4_mul(&mvp, cam->proj, model_view);
@@ -115,33 +125,43 @@ void model_draw(Model* self, Renderer* rd, Camera* cam)
     }
 }
 
-void model_add_mesh(Model* self, Mesh mesh, u32 total_meshes)
+bool model_add_mesh(Model* self, Mesh* mesh, u32 total_meshes)
 {
-    BGL_ASSERT(self->mesh_count <= total_meshes, "meshes exceeded expected count");
-    self->meshes[self->mesh_count] = mesh;
+    if(self->mesh_count >= total_meshes)
+    {
+        BGL_LOG_ERROR("meshes exceeded expected count");
+        return false;
+    }
+
+    self->meshes[self->mesh_count] = *mesh;
     self->mesh_count++;
+    return true;
 }
 
-void model_process_node(Model* self, Arena* arena, struct aiNode* node, const struct aiScene* scene)
+bool model_process_node(Model* self, Arena* arena, struct aiNode* node, const struct aiScene* scene)
 {
+    Mesh mesh;
     for(u32 i = 0; i < node->mNumMeshes; i++)
     {
-        struct aiMesh* mesh = scene->mMeshes[node->mMeshes[i]]; // node meshes are indexes into scene's meshes
-        model_add_mesh(self, model_process_mesh(self, arena, mesh, scene), scene->mNumMeshes);
+        struct aiMesh* ai_mesh = scene->mMeshes[node->mMeshes[i]]; // node meshes are indices into scene's meshes
+        if(!model_process_mesh(self, arena, ai_mesh, scene, &mesh)) return false;
+        if(!model_add_mesh(self, &mesh, scene->mNumMeshes)) return false;
     }
 
     for(u32 i = 0; i < node->mNumChildren; i++)
     {
-        model_process_node(self, arena, node->mChildren[i], scene);
+        if(!model_process_node(self, arena, node->mChildren[i], scene)) return false;
     }
+
+    return true;
 }
 
-Mesh model_process_mesh(Model* self, Arena* arena, struct aiMesh* model_mesh, const struct aiScene* scene)
+bool model_process_mesh(Model* self, Arena* arena, struct aiMesh* model_mesh, const struct aiScene* scene, Mesh* mesh_out)
 {
     Mesh mesh;
 
     u32* indices = NULL;
-    u32* tex_indices = NULL; // indexes into model's textures array
+    u32* tex_indices = NULL; // indices into model's textures array
     const u32 total_vertices = model_mesh->mNumVertices;
     u32 total_indices = 0;
     u32 total_textures = 0;
@@ -213,31 +233,35 @@ Mesh model_process_mesh(Model* self, Arena* arena, struct aiMesh* model_mesh, co
     struct aiMaterial* mat = scene->mMaterials[model_mesh->mMaterialIndex];
     u32 diffuse_count, specular_count;
 
-    u32* diff_indexes = model_load_textures(self, mat, TEXTURE_DIFFUSE, &diffuse_count);
-    u32* spec_indexes = model_load_textures(self, mat, TEXTURE_SPECULAR, &specular_count);
+    u32* diff_indices;
+    u32* spec_indices;
+    if(!model_load_textures(self, mat, TEXTURE_DIFFUSE, &diff_indices, &diffuse_count)) return false;
+    if(!model_load_textures(self, mat, TEXTURE_SPECULAR, &spec_indices, &specular_count)) return false;
 
     total_textures = diffuse_count + specular_count;
     if(total_textures)
     {
         tex_indices = (u32*)BGL_CALLOC(total_textures, sizeof(u32));
 
-        memcpy(tex_indices, diff_indexes, diffuse_count * sizeof(u32));
-        memcpy(tex_indices + diffuse_count, spec_indexes, specular_count * sizeof(u32));
+        memcpy(tex_indices, diff_indices, diffuse_count * sizeof(u32));
+        memcpy(tex_indices + diffuse_count, spec_indices, specular_count * sizeof(u32));
 
-        BGL_FREE(diff_indexes);
-        BGL_FREE(spec_indexes);
+        BGL_FREE(diff_indices);
+        BGL_FREE(spec_indices);
     }
 
     mesh_create(&mesh, vertex_buffer, total_vertices, indices, total_indices, tex_indices, total_textures);
-    return mesh;
+    *mesh_out = mesh;
+    return true;
 }
 
-u32* model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, u32* tex_count_out)
+bool model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, u32** tex_indices_out, u32* tex_count_out)
 {
     enum aiTextureType ai_type = type == TEXTURE_DIFFUSE ? aiTextureType_DIFFUSE : aiTextureType_SPECULAR;
     u32 tex_count = aiGetMaterialTextureCount(mat, ai_type); // textures of given type
+    *tex_indices_out = NULL;
     *tex_count_out = tex_count;
-    if(tex_count == 0) return NULL;
+    if(tex_count == 0) return true;
 
     u32* tex_indices = (u32*)BGL_CALLOC(tex_count, sizeof(u32)); // user of function must free themselves
 
@@ -262,7 +286,11 @@ u32* model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, 
         // increase amount to add to tex_count and reallocate textures
         add_tex_count++;
         self->material.textures = (Texture*)BGL_REALLOC(self->material.textures, (self->material.tex_count + add_tex_count) * sizeof(Texture));
-        BGL_ASSERT(self->material.textures != NULL, "failed to realloc texture array");
+        if(self->material.textures == NULL)
+        {
+            BGL_LOG_ERROR("failed to realloc texture array");
+            return false;
+        }
 
         // create new texture
         Texture texture;
@@ -277,7 +305,8 @@ u32* model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, 
 
     // increase tex_count to correct size
     self->material.tex_count += add_tex_count;
-    return tex_indices;
+    *tex_indices_out = tex_indices;
+    return true;
 }
 
 void model_free(Model* self)

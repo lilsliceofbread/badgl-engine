@@ -1,7 +1,7 @@
 #ifndef BGL_ARENA_H
 #define BGL_ARENA_H
 
-/* idea from https://github.com/PixelRifts/c-codebase/blob/master/source/base/mem.c */
+/* arena virtual alloc idea from https://github.com/PixelRifts/c-codebase/blob/master/source/base/mem.c */
 
 #include <stddef.h>
 #include "defines.h"
@@ -15,26 +15,48 @@
 
 typedef struct Arena {
     u8* memory;
-    u32 virtual_max; // maximum value of reserved virtual address space
-    u32 physical_max; // maximum value of reserved space backed by physical memory
-    u32 cursor; // position where unused memory starts
+    u64 virtual_max; // maximum value of reserved virtual address space
+    u64 physical_max; // maximum value of reserved space backed by physical memory
+    u64 cursor; // position where unused memory starts
 } Arena;
 
+/**
+ * @brief create arena of default size
+ */
 void arena_create(Arena* arena);
 
-void arena_create_sized(Arena* arena, u32 size);
+/**
+ * @brief create arena of size size
+ */
+void arena_create_sized(Arena* arena, u64 size);
 
-u8* arena_alloc(Arena* self, u32 size);
+/**
+ * @brief allocate memory within arena
+ * @returns ptr to memory
+ */
+u8* arena_alloc(Arena* self, u64 size);
 
+/**
+ * @brief free entire arena
+ */
 void arena_free(Arena* self);
 
-char* arena_read_file(Arena* self, const char* path, u32* file_size_out);
+/**
+ * @brief free all of arena allocated past ptr
+ */
+void arena_collapse(Arena* self, u8* ptr);
+
+/**
+ * @brief read file and allocate char buffer in arena
+ * @returns ptr to char buffer
+ */
+char* arena_read_file(Arena* self, const char* path, u64* file_size_out);
 
 
 
 /* probably don't use these, only used for shader parser */
-u8* arena_alloc_unaligned(Arena* self, u32 size);
+u8* arena_alloc_unaligned(Arena* self, u64 size);
 
-char* arena_read_file_unterminated_unaligned(Arena* self, const char* path, u32* file_size_out);
+char* arena_read_file_unterminated_unaligned(Arena* self, const char* path, u64* file_size_out);
 
 #endif

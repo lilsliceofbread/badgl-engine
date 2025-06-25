@@ -8,7 +8,9 @@
 #include "log.h"
 
 #ifdef NDEBUG
+#ifndef BGL_NO_DEBUG
 #define BGL_NO_DEBUG
+#endif
 #endif
 
 #ifdef BGL_NO_DEBUG

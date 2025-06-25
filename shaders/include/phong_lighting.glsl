@@ -1,36 +1,30 @@
 #ifndef BGL_PHONG_LIGHTING_GLSL
 #define BGL_PHONG_LIGHTING_GLSL
 
-#define BAND_RANGE 0.002 // 0.5 / 255, range of noise to remove banding
-
-float rand(vec2 co){
-    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-vec3 compute_dir_light(DirLight light, vec3 normal, vec3 frag_pos)
+vec3 compute_dir_light(DirLight light, vec3 normal, vec3 frag_pos, tex_coord_t tex_coord)
 {
     vec3 view_light_dir = (mat3(view) * normalize(-light.dir));
 
     /* ambient */
 
-    vec3 ambient = (material.ambient * texture(texture_diffuse, fs_in.tex_coord).xyz) * light.ambient.xyz;
+    vec3 ambient = (material.ambient * texture(BGL_GLSL_TEXTURE_DIFFUSE, tex_coord).xyz) * light.ambient.xyz;
 
     /* diffuse */
 
     float diffuse_strength = max(dot(normal, view_light_dir), 0.0);
-    vec3 diffuse = (diffuse_strength * material.diffuse * texture(texture_diffuse, fs_in.tex_coord).xyz) * light.diffuse.xyz;
+    vec3 diffuse = (diffuse_strength * material.diffuse * texture(BGL_GLSL_TEXTURE_DIFFUSE, tex_coord).xyz) * light.diffuse.xyz;
 
     /* specular */
 
     vec3 view_dir = normalize(-frag_pos);
     vec3 reflect_dir = reflect(-view_light_dir, normal);
     float specular_strength = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
-    vec3 specular = (specular_strength * material.specular * texture(texture_specular, fs_in.tex_coord).xyz) * light.specular.xyz;
+    vec3 specular = (specular_strength * material.specular * texture(BGL_GLSL_TEXTURE_SPECULAR, tex_coord).xyz) * light.specular.xyz;
 
     return (ambient + diffuse + specular);
 }
 
-vec3 compute_point_light(Light light, vec3 normal, vec3 frag_pos, vec3 world_pos)
+vec3 compute_point_light(Light light, vec3 normal, vec3 frag_pos, vec3 world_pos, tex_coord_t tex_coord)
 {
     vec3 view_light_pos = (view * light.pos).xyz;
 
@@ -43,37 +37,35 @@ vec3 compute_point_light(Light light, vec3 normal, vec3 frag_pos, vec3 world_pos
 
     /* ambient */
 
-    vec3 ambient = (material.ambient * texture(texture_diffuse, fs_in.tex_coord).xyz) * light.ambient.xyz;
+    vec3 ambient = (material.ambient * texture(BGL_GLSL_TEXTURE_DIFFUSE, tex_coord).xyz) * light.ambient.xyz;
 
     /* diffuse */
 
     vec3 light_dir = normalize(view_light_pos - frag_pos);
     float diffuse_strength = max(dot(normal, light_dir), 0.0);
-    vec3 diffuse = (diffuse_strength * material.diffuse * texture(texture_diffuse, fs_in.tex_coord).xyz) * light.diffuse.xyz;
+    vec3 diffuse = (diffuse_strength * material.diffuse * texture(BGL_GLSL_TEXTURE_DIFFUSE, tex_coord).xyz) * light.diffuse.xyz;
 
     /* specular */
 
     vec3 view_dir = normalize(-frag_pos);
     vec3 reflect_dir = reflect(-light_dir, normal);
     float specular_strength = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
-    vec3 specular = (specular_strength * material.specular * texture(texture_specular, fs_in.tex_coord).xyz) * light.specular.xyz;
+    vec3 specular = (specular_strength * material.specular * texture(BGL_GLSL_TEXTURE_SPECULAR, tex_coord).xyz) * light.specular.xyz;
 
     return attenuation * (ambient + diffuse + specular);
 }
 
-// TODO: fix this scuffed function to take in arguments instead
-vec3 compute_phong_light()
+vec3 compute_phong_light(vec3 normal, vec3 frag_pos, vec3 world_pos, tex_coord_t tex_coord,
+                         Light light_buffer[BGL_GLSL_MAX_LIGHTS], int light_count, DirLight dir_light)
 {
-    vec3 normal = normalize(fs_in.normal);
+    normal = normalize(normal);
 
-    vec3 result = compute_dir_light(dir_light, normal, fs_in.pos);
+    vec3 result = compute_dir_light(dir_light, normal, frag_pos, tex_coord);
     for(int i = 0; i < light_count; i++)
     {
-        result += compute_point_light(light_buffer[i], normal, fs_in.pos, fs_in.world_pos);
+        result += compute_point_light(light_buffer[i], normal, frag_pos, world_pos, tex_coord);
     }
 
-    result += mix(-BAND_RANGE, BAND_RANGE, rand(gl_FragCoord.xy)); // noise to fix banding
-    
     return result;
 }
 
