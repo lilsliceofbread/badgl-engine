@@ -1,4 +1,6 @@
-#! /bin/bash
+#!/bin/bash
+
+mkdir -p build
 
 cmake --build build
 

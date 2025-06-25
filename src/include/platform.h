@@ -18,9 +18,9 @@ void* platform_virtual_alloc(u64 size); // allocate in virtual address space
 
 void platform_physical_alloc(void* ptr, u64 size); // commit a section of virtual address space to physical memory
 
-void platform_physical_dealloc(void* ptr, u64 size); // decommit
+void platform_physical_free(void* ptr, u64 size); // decommit
 
-void platform_virtual_dealloc(void* ptr, u64 size); // unreserve virtual address space
+void platform_virtual_free(void* ptr, u64 size); // unreserve virtual address space
 
 void platform_prepend_executable_directory(char* buffer, u32 length, const char* path);
 

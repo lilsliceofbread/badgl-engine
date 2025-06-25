@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.13.4)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 project(game)
 
 file(GLOB_RECURSE BADGL_EXAMPLE_SRCS CONFIGURE_DEPENDS "*.c")
@@ -13,11 +15,7 @@ endif()
 add_executable(${PROJECT_NAME} ${BADGL_EXAMPLE_SRCS})
 
 target_include_directories(${PROJECT_NAME} PUBLIC .
-                                           PUBLIC ../include
-                                           PUBLIC ../external/stb
-                                           PUBLIC ../external/glfw/include 
-                                           PUBLIC ../external/glad/include 
-                                           PUBLIC ../external/assimp/include
+                                           PUBLIC ../src/include
                                            PUBLIC external/cimgui
                                            PUBLIC external/cimgui/generator/output)
 

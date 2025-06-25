@@ -42,12 +42,12 @@ void platform_physical_alloc(void* ptr, u64 size)
     VirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
 }
 
-void platform_physical_dealloc(void* ptr, u64 size)
+void platform_physical_free(void* ptr, u64 size)
 {
     VirtualFree(ptr, size, MEM_DECOMMIT);
 }
 
-void platform_virtual_dealloc(void* ptr, u64 size)
+void platform_virtual_free(void* ptr, BGL_UNUSED u64 size)
 {
     VirtualFree(ptr, 0, MEM_RELEASE);
 }

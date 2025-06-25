@@ -20,6 +20,6 @@ uniform sampler2D BGL_GLSL_TEXTURE_SPECULAR;
 
 void main()
 {
-    vec3 phong = compute_phong_light(vs_out.normal, vs_out.frag_pos, vs_out.world_pos, vs_out.tex_coord, light_buffer, light_count, dir_light);
+    vec3 phong = compute_phong_light(vs_out.normal, vs_out.frag_pos, vs_out.world_pos, vs_out.tex_coord);
     frag_colour = vec4(phong, 1.0);
 }

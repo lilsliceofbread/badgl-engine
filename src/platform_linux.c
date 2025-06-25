@@ -43,12 +43,12 @@ void platform_physical_alloc(void* ptr, u64 size)
     mprotect(ptr, size, PROT_READ | PROT_WRITE);
 }
 
-void platform_physical_dealloc(void* ptr, u64 size)
+void platform_physical_free(void* ptr, u64 size)
 {
     mprotect(ptr, size, PROT_NONE);
 }
 
-void platform_virtual_dealloc(void* ptr, u64 size)
+void platform_virtual_free(void* ptr, u64 size)
 {
     munmap(ptr, size);
 }

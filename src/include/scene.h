@@ -14,7 +14,9 @@
 /* uv sphere resolution for default light model */
 #define BGL_LIGHT_SPHERE_RES 8
 
-typedef void (*SceneUpdateFunc)();
+/* need to do this to define callback and also have it in the scene struct */
+typedef struct Scene Scene;
+typedef void (*SceneUpdateFunc)(Scene* scene);
 
 typedef enum SceneFlags {
     BGL_SCENE_HAS_SKYBOX = 1 << 0,

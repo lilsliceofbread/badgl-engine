@@ -75,6 +75,8 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
 
     rd_configure_gl(self);
 
+    platform_init();
+
     Arena arena;
     arena_create_sized(&arena, MEGABYTES(1)); // definitely big enough for these files
     const char* shader_filepaths[] = {"shaders/skybox.glsl", "shaders/quad.glsl", "shaders/light.glsl"};
@@ -88,8 +90,6 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
         BGL_ASSERT_NO_MSG(rd_add_shader(self, &arena, &shader_filepaths[2], 1, &self->light_shader));
 
     arena_free(&arena);
-    
-    platform_init();
 
     char imgui_version[BGL_RD_VERSION_STRLEN];
     rd_get_version_string(self, imgui_version);
@@ -128,7 +128,7 @@ void rd_configure_gl(Renderer* self)
 
     glEnable(GL_BLEND); // enable transparent textures
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    //glEnable(GL_FRAMEBUFFER_SRGB) // this makes everything look oversaturated and garbage
+    //glEnable(GL_FRAMEBUFFER_SRGB); // this makes everything look oversaturated and garbage
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);

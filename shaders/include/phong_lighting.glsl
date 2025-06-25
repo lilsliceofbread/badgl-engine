@@ -55,8 +55,10 @@ vec3 compute_point_light(Light light, vec3 normal, vec3 frag_pos, vec3 world_pos
     return attenuation * (ambient + diffuse + specular);
 }
 
-vec3 compute_phong_light(vec3 normal, vec3 frag_pos, vec3 world_pos, tex_coord_t tex_coord,
-                         Light light_buffer[BGL_GLSL_MAX_LIGHTS], int light_count, DirLight dir_light)
+/* assumes light_buffer and dir_light exist,
+ * since passing light_buffer as a parameter gives literally 3 fps
+ * this is because all parameters are copied, so each pixel copies the light buffer */
+vec3 compute_phong_light(vec3 normal, vec3 frag_pos, vec3 world_pos, tex_coord_t tex_coord)
 {
     normal = normalize(normal);
 

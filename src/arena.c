@@ -55,7 +55,7 @@ void arena_free(Arena* self)
 {
     BGL_LOG_INFO("freed arena, final physical max %luKB, final cursor pos %luB", self->physical_max / KILOBYTES(1), self->cursor);
 
-    platform_virtual_dealloc(self->memory, self->virtual_max);
+    platform_virtual_free(self->memory, self->virtual_max);
     self->memory = NULL;
     self->virtual_max = 0;
     self->physical_max = 0;
