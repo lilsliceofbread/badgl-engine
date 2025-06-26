@@ -50,15 +50,15 @@ void camera_update_proj(Camera* self, f32 fov, f32 aspect_ratio, f32 znear, f32 
     mat_perspective_fov(&self->proj, fov, aspect_ratio, znear, zfar);
 }
 
-void camera_update(Camera* self, Renderer* rd)
+void camera_update(Camera* self, BGLWindow* window, f32 delta_time)
 {
-    const f32 aspect_ratio = (f32)(rd->width) / (f32)(rd->height);
+    const f32 aspect_ratio = (f32)(window->width) / (f32)(window->height);
     if(aspect_ratio != self->aspect_ratio)
     {
         camera_update_proj(self, self->fov, aspect_ratio, self->znear, self->zfar);
     }
 
-    const f32 cam_step = self->speed * (f32)rd->delta_time;
+    const f32 cam_step = self->speed * (f32)delta_time;
 
     // remove y component from "velocity" vecs to keep moving on flat plane
     vec3 flat_dir = VEC3( 
@@ -78,41 +78,41 @@ void camera_update(Camera* self, Renderer* rd)
     vec3 world_up = VEC3(0.0f, 1.0f, 0.0f);
 
     vec3 step_vec;
-    if(rd_key_pressed(rd, GLFW_KEY_W))
+    if(platform_window_key_pressed(window, GLFW_KEY_W))
     {
         step_vec = vec3_scale(flat_dir, cam_step);
         self->pos = vec3_add(self->pos, step_vec);
     }
-    if(rd_key_pressed(rd, GLFW_KEY_S))
+    if(platform_window_key_pressed(window, GLFW_KEY_S))
     {
         step_vec = vec3_scale(flat_dir, cam_step);
         self->pos = vec3_sub(self->pos, step_vec);
     }
-    if(rd_key_pressed(rd, GLFW_KEY_A))
+    if(platform_window_key_pressed(window, GLFW_KEY_A))
     {
         step_vec = vec3_scale(flat_right, cam_step);
         self->pos = vec3_sub(self->pos, step_vec);
     }
-    if(rd_key_pressed(rd, GLFW_KEY_D))
+    if(platform_window_key_pressed(window, GLFW_KEY_D))
     {
         step_vec = vec3_scale(flat_right, cam_step);
         self->pos = vec3_add(self->pos, step_vec);
     }
-    if(rd_key_pressed(rd, GLFW_KEY_SPACE))
+    if(platform_window_key_pressed(window, GLFW_KEY_SPACE))
     {
         step_vec = vec3_scale(world_up, cam_step);
         self->pos = vec3_add(self->pos, step_vec);
     }
-    if(rd_key_pressed(rd, GLFW_KEY_LEFT_CONTROL))
+    if(platform_window_key_pressed(window, GLFW_KEY_LEFT_CONTROL))
     {
         step_vec = vec3_scale(world_up, cam_step);
         self->pos = vec3_sub(self->pos, step_vec);
     }
 
     f64 cursor_x, cursor_y;
-    rd_get_cursor_pos(rd, &cursor_x, &cursor_y);
+    bool mouse_enabled = platform_window_get_cursor(window, &cursor_x, &cursor_y);
 
-    if(!rd->mouse_should_update)
+    if(!mouse_enabled)
     {
         self->last_cursor_x = cursor_x;
         self->last_cursor_y = cursor_y;

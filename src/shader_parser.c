@@ -172,7 +172,7 @@ void process_uniform(ShaderParser* parser, Shader* shader)
     Uniform uniform;
 
     next_token(parser);
-    // TODO: store type, use 32KB arena in Shader for allocation
+    // TODO: store type, use 32KB arena in Shader for allocation?
     next_token(parser);
 
     /* next part assumes immediate whitespace after semicolon, it may have a comment

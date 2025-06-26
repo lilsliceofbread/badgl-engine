@@ -24,6 +24,6 @@ a bash/batch script is used to build and then move resources files into the same
 
 - the example program should help to give some idea of the structure of the engine
 
-- press *esc* to toggle keyboard and mouse input, and *p* to toggle wireframe view
+- press *esc* to uncapture keyboard and mouse input
 
 - if you are using your own resources (e.g. models, textures etc.), **specify your paths relative to the executable.**

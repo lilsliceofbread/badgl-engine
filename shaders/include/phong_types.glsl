@@ -26,6 +26,7 @@ struct Material {
 
 #endif
 
+/* use vec4 to align nicely for ubo */
 struct Light {
     vec4 pos;
     vec4 ambient;

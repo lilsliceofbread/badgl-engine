@@ -5,6 +5,7 @@
 #define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 #include "cimgui.h"
 #include "cimgui_impl.h"
+#include <glad/glad.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,8 +23,7 @@
  */
 void rd_configure_gl(Renderer* self);
 void rd_imgui_init(Renderer* self, const char* glsl_version);
-void rd_resize_callback(GLFWwindow* win, i32 width, i32 height);
-void rd_key_callback(GLFWwindow* win, i32 key, i32 scancode, i32 action, i32 mods);
+void rd_resize_callback(BGLWindow* window);
 void APIENTRY rd_debug_callback(GLenum source, GLenum type, u32 id, GLenum severity, GLsizei length,
                                 const char *message, const void *user_param);
 void rd_get_version_major_minor(Renderer* self, i32* major, i32* minor);
@@ -31,16 +31,12 @@ void rd_get_version_string(Renderer* self, char* buffer);
 
 void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, RendererFlags flags, const char* version)
 {
-    self->width = width;
-    self->height = height;
-    self->mouse_wait_update = 1;
-    self->mouse_should_update = false;
     self->shader_count = 0;
     self->shaders = NULL;
     self->delta_time = 0.0;
     self->last_time = 0.0;
     self->framecount = 0;
-    self->flags = flags & (RendererFlags)~(_BGL_RD_CURSOR_DISABLED | _BGL_RD_VSYNC_ENABLED); // set both to false by default
+    self->flags = flags & (RendererFlags)~(_BGL_RD_VSYNC_ENABLED); // set both to false by default
 
     i32 major, minor;
     BGL_ASSERT(strlen(version) >= 3, "invalid opengl version");
@@ -48,30 +44,10 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     rd_get_version_major_minor(self, &major, &minor);
     BGL_ASSERT(major == 4 && (2 <= minor && minor <= 6), "opengl versions supported: 4.2 - 4.6 (allows setting of ubo binding in shader)");
 
-    i32 ret = glfwInit();
-    BGL_ASSERT(ret, "failed to init GLFW");
+    platform_window_init(&self->window, width, height, win_title, major, minor);
+    platform_window_set_resize_callback(&self->window, (BGLWindowResizeFunc)rd_resize_callback);
 
-    #ifndef BGL_NO_DEBUG
-        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  
-    #endif
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    
-    GLFWwindow* win = glfwCreateWindow(width, height, win_title, NULL, NULL);
-    self->win = win;
-    BGL_ASSERT(win != NULL, "failed to open window. is your opengl version supported on your machine?");
-
-    glfwMakeContextCurrent(win);
-    glfwSetCursorPos(win, width / 2, height / 2);
-    glfwSetWindowUserPointer(win, self);
-    glfwSetKeyCallback(self->win, rd_key_callback);
-    glfwSetFramebufferSizeCallback(win, rd_resize_callback);
-    glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    ret = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-    BGL_ASSERT(ret, "failed to init GLAD");
+    BGL_ASSERT(gladLoadGL(), "failed to init GLAD");
 
     rd_configure_gl(self);
 
@@ -124,7 +100,7 @@ void rd_configure_gl(Renderer* self)
 
     textures_init();
 
-    glViewport(0, 0, self->width, self->height);
+    glViewport(0, 0, self->window.width, self->window.height);
 
     glEnable(GL_BLEND); // enable transparent textures
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -150,19 +126,13 @@ void rd_draw_triangles(u32 ind_count)
 // annoying fix, sometimes resize callback is delayed
 void rd_update_viewport(Renderer* self)
 {
-    glfwGetFramebufferSize(self->win, &self->width, &self->height);
-    glViewport(0, 0, self->width, self->height);
+    platform_window_update_size(&self->window);
+    glViewport(0, 0, self->window.width, self->window.height);
 }
 
 void rd_set_viewport(i32 x, i32 y, i32 width, i32 height)
 {
     glViewport(x, y, width, height);
-}
-
-// allow manual swapping of buffers
-void rd_swap_buffers(Renderer* self)
-{
-    glfwSwapBuffers(self->win);
 }
 
 void rd_imgui_init(Renderer* self, const char* glsl_version)
@@ -176,7 +146,7 @@ void rd_imgui_init(Renderer* self, const char* glsl_version)
     platform_prepend_executable_directory(imgui_ini_path, 256, "imgui.ini");
     igLoadIniSettingsFromDisk(imgui_ini_path);
 
-    ImGui_ImplGlfw_InitForOpenGL(self->win, true);
+    ImGui_ImplGlfw_InitForOpenGL(self->window.win, true); // can't be bothered to abstract
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     igStyleColorsDark(NULL);
@@ -227,34 +197,11 @@ void rd_end_frame(Renderer* self)
     igRender();
     ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
 
-    glfwSwapBuffers(self->win);
-    glfwPollEvents();
+    platform_window_swap_buffers(&self->window);
 
     self->framecount++;
 
-    if(self->mouse_wait_update > 0)
-    {
-        self->mouse_wait_update--;
-        self->mouse_should_update = false;
-        return;
-    }
-    else if(self->flags & _BGL_RD_CURSOR_DISABLED)
-    {
-        self->mouse_should_update = false;
-        return;
-    }
-
-    self->mouse_should_update = true;
-}
-
-bool rd_key_pressed(Renderer* self, i32 key)
-{
-    return GLFW_PRESS == glfwGetKey(self->win, key);
-}
-
-bool rd_win_should_close(Renderer* self)
-{
-    return glfwWindowShouldClose(self->win);
+    platform_window_poll_events(&self->window);
 }
 
 void rd_free(Renderer* self)
@@ -273,49 +220,12 @@ void rd_free(Renderer* self)
     ImGui_ImplGlfw_Shutdown();
     igDestroyContext(self->imgui_ctx);
 
-    glfwDestroyWindow(self->win);
-    glfwTerminate();
+    platform_window_free(&self->window);
 }
 
-void rd_resize_callback(GLFWwindow* win, i32 width, i32 height)
+void rd_resize_callback(BGLWindow* window)
 {
-    glViewport(0, 0, width, height);
-    Renderer* rd = (Renderer*)glfwGetWindowUserPointer(win); 
-    rd->width = width;
-    rd->height = height;
-}
-
-void rd_key_callback(GLFWwindow* win, i32 key, BGL_UNUSED i32 scancode, i32 action, BGL_UNUSED i32 mods)
-{
-    Renderer* rd = (Renderer*)glfwGetWindowUserPointer(win);
-
-    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-    {
-        if(rd->flags & _BGL_RD_CURSOR_DISABLED) // toggle between cursor locked vs usable
-        {
-            glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            glfwSetCursorPos(win, rd->width / 2, rd->height / 2);
-
-            rd->flags &= (RendererFlags)~(_BGL_RD_CURSOR_DISABLED);
-            rd->mouse_wait_update = 1; // mouse updates should wait 1 frame to prevent flicking
-        }
-        else
-        {
-            glfwFocusWindow(win);
-            glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-            rd->flags |= _BGL_RD_CURSOR_DISABLED;
-        }
-    }
-    if(key == GLFW_KEY_P)
-    {
-        rd_set_wireframe(action != GLFW_RELEASE);
-    }
-}
-
-void rd_get_cursor_pos(Renderer* self, f64* cursor_x_out, f64* cursor_y_out)
-{
-    glfwGetCursorPos(self->win, cursor_x_out, cursor_y_out);
+    glViewport(0, 0, window->width, window->height);
 }
 
 void APIENTRY rd_debug_callback(BGL_UNUSED GLenum source, BGL_UNUSED GLenum type,  u32 id,

@@ -33,7 +33,7 @@ void game_init()
     arena_create(&arena); // create arena for loading data
                           
     RendererFlags flags = 0; // use defaults - can disable lighting, skybox e.g. BGL_RD_SKYBOX_OFF | BGL_RD_UI_OFF | BGL_RD_LIGHTING_OFF
-    rd_init(&s.rd, 1280, 720, "badgl demo", flags, "4.6"); // my pc has max opengl 4.2 so no debug output for me :(
+    rd_init(&s.rd, 1280, 720, "badgl demo", flags, "4.2"); // my pc has max opengl 4.2 so no debug output for me :(
 
     loading_begin(); // a simple quad is drawn to the screen before loading
 
@@ -59,7 +59,7 @@ void game_init()
 
 void game_run(void)
 {
-    while(!rd_win_should_close(&s.rd))
+    while(!platform_window_should_close(&s.rd.window))
     {
         rd_begin_frame(&s.rd);
 
@@ -131,13 +131,18 @@ void loading_begin(void)
 {
     Quad loading_screen = quad_create(VEC2(-1.0f, -1.0f), VEC2(2.0f, 2.0f), "res/loading.png");
 
-    rd_update_viewport(&s.rd); // glfw framebuffer size may not have updated yet so update renderer width/height
+    platform_window_update_size(&s.rd.window); // update window width/height
 
-    i32 size = (s.rd.width >= s.rd.height) ? s.rd.height / 2 : s.rd.width / 2;
-    rd_set_viewport((s.rd.width / 2) - (size / 2), (s.rd.height / 2) - (size / 2), size, size); // place loading in middle of screen
+    i32 width = s.rd.window.width;
+    i32 height = s.rd.window.height;
+    
+    /* place loading image in middle of screen */
+    i32 size = (width >= height) ? height / 2 : width / 2;
+    rd_set_viewport((width / 2) - (size / 2), (height / 2) - (size / 2), size, size);
 
     quad_draw(&loading_screen, &s.rd);
-    rd_swap_buffers(&s.rd);
+    platform_window_swap_buffers(&s.rd.window);
+
     quad_free(&loading_screen);
 }
 

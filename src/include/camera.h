@@ -2,7 +2,7 @@
 #define BGL_CAMERA_H
 
 #include "glmath.h"
-#include "renderer.h"
+#include "platform.h"
 
 typedef struct Camera
 {
@@ -25,7 +25,7 @@ typedef struct Camera
 
 Camera camera_create(vec3 start_pos, f32 start_pitch, f32 start_yaw, f32 speed, f32 sensitivity);
 
-void camera_update(Camera* self, Renderer* rd);
+void camera_update(Camera* self, BGLWindow* window, f32 delta_time);
 
 void camera_update_view(Camera* self); // recalculate up/right vecs and view matrix based on pos/dir
 

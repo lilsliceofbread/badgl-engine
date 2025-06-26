@@ -20,7 +20,7 @@ void scene_send_lights(Scene* self, Renderer* rd);
 
 void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
 {
-    const f32 aspect_ratio = (f32)(rd->width) / (f32)(rd->height); // not casting these to f32 causes the aspect ratio to be rounded
+    const f32 aspect_ratio = (f32)(rd->window.width) / (f32)(rd->window.height); // without cast does int division for aspect ratio... fun bug
     self->cam = camera_create(start_pos, start_euler.x, start_euler.y, MOVESPEED, SENSITIVITY);
     camera_update_proj(&self->cam, DEFAULT_FOV, aspect_ratio, DEFAULT_ZNEAR, DEFAULT_ZFAR);
 
@@ -59,7 +59,6 @@ void scene_set_update_callback(Scene* self, SceneUpdateFunc func)
     self->user_update_func = func;
 }
 
-// TODO: add string associated with models instead of using indices?
 u32 scene_add_model(Scene* self, const Model* model)
 {
     BLOCK_RESIZE_ARRAY(&self->models, Model, self->model_count, 1);
@@ -148,11 +147,12 @@ void scene_switch(Scene* self, Renderer* rd)
     scene_send_lights(self, rd);
 }
 
+// TODO: remove renderer from update
 void scene_update(Scene* self, Renderer* rd)
 {
     if(self->user_update_func != NULL) self->user_update_func(self);
 
-    camera_update(&self->cam, rd);
+    camera_update(&self->cam, &rd->window, (f32)rd->delta_time);
 }
 
 void scene_draw(Scene* self, Renderer* rd)
@@ -213,7 +213,7 @@ void scene_send_lights(Scene* self, Renderer* rd)
 
     ubo_bind_buffer_range(self->light_ubo, 0, 0, BGL_GLSL_MAX_LIGHTS * sizeof(Light) + BGL_GLSL_INT_SIZE); // TODO: remove hardcoding of location/index
 
-    // TODO: add dir_light to ubo so as to not do this garbage (the light which has pos of 0, 0, 0)
+    // TODO: add dir_light to ubo so as to not do this (light index 0)
     /* updating dir_light for all shaders */
 
     u32 shaders[self->model_count];
