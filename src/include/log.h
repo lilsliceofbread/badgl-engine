@@ -4,10 +4,10 @@
 #include <string.h>
 #include "types.h"
 
-// theoretically this unholy macro should be optimised out in compilation
-#ifdef __linux__
+/* hopefully this unholy macro should be optimised out in compilation - doesn't matter as in release mode only errors are logged*/
+#if defined(__linux__)
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#elif _WIN32
+#elif defined(_WIN32)
 #define __FILENAME__ (strrchr(__FILE__, '/') || strrchr(__FILE__, '\\') ? (strrchr(__FILE__, '/') > strrchr(__FILE__, '\\') ? strrchr(__FILE__, '/') + 1 : strrchr(__FILE__, '\\') + 1) : __FILE__)
 #endif
 #define BGL_LOG(type, msg, ...) log_impl(type, __FILENAME__, __LINE__, msg,  ##__VA_ARGS__)
@@ -31,11 +31,11 @@
 
 typedef enum LogType
 {
-    #ifdef __linux__
+    #if defined(__linux__)
         BGL_LOG_ERROR = 91, // use enum as colours
         BGL_LOG_WARN = 93,
         BGL_LOG_INFO = 35
-    #elif _WIN32
+    #elif defined(_WIN32)
         BGL_LOG_ERROR = 12,
         BGL_LOG_WARN = 14,
         BGL_LOG_INFO = 13 

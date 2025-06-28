@@ -1,7 +1,7 @@
 #ifndef BGL_LIGHT_H
 #define BGL_LIGHT_H
 
-#include "glmath.h"
+#include "bgl_math.h"
 #include "shader.h"
 
 /* define structs only once in glsl and then include */

@@ -8,18 +8,19 @@
 
 typedef enum TextureType
 {
-    TEXTURE_DIFFUSE  = 1 << 0,
-    TEXTURE_SPECULAR = 1 << 1,
-    TEXTURE_NORMAL   = 1 << 2,
-    TEXTURE_CUBEMAP  = 1 << 3,
-    TEXTURE_DEFAULT  = 1 << 4  // * dummy white 1x1 texture
+    BGL_TEXTURE_PHONG_DEFAULT  = 1 << 0, // * dummy white 1x1 texture
+    BGL_TEXTURE_PHONG_DIFFUSE  = 1 << 1,
+    BGL_TEXTURE_PHONG_SPECULAR = 1 << 2,
+    BGL_TEXTURE_PHONG_NORMAL   = 1 << 3,
+    BGL_TEXTURE_PHONG_CUBEMAP  = 1 << 4,
 } TextureType;
 
 typedef struct Texture
 {
-    GLuint id;
-    TextureType type;
+    u32 id;
+    TextureType type; // TODO: remove for PBR?
     i32 width, height;
+    // TODO: u32 mipmaps;
     char path[MAX_PATH_LENGTH];
 } Texture;
 

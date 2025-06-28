@@ -1,4 +1,4 @@
-#include "glmath.h"
+#include "bgl_math.h"
 
 #include <stdlib.h>
 #include <string.h>

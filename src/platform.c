@@ -1,16 +1,16 @@
-#include "platform.h"
+#include "window.h"
 #include "defines.h"
 
-/* non os-specific platform stuff i.e. glfw abstraction
- * allows for potentially removing glfw in future? */
+/* glfw abstraction */
+// TODO: would be cool to remove glfw in future
 
 /**
  * internal functions
  */
-void platform_resize_callback(GLFWwindow* win, i32 width, i32 height);
-void platform_key_callback(GLFWwindow* win, i32 key, i32 scancode, i32 action, i32 mods);
+void resize_callback(GLFWwindow* win, i32 width, i32 height);
+void key_callback(GLFWwindow* win, i32 key, i32 scancode, i32 action, i32 mods);
 
-void platform_window_init(BGLWindow* window, i32 width, i32 height, const char* win_title, i32 gl_version_major, i32 gl_version_minor)
+void window_init(BGLWindow* window, i32 width, i32 height, const char* win_title, i32 gl_version_major, i32 gl_version_minor)
 {
     window->width = width;
     window->height = height;
@@ -35,24 +35,24 @@ void platform_window_init(BGLWindow* window, i32 width, i32 height, const char* 
     glfwMakeContextCurrent(win);
     glfwSetWindowUserPointer(window->win, window);
     glfwSetCursorPos(win, (f64)width / 2, (f64)height / 2);
-    glfwSetKeyCallback(win, platform_key_callback);
-    glfwSetFramebufferSizeCallback(win, platform_resize_callback);
+    glfwSetKeyCallback(win, key_callback);
+    glfwSetFramebufferSizeCallback(win, resize_callback);
     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
-bool platform_window_key_pressed(BGLWindow* window, i32 key)
+bool window_key_pressed(BGLWindow* window, i32 key)
 {
     return GLFW_PRESS == glfwGetKey(window->win, key);
 }
 
-bool platform_window_get_cursor(BGLWindow* window, f64* x_out, f64* y_out)
+bool window_get_cursor(BGLWindow* window, f64* x_out, f64* y_out)
 {
     glfwGetCursorPos(window->win, x_out, y_out);
 
     return window->mouse_enabled && window->mouse_wait <= 0;
 }
 
-void platform_window_toggle_cursor(BGLWindow* window)
+void window_toggle_cursor(BGLWindow* window)
 {
     if(!window->mouse_enabled) // toggle between cursor locked vs usable
     {
@@ -70,17 +70,17 @@ void platform_window_toggle_cursor(BGLWindow* window)
     }
 }
 
-bool platform_window_should_close(BGLWindow* window)
+bool window_should_close(BGLWindow* window)
 {
     return glfwWindowShouldClose(window->win);
 }
 
-void platform_window_swap_buffers(BGLWindow* window)
+void window_swap_buffers(BGLWindow* window)
 {
     glfwSwapBuffers(window->win);
 }
 
-void platform_window_poll_events(BGLWindow* window)
+void window_poll_events(BGLWindow* window)
 {
     glfwPollEvents();
 
@@ -91,17 +91,17 @@ void platform_window_poll_events(BGLWindow* window)
     }
 }
 
-void platform_window_set_resize_callback(BGLWindow* window, BGLWindowResizeFunc func)
+void window_set_resize_callback(BGLWindow* window, BGLWindowResizeFunc func)
 {
     window->resize_func = func;
 }
 
-void platform_window_update_size(BGLWindow* window)
+void window_update_size(BGLWindow* window)
 {
     glfwGetFramebufferSize(window->win, &window->width, &window->height);
 }
 
-void platform_window_free(BGLWindow* window)
+void window_free(BGLWindow* window)
 {
     glfwDestroyWindow(window->win);
     glfwTerminate();
@@ -112,20 +112,20 @@ void platform_window_free(BGLWindow* window)
 /**
  * internal functions
  */
-void platform_resize_callback(GLFWwindow* win, i32 width, i32 height)
+void resize_callback(GLFWwindow* win, i32 width, i32 height)
 {
     BGLWindow* window = (BGLWindow*)glfwGetWindowUserPointer(win); 
     window->width = width;
     window->height = height;
-    if(window->resize_func != NULL) window->resize_func(window); // awkward system to avoid calling glViewport in platform
+    if(window->resize_func != NULL) window->resize_func(window); // awkward system to avoid calling glViewport in window
 }
 
-void platform_key_callback(GLFWwindow* win, i32 key, BGL_UNUSED i32 scancode, i32 action, BGL_UNUSED i32 mods)
+void key_callback(GLFWwindow* win, i32 key, BGL_UNUSED i32 scancode, i32 action, BGL_UNUSED i32 mods)
 {
     BGLWindow* window = (BGLWindow*)glfwGetWindowUserPointer(win);
 
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
-        platform_window_toggle_cursor(window);
+        window_toggle_cursor(window);
     }
 }

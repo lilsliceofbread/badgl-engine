@@ -1,6 +1,7 @@
 #include "material.h"
 
 #include "defines.h"
+#include "texture.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,8 +24,8 @@ void material_create(Material* mat, bool is_cubemap_shader, vec3 ambient, vec3 d
     mat->textures = (Texture*)BGL_MALLOC(2 * sizeof(Texture)); // diffuse and specular
     mat->tex_count = 2;
 
-    texture_global_default_create(&mat->textures[0], TEXTURE_DIFFUSE, is_cubemap_shader);
-    texture_global_default_create(&mat->textures[1], TEXTURE_SPECULAR, is_cubemap_shader);
+    texture_global_default_create(&mat->textures[0], BGL_TEXTURE_PHONG_DIFFUSE, is_cubemap_shader);
+    texture_global_default_create(&mat->textures[1], BGL_TEXTURE_PHONG_SPECULAR, is_cubemap_shader);
 }
 
 void material_add_texture(Material* mat, TextureType type, const char* texture_path)
@@ -35,14 +36,14 @@ void material_add_texture(Material* mat, TextureType type, const char* texture_p
         return;
     }
 
-    type &= (TextureType)~(TEXTURE_CUBEMAP | TEXTURE_DEFAULT);
+    type &= (TextureType)~(BGL_TEXTURE_PHONG_CUBEMAP | BGL_TEXTURE_PHONG_DEFAULT);
 
     Texture* tex_to_replace = NULL;
     for(u32 i = 0; i < mat->tex_count; i++)
     {
-        if((mat->textures[i].type & (TextureType)~(TEXTURE_CUBEMAP | TEXTURE_DEFAULT)) != type) continue;
+        if((mat->textures[i].type & (TextureType)~(BGL_TEXTURE_PHONG_CUBEMAP | BGL_TEXTURE_PHONG_DEFAULT)) != type) continue;
 
-        if(!(mat->textures[i].type & TEXTURE_DEFAULT))
+        if(!(mat->textures[i].type & BGL_TEXTURE_PHONG_DEFAULT))
         {
             texture_free(&mat->textures[i]);
         }
@@ -67,12 +68,12 @@ void material_add_texture(Material* mat, TextureType type, const char* texture_p
         texture_create(tex_to_replace, type, texture_path, false);
     }
 
-    if(type & TEXTURE_DIFFUSE)
+    if(type & BGL_TEXTURE_PHONG_DIFFUSE)
     {
         mat->ambient = VEC3(1.0f, 1.0f, 1.0f);
         mat->diffuse = VEC3(1.0f, 1.0f, 1.0f);
     }
-    else if(type & TEXTURE_SPECULAR)
+    else if(type & BGL_TEXTURE_PHONG_SPECULAR)
     {
         mat->specular = VEC3(1.0f, 1.0f, 1.0f);
     }

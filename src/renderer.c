@@ -33,10 +33,11 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
 {
     self->shader_count = 0;
     self->shaders = NULL;
+    self->current_shader = 9999999; // some large value that won't be true for the first check
     self->delta_time = 0.0;
     self->last_time = 0.0;
     self->framecount = 0;
-    self->flags = flags & (RendererFlags)~(_BGL_RD_VSYNC_ENABLED); // set both to false by default
+    self->flags = flags & (RendererFlags)~(_BGL_RD_VSYNC_ENABLED); // set to false by default
 
     i32 major, minor;
     BGL_ASSERT(strlen(version) >= 3, "invalid opengl version");
@@ -44,8 +45,8 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     rd_get_version_major_minor(self, &major, &minor);
     BGL_ASSERT(major == 4 && (2 <= minor && minor <= 6), "opengl versions supported: 4.2 - 4.6 (allows setting of ubo binding in shader)");
 
-    platform_window_init(&self->window, width, height, win_title, major, minor);
-    platform_window_set_resize_callback(&self->window, (BGLWindowResizeFunc)rd_resize_callback);
+    window_init(&self->window, width, height, win_title, major, minor);
+    window_set_resize_callback(&self->window, (BGLWindowResizeFunc)rd_resize_callback);
 
     BGL_ASSERT(gladLoadGL(), "failed to init GLAD");
 
@@ -126,7 +127,7 @@ void rd_draw_triangles(u32 ind_count)
 // annoying fix, sometimes resize callback is delayed
 void rd_update_viewport(Renderer* self)
 {
-    platform_window_update_size(&self->window);
+    window_update_size(&self->window);
     glViewport(0, 0, self->window.width, self->window.height);
 }
 
@@ -166,6 +167,15 @@ bool rd_add_shader(Renderer* self, Arena *scratch, const char** shader_filepaths
     return ret;
 }
 
+void rd_use_shader(Renderer* self, u32 index)
+{
+    if(index != self->current_shader)
+    {
+        shader_use(&self->shaders[index]);
+        self->current_shader = index;
+    }
+}
+
 void rd_set_wireframe(bool useWireframe)
 {
     if(useWireframe)
@@ -180,6 +190,23 @@ void rd_set_wireframe(bool useWireframe)
     }
 }
 
+void rd_cull_face(bool on, bool back)
+{
+    glCullFace(back ? GL_BACK : GL_FRONT);
+    if(on)
+    {
+        glEnable(GL_CULL_FACE);
+    }
+    else {
+        glDisable(GL_CULL_FACE);
+    }
+}
+
+void rd_toggle_vsync(bool on)
+{
+    platform_toggle_vsync(on);
+}
+
 void rd_begin_frame(Renderer* self)
 {
     ImGui_ImplOpenGL3_NewFrame();
@@ -190,6 +217,73 @@ void rd_begin_frame(Renderer* self)
     f64 curr_time = platform_get_time();
     self->delta_time = curr_time - self->last_time;
     self->last_time = curr_time; 
+
+    #ifndef BGL_NO_DEBUG
+    igBegin("renderer", NULL, 0);
+        igText("fps: %f", 1.0f / self->delta_time);
+
+        static bool vsync_on = true;
+        if(igButton("toggle v-sync", (ImVec2){0, 0}))
+        {
+            vsync_on = !vsync_on;
+            rd_toggle_vsync(vsync_on);
+        }
+
+        /* shader hot reloading */
+        static char current_item[MAX_SHADER_FILEPATH] = {0};
+        static u32 current_index = 0;
+        if(igBeginCombo("##shaders", current_item, 0))
+        {
+            for (u32 i = 0; i < self->shader_count; i++)
+            {
+                /* we don't talk about it */
+                const char* source0 = str_find_last_of(self->shaders[i].sources[0], '/');
+                char* extension = str_find_last_of(self->shaders[i].sources[0], '.');
+                BGL_ASSERT(extension > source0, "extension before end of shader filename %s", source0);
+                if(*source0 == '/') source0++; // if path contains / move past it
+                *extension = '\0'; // temporarily end string at .
+                                   
+                bool current_item_selected = current_item == source0;
+                if(igSelectable_Bool(source0, current_item_selected, 0, (ImVec2){0, 0}))
+                {
+                    strcpy(current_item, source0);
+                    current_index = i;
+                }
+                if(current_item_selected)
+                {
+                    igSetItemDefaultFocus();
+                }
+                *extension = '.';
+            }
+            igEndCombo();
+        }
+        if(igButton("hot reload shader", (ImVec2){0, 0}))
+        {
+            /* we REALLY don't talk about it */
+            Shader shader;
+            Arena scratch;
+            char version_str[BGL_RD_VERSION_STRLEN];
+            arena_create_sized(&scratch, KILOBYTES(512));
+            rd_get_version_string(self, version_str);
+            
+            u32 source_count = 0;
+            const char* sources[3];
+            for(int i = 0; i < 3; i++)
+            {
+                const char* current_source = self->shaders[current_index].sources[i];
+                sources[i] = current_source; // need to do this because function requires const char**, cannot take const char* []
+
+                if(current_source[0] != '\0')
+                    source_count++;
+            }
+            if(shader_create(&shader, &scratch, sources, source_count, version_str))
+            {
+                shader_free(&self->shaders[current_index]);
+                self->shaders[current_index] = shader;
+            }
+        }
+        igEnd();
+    #endif
 }
 
 void rd_end_frame(Renderer* self)
@@ -197,11 +291,11 @@ void rd_end_frame(Renderer* self)
     igRender();
     ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
 
-    platform_window_swap_buffers(&self->window);
+    window_swap_buffers(&self->window);
 
     self->framecount++;
 
-    platform_window_poll_events(&self->window);
+    window_poll_events(&self->window);
 }
 
 void rd_free(Renderer* self)
@@ -220,7 +314,7 @@ void rd_free(Renderer* self)
     ImGui_ImplGlfw_Shutdown();
     igDestroyContext(self->imgui_ctx);
 
-    platform_window_free(&self->window);
+    window_free(&self->window);
 }
 
 void rd_resize_callback(BGLWindow* window)

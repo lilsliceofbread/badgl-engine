@@ -6,10 +6,10 @@
 #include <math.h>
 #include <types.h>
 
-#define      GL_PI 3.14159265358979323846f
-#define GL_DEG2RAD 0.01745329251994329576f // PI / 180
+#define      BGL_PI 3.14159265358979323846f
+#define BGL_DEG2RAD 0.01745329251994329576f // PI / 180
 
-#define RADIANS(deg) ((deg) * GL_DEG2RAD)
+#define RADIANS(deg) ((deg) * BGL_DEG2RAD)
 
 #define CLAMP(val, lower, upper) ((val) < (lower)) ? (lower) : ((val) > (upper)) ? (upper) : (val)
 

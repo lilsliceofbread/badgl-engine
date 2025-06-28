@@ -26,23 +26,21 @@ void shapes_uv_sphere(Model* self, Arena* scratch, u32 res, const Material* mate
     };
     u32* indices = (u32*)arena_alloc(scratch, total_indices * sizeof(u32));
 
-    // top vertex
+    /* top vertex */
     vertex_buffer.pos[0].x = 0.0f;
     vertex_buffer.pos[0].y = 1.0f;
     vertex_buffer.pos[0].z = 0.0f;
-
     vert_count++;
 
     const f32 inv_hori = 1.0f / (f32)horizontals;
     const f32 inv_vert = 1.0f / (f32)verticals;
-    const f32 pi2 = 2.0f * GL_PI; // multiply 2 * PI before hand
     for(u32 i = 0; i < horizontals; i++) // latitudes (start after top vertex (i+1) and stop before bottom vertex (< not <=))
     {
-        // only 1PI because horizontal stacks will only need to sweep half the circle (other half is just the reverse)
-        const f32 horizontal_angle = (f32)(i + 1) * GL_PI * inv_hori;
+        /* only 1PI because horizontal stacks will only need to sweep half the circle (other half is just the reverse) */
+        const f32 horizontal_angle = (f32)(i + 1) * BGL_PI * inv_hori;
 
         const f32 radius = sinf(horizontal_angle);
-        const f32 y = cosf(horizontal_angle); // same for whole horizontal
+        const f32 y = cosf(horizontal_angle);
 
         for(u32 j = 0; j < verticals; j++) // longitudes (< to stop before 2PI which is a repeat of 0)
         {
@@ -51,10 +49,10 @@ void shapes_uv_sphere(Model* self, Arena* scratch, u32 res, const Material* mate
              * since opengl is right-handed this creates vertices clockwise
              * as the unit circle is reversed with +z going "down"
              */
-            f32 vertical_angle = (f32)j * pi2 * inv_vert;
+            f32 vertical_angle = (f32)j * 2 * BGL_PI * inv_vert;
 
+            /* calculate cartesian coords from spherical*/
             vec3 pos;
-            // calculate cartesian coords from spherical
             pos.x = radius * cosf(vertical_angle);
             pos.y = y;
             pos.z = radius * sinf(vertical_angle);
@@ -63,16 +61,15 @@ void shapes_uv_sphere(Model* self, Arena* scratch, u32 res, const Material* mate
             vert_count++;
         }
     }
-    // this creates (horizontals - 1) horizontals as the loop goes from 1 to horizontals
+    /* this creates (horizontals - 1) horizontals as the loop goes from 1 to horizontals */
 
-    // bottom vertex
+    /* bottom vertex */
     vertex_buffer.pos[vert_count].x = 0.0f;
     vertex_buffer.pos[vert_count].y = -1.0f;
     vertex_buffer.pos[vert_count].z = 0.0f;
-
     vert_count++;
 
-    // top triangle's indices
+    /* top triangle's indices */
     for(u32 i = 0; i < verticals; i++)
     {
         u32 p1 = (i) + 1; // add 1 because 0 is top vertex
@@ -104,7 +101,7 @@ void shapes_uv_sphere(Model* self, Arena* scratch, u32 res, const Material* mate
             u32 br = layer2 + j;
             u32 bl = layer2 + (j + 1) % verticals;
 
-            // counter-clockwise quad indices
+            /* counter-clockwise quad indices */
             indices[ind_count] = tr;
             indices[ind_count + 1] = tl;
             indices[ind_count + 2] = bl;
@@ -118,7 +115,7 @@ void shapes_uv_sphere(Model* self, Arena* scratch, u32 res, const Material* mate
 
     }
 
-    // bottom triangle's indices
+    /* bottom triangle's indices */
     const u32 final_layer_index = verticals * (horizontals - 2) + 1; // add 1 because of top vertex
     for(u32 i = 0; i < verticals; i++)
     {
@@ -152,12 +149,12 @@ void shapes_box(Model* self, Arena* scratch, f32 width, f32 height, f32 depth, c
     };
 
     {
-        // half width, height, depth
+        /* half width, height, depth */
         const f32 hw = 0.5f * width;
         const f32 hh = 0.5f * height;
         const f32 hd = 0.5f * depth;
 
-        // need to specify 24 vertices to allow normals to be flat
+        /* need to specify 24 vertices to allow normals to be flat */
         const vec3 vertex_positions[] = {
             {-hw, -hh, hd}, // front
             { hw, -hh, hd},
@@ -304,7 +301,7 @@ void shapes_plane(Model* self, Arena* scratch, f32 width, f32 height, u32 res, c
     {
         for(u32 x = 0; x < res - 1; x++)
         {
-            // anti-clockwise indices
+            /* anti-clockwise indices */
             indices[idx]     = (res * y)       + x + 1; // top right
             indices[idx + 1] = (res * y)       + x;     // top left
             indices[idx + 2] = (res * (y + 1)) + x;     // bottom left

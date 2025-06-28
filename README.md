@@ -20,6 +20,8 @@ a bash/batch script is used to build and then move resources files into the same
 
 *Windows*: build with `./build.bat`. if using MinGW GCC compiler is available it will be used. if you want to use a specific compiler you need to edit the cmake command within build.bat, along with the Makefile type.
 
+*macOS*: unsupported
+
 # using the engine
 
 - the example program should help to give some idea of the structure of the engine

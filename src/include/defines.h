@@ -19,9 +19,9 @@
     #define BGL_PERFORMANCE_START()
     #define BGL_PERFORMANCE_END(str)
 #else
-    #ifdef __linux__
+    #if defined(__linux__)
         #define BGL_EXIT() __builtin_trap()
-    #elif _WIN32
+    #elif defined(_WIN32)
         #define BGL_EXIT() __debugbreak()
     #endif
 
@@ -54,7 +54,7 @@
 
 #ifdef _WIN32
     #define BGL_EXPORT __declspec(dllexport)
-#elif __linux__
+#else
     #define BGL_EXPORT
 #endif
 
@@ -85,8 +85,8 @@ if(count + increase > prev_max)                                                 
 #define INT_TO_CHAR(i) (char)((i) + 0x30)
 
 /* expand macro and convert to string */
-#define _MACRO_TO_STR(macro) #macro
-#define MACRO_TO_STR(macro) _MACRO_TO_STR(macro)
+#define MACRO_TO_MACRO_NAME(macro) #macro
+#define MACRO_TO_STR(macro) MACRO_TO_MACRO_NAME(macro)
 
 
 #endif

@@ -1,4 +1,5 @@
 #include "quad.h"
+#include "texture.h"
 
 Quad quad_create(vec2 pos, vec2 size, const char* texture_path)
 {
@@ -34,14 +35,14 @@ Quad quad_create(vec2 pos, vec2 size, const char* texture_path)
 
     vao_unbind();
 
-    if(texture_path != NULL) texture_create(&self.texture, TEXTURE_DIFFUSE, texture_path, false); // type not really necessary
+    if(texture_path != NULL) texture_create(&self.texture, BGL_TEXTURE_PHONG_DIFFUSE, texture_path, false); // type not really necessary
 
     return self;
 }
 
 void quad_draw(Quad* self, Renderer* rd)
 {
-    shader_use(&rd->shaders[rd->quad_shader]);
+    rd_use_shader(rd, rd->quad_shader);
 
     texture_bind(&self->texture); // only one texture so no need to use uniform to associate with sampler n stuff
 

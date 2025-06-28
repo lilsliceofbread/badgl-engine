@@ -5,13 +5,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef __linux__
-    #define GET_LAST_FILE_SEPARATOR(name, path) char* name = str_find_last_of(path, '/')
-#elif _WIN32
-    #define GET_LAST_FILE_SEPARATOR(name, path)           \
-    char* _last_slash = str_find_last_of(path, '/');      \
-    char* _last_backslash = str_find_last_of(path, '\\'); \
-    char* name = _last_slash > _last_backslash ? _last_slash : _last_backslash
+#ifdef _WIN32
+#define GET_LAST_FILE_SEPARATOR(name, path)           \
+char* _last_slash = str_find_last_of(path, '/');      \
+char* _last_backslash = str_find_last_of(path, '\\'); \
+char* name = _last_slash > _last_backslash ? _last_slash : _last_backslash
+#else
+#define GET_LAST_FILE_SEPARATOR(name, path) char* name = str_find_last_of(path, '/')
 #endif
 
 char* get_file_data(const char* filepath)
@@ -46,7 +46,7 @@ char* get_file_data(const char* filepath)
 char* str_find_last_of(const char* str, char c)
 {
     if(str == NULL) return NULL;
-    char* latest_occurrence = NULL;
+    char* latest_occurrence = (char*)str;
 
     while(*str != '\0')
     {

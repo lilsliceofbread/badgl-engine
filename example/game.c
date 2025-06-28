@@ -11,10 +11,7 @@ static struct
     Renderer rd;
     Scene scenes[MAX_SCENES];
     u32 scene_count;
-
     u32 current_scene;
-    i32 light_index;
-    bool is_vsync_on;
 } s; // game state
 
 void game_add_models(Arena* arena);
@@ -27,7 +24,6 @@ void game_init()
 {
     s.scene_count = 0;
     s.current_scene = 0;
-    s.is_vsync_on = true;
 
     Arena arena;
     arena_create(&arena); // create arena for loading data
@@ -59,54 +55,15 @@ void game_init()
 
 void game_run(void)
 {
-    while(!platform_window_should_close(&s.rd.window))
+    while(!window_should_close(&s.rd.window))
     {
         rd_begin_frame(&s.rd);
 
-        igBegin("settings", NULL, 0);
-            igText("fps: %f", 1.0f / s.rd.delta_time);
-
-            if(igButton("toggle v-sync", (ImVec2){0, 0}))
-            {
-                platform_toggle_vsync(!s.is_vsync_on);
-                s.is_vsync_on = !s.is_vsync_on; 
-            }
-
+        igBegin("game", NULL, 0);
             if(igButton("next scene", (ImVec2){0, 0}))
             {
                 s.current_scene = (s.current_scene + 1) % s.scene_count;
                 scene_switch(&s.scenes[s.current_scene], &s.rd);
-            }
-
-            {
-                igText("light editor");
-
-                Scene* scene = &s.scenes[s.current_scene];
-
-                igInputInt("current light", &s.light_index, 1, 1, 0);
-                s.light_index = CLAMP(s.light_index, 0, scene->light_count - 1);
-
-                Light* light = &scene->lights[s.light_index];
-                DirLight* dir_light = &scene->dir_light;
-
-                igText("position:");
-                igInputFloat("x", (f32*)&light->pos.x, 0.5f, 0.5f, "%.1f", 0);
-                igInputFloat("y", (f32*)&light->pos.y, 0.5f, 0.5f, "%.1f", 0);
-                igInputFloat("z", (f32*)&light->pos.z, 0.5f, 0.5f, "%.1f", 0);
-                igColorEdit3("ambient", (f32*)&light->ambient, 0);
-                igColorEdit3("diffuse", (f32*)&light->diffuse, 0);
-                igColorEdit3("specular", (f32*)&light->specular, 0);
-                igSliderFloat3("attenuation", (f32*)&light->attenuation, 0.0f, 1.0f, "%.3f", 0);
-
-                igDummy((ImVec2){1, 1}); // spacing
-                igText("directional light");
-
-                igSliderFloat3("direction", (f32*)&dir_light->dir, -1.0f, 1.0f, "%.2f", 0);
-                igColorEdit3("ambient##1", (f32*)&dir_light->ambient, 0);
-                igColorEdit3("diffuse##1", (f32*)&dir_light->diffuse, 0);
-                igColorEdit3("specular##1", (f32*)&dir_light->specular, 0);
-
-                scene_update_lights(scene, &s.rd); // this updates light data and light graphics as well, because we are rendering this scene
             }
         igEnd();
 
@@ -131,7 +88,7 @@ void loading_begin(void)
 {
     Quad loading_screen = quad_create(VEC2(-1.0f, -1.0f), VEC2(2.0f, 2.0f), "res/loading.png");
 
-    platform_window_update_size(&s.rd.window); // update window width/height
+    window_update_size(&s.rd.window); // update window width/height
 
     i32 width = s.rd.window.width;
     i32 height = s.rd.window.height;
@@ -141,7 +98,7 @@ void loading_begin(void)
     rd_set_viewport((width / 2) - (size / 2), (height / 2) - (size / 2), size, size);
 
     quad_draw(&loading_screen, &s.rd);
-    platform_window_swap_buffers(&s.rd.window);
+    window_swap_buffers(&s.rd.window);
 
     quad_free(&loading_screen);
 }
@@ -166,7 +123,10 @@ void game_add_models(Arena* arena)
     /* create shaders for our models */
 
     u32 model_shader, sphere_shader;
-    const char* shader_filepaths[] = {"shaders/model.vert", "shaders/model.frag", "shaders/sphere.vert", "shaders/sphere.frag"};
+    const char* shader_filepaths[] = {
+        "shaders/phong.vert", "shaders/phong.frag",
+        "shaders/sphere.vert", "shaders/phong_cubemap.frag" // sphere has different vertex shader since it's normals and uvs are determined from positions
+    };
     if(!rd_add_shader(&s.rd, arena, &shader_filepaths[0], 2, &model_shader)
     || !rd_add_shader(&s.rd, arena, &shader_filepaths[2], 2, &sphere_shader))
     {
@@ -185,8 +145,8 @@ void game_add_models(Arena* arena)
                     VEC3(0.0f, 0.0f, 0.0f),
                     VEC3(0.0f, 0.0f, 0.0f),
                     VEC3(0.0f, 0.0f, 0.0f), 32.0f);
-    material_add_texture(&materials[0], TEXTURE_DIFFUSE, "res/earth_day_diffuse.png");
-    material_add_texture(&materials[0], TEXTURE_SPECULAR, "res/earth_specular.png");
+    material_add_texture(&materials[0], BGL_TEXTURE_PHONG_DIFFUSE, "res/earth_day_diffuse.png");
+    material_add_texture(&materials[0], BGL_TEXTURE_PHONG_SPECULAR, "res/earth_specular.png");
 
     material_create(&materials[1], true,
                     VEC3(0.8f, 0.1f, 0.2f),

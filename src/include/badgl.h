@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "glmath.h"
+#include "bgl_math.h"
 #include "scene.h"
 #include "renderer.h"
 #include "camera.h"

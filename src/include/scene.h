@@ -6,7 +6,7 @@
 #include "model.h"
 #include "skybox.h"
 #include "arena.h"
-#include "glmath.h"
+#include "bgl_math.h"
 #include "light.h"
 
 #include "defines.glsl"

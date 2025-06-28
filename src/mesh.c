@@ -27,7 +27,7 @@ void mesh_create(Mesh* self,
         use_normals = true;
         vertex_size += 3;
     }
-    if(vertex_buffer.uv != NULL)
+    if(vertex_buffer.uv != NULL) // TODO: allow cubemap tex coords
     {
         use_UVs = true;
         vertex_size += 2;
@@ -59,7 +59,7 @@ void mesh_create(Mesh* self,
     vao_attribute(0, 3, GL_FLOAT, 3 * sizeof(f32), 0);
     if(use_normals) vao_attribute(1, 3, GL_FLOAT, 3 * sizeof(f32), 3 * single_size);
 
-    if(use_UVs) 
+    if(use_UVs)
     {
         u32 index = 1 + (u32)use_normals; // if normals used then will be 2, otherwise 1
         size_t offset = use_normals ? 6 * single_size : 3 * single_size;

@@ -1,11 +1,10 @@
 #include "shader_parser.h"
 #include "util.h"
+#include "defines.glsl"
 
 // TODO: test geometry shader
 
 /* for #include directive */
-#define MAX_SHADER_FILEPATH 512 
-
 #define PARSER_ALLOC_SIZE(parser) ((parser)->first - (parser)->prev_edit) // alloc from prev_edit to before first char of token (-1 + 1)
 
 #define PARSER_ASSERT(cond, msg, ...) \
@@ -26,6 +25,7 @@
 void skip_whitespace(ShaderParser* parser);
 void next_token(ShaderParser* parser);
 bool token_strequal(ShaderParser* parser, const char* string);
+void token_add_uniform_name(ShaderParser* parser, Uniform* uniform);
 
 bool parser_alloc(ShaderParser* parser, Arena* scratch, u64 size);
 bool add_version_directive(ShaderParser* parser, Arena* scratch);
@@ -167,28 +167,63 @@ bool add_version_directive(ShaderParser* parser, Arena* scratch)
     return true;
 }
 
+void token_add_uniform_name(ShaderParser* parser, Uniform* uniform)
+{
+    u64 length = parser->last - parser->first;
+    if(length >= MAX_UNIFORM_NAME - 1) return; // consider \0
+
+    memcpy(uniform->name, parser->code + parser->first, length);
+    uniform->name[length] = '\0';
+
+}
+
+/* assumes immediate whitespace after semicolon, it may have a comment
+ * after or another uniform with no newline in between which messes this up */
 void process_uniform(ShaderParser* parser, Shader* shader)
 {
     Uniform uniform;
 
     next_token(parser);
-    // TODO: store type, use 32KB arena in Shader for allocation?
-    next_token(parser);
-
-    /* next part assumes immediate whitespace after semicolon, it may have a comment
-     * after or another uniform with no newline in between which messes this up */
-    u64 length = parser->last - parser->first;
-    if(length >= MAX_UNIFORM_NAME - 1) return; // consider \0
-
-    memcpy(uniform.name, parser->code + parser->first, length);
-    uniform.name[length] = '\0';
+    if(token_strequal(parser, "sampler2D") || token_strequal(parser, "samplerCube")) // TODO: add more 
+    {
+        next_token(parser);
+        // TODO: add more when more textures added
+        parser->last--; // remove semicolon
+        if(token_strequal(parser, MACRO_TO_MACRO_NAME(BGL_GLSL_TEXTURE_DIFFUSE)))
+        {
+            strncpy(uniform.name, MACRO_TO_STR(BGL_GLSL_TEXTURE_DIFFUSE), MAX_UNIFORM_NAME);
+        }
+        else if(token_strequal(parser, MACRO_TO_MACRO_NAME(BGL_GLSL_TEXTURE_SPECULAR)))
+        {
+            strncpy(uniform.name, MACRO_TO_STR(BGL_GLSL_TEXTURE_SPECULAR), MAX_UNIFORM_NAME);
+        }
+        else
+        {
+            parser->last++;
+            token_add_uniform_name(parser, &uniform);
+            BGL_LOG_INFO("non-standard name for sampler uniform: %s", uniform.name);
+            parser->last--;
+        }
+        parser->last++; // add back semicolon
+    }
+    else if(token_strequal(parser, "Material") || token_strequal(parser, "DirLight")) // struct uniforms are too complicated
+    {
+        parser->last++;
+        return;
+    }
+    else
+    {
+        next_token(parser);
+        if(parser->code[parser->first] == '{') return; // ubo - don't bother with it now will be cached later
+        token_add_uniform_name(parser, &uniform);
+    }
 
     /* ignore duplicates from previously processed shaders */
     for(u32 i = 0; i < shader->uniform_count; i++)
     {
-        if(strcmp(uniform.name, shader->uniforms[i].name) == 0)
-            return;
+        if(strcmp(uniform.name, shader->uniforms[i].name) == 0) return;
     }
+    if(strcmp(uniform.name, "") == 0) BGL_LOG_ERROR("%s", parser->code + parser->first);
 
     BLOCK_RESIZE_ARRAY(&shader->uniforms, Uniform, shader->uniform_count, 1);
     shader->uniforms[shader->uniform_count++] = uniform;

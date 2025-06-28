@@ -21,7 +21,7 @@ void scene_send_lights(Scene* self, Renderer* rd);
 void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
 {
     const f32 aspect_ratio = (f32)(rd->window.width) / (f32)(rd->window.height); // without cast does int division for aspect ratio... fun bug
-    self->cam = camera_create(start_pos, start_euler.x, start_euler.y, MOVESPEED, SENSITIVITY);
+    camera_create(&self->cam, start_pos, start_euler.x, start_euler.y, MOVESPEED, SENSITIVITY);
     camera_update_proj(&self->cam, DEFAULT_FOV, aspect_ratio, DEFAULT_ZNEAR, DEFAULT_ZFAR);
 
     self->models = NULL;
@@ -150,6 +150,49 @@ void scene_switch(Scene* self, Renderer* rd)
 // TODO: remove renderer from update
 void scene_update(Scene* self, Renderer* rd)
 {
+    #ifndef BGL_NO_DEBUG
+    igBegin("scene", NULL, 0);
+        igText("light editor");
+
+        static i32 light_editor_index = 0;
+        igInputInt("current light", &light_editor_index, 1, 1, 0);
+        light_editor_index = CLAMP(light_editor_index, 0, self->light_count - 1);
+
+        Light* light = &self->lights[light_editor_index];
+        DirLight* dir_light = &self->dir_light;
+
+        igText("position:");
+        igInputFloat("x", (f32*)&light->pos.x, 0.5f, 0.5f, "%.1f", 0);
+        igInputFloat("y", (f32*)&light->pos.y, 0.5f, 0.5f, "%.1f", 0);
+        igInputFloat("z", (f32*)&light->pos.z, 0.5f, 0.5f, "%.1f", 0);
+        igColorEdit3("ambient", (f32*)&light->ambient, 0);
+        igColorEdit3("diffuse", (f32*)&light->diffuse, 0);
+        igColorEdit3("specular", (f32*)&light->specular, 0);
+        igSliderFloat3("attenuation", (f32*)&light->attenuation, 0.0f, 1.0f, "%.3f", 0);
+
+        igDummy((ImVec2){1, 1}); // spacing
+        igText("directional light");
+
+        igSliderFloat3("direction", (f32*)&dir_light->dir, -1.0f, 1.0f, "%.2f", 0);
+        igColorEdit3("ambient##1", (f32*)&dir_light->ambient, 0);
+        igColorEdit3("diffuse##1", (f32*)&dir_light->diffuse, 0);
+        igColorEdit3("specular##1", (f32*)&dir_light->specular, 0);
+
+        static bool always_update_lights = true;
+        if(igButton("light updates:", (ImVec2){0, 0})) always_update_lights = !always_update_lights; // stop lights updating every frame
+        igSameLine(0.0f, 7.0f);                                                                                 
+        if(always_update_lights) 
+        {
+            igText("on");
+            scene_update_lights(self, rd); // this updates light data and light graphics as well, because we are rendering this scene
+        }
+        else
+        {
+            igText("off");
+        }
+    igEnd();
+    #endif
+
     if(self->user_update_func != NULL) self->user_update_func(self);
 
     camera_update(&self->cam, &rd->window, (f32)rd->delta_time);
@@ -234,9 +277,7 @@ void scene_send_lights(Scene* self, Renderer* rd)
 
     for(u32 i = 0; i < shader_count; i++)
     {
-        Shader* curr_shader = &rd->shaders[shaders[i]];
-
-        shader_use(curr_shader);
-        dir_light_set_uniforms(&self->dir_light, curr_shader);
+        rd_use_shader(rd, shaders[i]);
+        dir_light_set_uniforms(&self->dir_light, &rd->shaders[shaders[i]]);
     }
 }

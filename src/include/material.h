@@ -1,7 +1,7 @@
 #ifndef BGL_MATERIAL_H
 #define BGL_MATERIAL_H
 
-#include "glmath.h"
+#include "bgl_math.h"
 #include "texture.h"
 #include "shader.h"
 
@@ -35,7 +35,7 @@ void material_create(Material* mat, bool is_cubemap_shader, vec3 ambient, vec3 d
  * @note   if a texture of type already exists, and is not the default texture, it will be freed and replaced with the new texture
  * @note   textures always take priority over colour values i.e. if a material has a specular texture, the specular colour will be set to white and ignored
  * @param  mat: an already created material
- * @param  type: type must be of TEXTURE_DIFFUSE, TEXTURE_SPECULAR, or TEXTURE_NORMAL (TEXTURE_CUBEMAP and TEXTURE_DEFAULT are irrelevant flags and are ignored)
+ * @param  type: type must be of BGL_TEXTURE_PHONG_DIFFUSE, BGL_TEXTURE_PHONG_SPECULAR, or BGL_TEXTURE_PHONG_NORMAL (TEXTURE_CUBEMAP and TEXTURE_DEFAULT are irrelevant flags and are ignored)
  * @param  texture_path: path to texture (if using cubemap, see texture_cubemap_create for more details)
  */
 void material_add_texture(Material* mat, TextureType type, const char* texture_path);

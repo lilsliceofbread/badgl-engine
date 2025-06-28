@@ -4,10 +4,11 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/mesh.h>
+
 #include <string.h>
 #include "defines.h"
 #include "arena.h"
-#include "glmath.h"
+#include "bgl_math.h"
 #include "platform.h"
 #include "texture.h"
 #include "renderer.h"
@@ -50,11 +51,11 @@ bool model_load(Model* self, Arena* scratch, const char* path, u32 shader_idx)
     self->mesh_count = 0;
     self->meshes = (Mesh*)BGL_MALLOC(scene->mNumMeshes * sizeof(Mesh)); // allocate enough meshes
 
-    u8* init_pos = arena_alloc(scratch, 0);
+    u8* arena_init_pos = arena_alloc(scratch, 0);
 
     bool success = model_process_node(self, scratch, scene->mRootNode, scene);
 
-    arena_collapse(scratch, init_pos);
+    arena_collapse(scratch, arena_init_pos);
 
     aiReleaseImport(scene);
 
@@ -69,12 +70,12 @@ bool model_load(Model* self, Arena* scratch, const char* path, u32 shader_idx)
         Texture tex = self->material.textures[i];
 
         // TODO: make use material functions instead
-        if(tex.type & TEXTURE_DIFFUSE)
+        if(tex.type & BGL_TEXTURE_PHONG_DIFFUSE)
         {
             self->material.ambient = VEC3(1.0f, 1.0f, 1.0f);
             self->material.diffuse = VEC3(1.0f, 1.0f, 1.0f);
         }
-        else if(tex.type & TEXTURE_SPECULAR)
+        else if(tex.type & BGL_TEXTURE_PHONG_SPECULAR)
         {
             self->material.specular = VEC3(1.0f, 1.0f, 1.0f);
         }
@@ -100,14 +101,14 @@ void model_update_transform(Model* self, const Transform* transform)
 
 void model_draw(Model* self, Renderer* rd, Camera* cam)
 {
-    Shader* shader = &rd->shaders[self->shader_idx];
+    Shader* shader = &rd->shaders[self->shader_idx]; // TODO: move draw funcs into rendersystem to fix this
 
     // TODO: calculate normal matrix here instead of in shader
     mat4 mvp, model_view;
     mat4_mul(&model_view, cam->view, self->model);
-    mat4_mul(&mvp, cam->proj, model_view);
+    mat4_mul(&mvp, cam->projection, model_view);
 
-    shader_use(shader);
+    rd_use_shader(rd, self->shader_idx);
     
     material_set_uniforms(&self->material, shader);
 
@@ -235,8 +236,8 @@ bool model_process_mesh(Model* self, Arena* arena, struct aiMesh* model_mesh, co
 
     u32* diff_indices;
     u32* spec_indices;
-    if(!model_load_textures(self, mat, TEXTURE_DIFFUSE, &diff_indices, &diffuse_count)) return false;
-    if(!model_load_textures(self, mat, TEXTURE_SPECULAR, &spec_indices, &specular_count)) return false;
+    if(!model_load_textures(self, mat, BGL_TEXTURE_PHONG_DIFFUSE, &diff_indices, &diffuse_count)) return false;
+    if(!model_load_textures(self, mat, BGL_TEXTURE_PHONG_SPECULAR, &spec_indices, &specular_count)) return false;
 
     total_textures = diffuse_count + specular_count;
     if(total_textures)
@@ -257,7 +258,7 @@ bool model_process_mesh(Model* self, Arena* arena, struct aiMesh* model_mesh, co
 
 bool model_load_textures(Model* self, struct aiMaterial* mat, TextureType type, u32** tex_indices_out, u32* tex_count_out)
 {
-    enum aiTextureType ai_type = type == TEXTURE_DIFFUSE ? aiTextureType_DIFFUSE : aiTextureType_SPECULAR;
+    enum aiTextureType ai_type = type == BGL_TEXTURE_PHONG_DIFFUSE ? aiTextureType_DIFFUSE : aiTextureType_SPECULAR;
     u32 tex_count = aiGetMaterialTextureCount(mat, ai_type); // textures of given type
     *tex_indices_out = NULL;
     *tex_count_out = tex_count;

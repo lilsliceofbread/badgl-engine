@@ -5,7 +5,7 @@
 #include "defines.h"
 #include "shader_parser.h"
 #include "util.h"
-#include "glmath.h"
+#include "bgl_math.h"
 #include "arena.h"
 
 #define INFO_LOG_SIZE 512 
@@ -25,7 +25,7 @@
  */
 bool shader_compile(const char* shader_code, GLenum shader_type, u32* shader_out);
 
-bool shader_create(Shader* self, Arena* scratch, const char** shader_filepaths, u32 shader_count, const char* version_str)
+bool shader_create(Shader* self, Arena* scratch, const char* const* shader_filepaths, u32 shader_count, const char* version_str)
 {
     BGL_PERFORMANCE_START();
 
@@ -40,6 +40,7 @@ bool shader_create(Shader* self, Arena* scratch, const char** shader_filepaths, 
 
     self->uniform_count = 0;
     self->uniforms = NULL;
+    memset(self->sources, 0, 3 * MAX_SHADER_FILEPATH);
 
     for(u32 i = 0; i < shader_count; i++)
     {
@@ -52,14 +53,20 @@ bool shader_create(Shader* self, Arena* scratch, const char** shader_filepaths, 
         if(strcmp(extension, ".vert") == 0 || strcmp(extension, ".glsl") == 0)
         {
             shader_code[0] = arena_read_file(scratch, path, NULL);
+            if(strlen(path) < MAX_SHADER_FILEPATH - 1)
+                strncpy(self->sources[0], path, MAX_SHADER_FILEPATH);
         }
         else if(strcmp(extension, ".frag") == 0)
         {
             shader_code[1] = arena_read_file(scratch, path, NULL);
+            if(strlen(path) < MAX_SHADER_FILEPATH - 1)
+                strncpy(self->sources[1], path, MAX_SHADER_FILEPATH);
         }
         else if(strcmp(extension, ".geom") == 0)
         {
             shader_code[2] = arena_read_file(scratch, path, NULL);
+            if(strlen(path) < MAX_SHADER_FILEPATH - 1)
+                strncpy(self->sources[2], path, MAX_SHADER_FILEPATH);
         }
         else
         {
@@ -133,10 +140,10 @@ bool shader_create(Shader* self, Arena* scratch, const char** shader_filepaths, 
     for(u32 i = 0; i < self->uniform_count; i++)
     {
         i32 location = glGetUniformLocation(self->id, self->uniforms[i].name);
-        /*if(location == -1)
+        if(location == -1)
         {
             BGL_LOG_WARN("uniform %s was not given a location in program. name of one of the shader sources: %s", self->uniforms[i].name, shader_filepaths[0]);
-        }*/
+        }
         self->uniforms[i].location = location;
     }
 

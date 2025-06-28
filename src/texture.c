@@ -29,6 +29,7 @@
 static struct
 {
     i32 max_texture_units;
+    /* white 1x1 textures which allow shaders to work for both textures and solid colours */
     Texture texture_default;
     Texture cubemap_default;
 } texture_ctx;
@@ -114,7 +115,7 @@ void texture_default_create(Texture* self, u8 brightness, TextureType type)
 
     self->width = 1;
     self->height = 1;
-    self->type = type | TEXTURE_DEFAULT;
+    self->type = type | BGL_TEXTURE_PHONG_DEFAULT;
 
     memset(self->path, 0, MAX_PATH_LENGTH);
     BGL_LOG_INFO("created 1x1 default texture of id: %u", self->id);
@@ -140,7 +141,7 @@ void texture_default_cubemap_create(Texture* self, u8 brightness, TextureType ty
 
     self->width = 1; 
     self->height = 1;
-    self->type = type | TEXTURE_DEFAULT | TEXTURE_CUBEMAP;
+    self->type = type | BGL_TEXTURE_PHONG_DEFAULT | BGL_TEXTURE_PHONG_CUBEMAP;
 
     memset(self->path, 0, MAX_PATH_LENGTH);
     BGL_LOG_INFO("created 1x1 default cubemap of id: %u", self->id);
@@ -171,7 +172,7 @@ void texture_cubemap_create(Texture* self, TextureType type, const char* path)
         texture_multi_image_cubemap_create(self, full_path); // if path is incorrect, will error in this function
     }
 
-    self->type = type | TEXTURE_CUBEMAP;
+    self->type = type | BGL_TEXTURE_PHONG_CUBEMAP;
 
     strncpy(self->path, full_path, MAX_PATH_LENGTH);
 
@@ -180,7 +181,7 @@ void texture_cubemap_create(Texture* self, TextureType type, const char* path)
 
 void texture_bind(Texture* self)
 {
-    GLenum target = self->type & TEXTURE_CUBEMAP ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D; 
+    GLenum target = self->type & BGL_TEXTURE_PHONG_CUBEMAP ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D; 
     glBindTexture(target, self->id);
 }
 
@@ -197,9 +198,9 @@ void texture_free(Texture* self)
 
 const char* texture_type_get_str(TextureType type)
 {
-    if(type & TEXTURE_DIFFUSE) return MACRO_TO_STR(BGL_GLSL_TEXTURE_DIFFUSE);
-    if(type & TEXTURE_SPECULAR) return MACRO_TO_STR(BGL_GLSL_TEXTURE_SPECULAR);
-    if(type & TEXTURE_NORMAL) return MACRO_TO_STR(BGL_GLSL_TEXTURE_NORMAL);
+    if(type & BGL_TEXTURE_PHONG_DIFFUSE) return MACRO_TO_STR(BGL_GLSL_TEXTURE_DIFFUSE);
+    if(type & BGL_TEXTURE_PHONG_SPECULAR) return MACRO_TO_STR(BGL_GLSL_TEXTURE_SPECULAR);
+    if(type & BGL_TEXTURE_PHONG_NORMAL) return MACRO_TO_STR(BGL_GLSL_TEXTURE_NORMAL);
     BGL_ASSERT(false, "invalid texture type %d", (i32)type);
     return NULL;
 }

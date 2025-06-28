@@ -5,6 +5,7 @@
 #include "cimgui.h"
 
 #include "defines.h"
+#include "window.h"
 #include "shader.h"
 
 typedef enum RendererFlags
@@ -24,6 +25,7 @@ typedef struct Renderer
     Shader* shaders;
     u32 skybox_shader, quad_shader, light_shader; // light shader is the shader for the model associated with light
     u32 shader_count;
+    u32 current_shader;
 
     f64 last_time, delta_time;
     u64 framecount;
@@ -65,6 +67,11 @@ void rd_end_frame(Renderer* self);
 bool rd_add_shader(Renderer* self, Arena* scratch, const char** shader_filepaths, u32 shader_count, u32* shader_out);
 
 /**
+ * @param  index: index of shader given by rd_add_shader
+ */
+void rd_use_shader(Renderer* self, u32 index);
+
+/**
  * @brief  manually update the glViewport to match the window (sometimes it doesn't happen automatically so if you need to, use this)
  */
 void rd_update_viewport(Renderer* self);
@@ -81,6 +88,14 @@ void rd_set_viewport(i32 x, i32 y, i32 width, i32 height);
  * @param  useWireframe: true for wireframe, false for normal
  */
 void rd_set_wireframe(bool useWireframe);
+
+/**
+ * @param  on: turns on face culling
+ * @param  back: should cull the front or the back face
+ */
+void rd_cull_face(bool on, bool back);
+
+void rd_toggle_vsync(bool on);
 
 void rd_free(Renderer* self);
 

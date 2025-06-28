@@ -1,7 +1,7 @@
 #ifndef BGL_MESH_H
 #define BGL_MESH_H
 
-#include "glmath.h"
+#include "bgl_math.h"
 #include "texture.h"
 #include "vao.h"
 #include "bo.h"

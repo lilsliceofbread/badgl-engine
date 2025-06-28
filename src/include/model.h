@@ -1,16 +1,11 @@
 #ifndef BGL_MODEL_H
 #define BGL_MODEL_H
 
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/mesh.h>
-
 #include "mesh.h"
 #include "texture.h"
 #include "shader.h"
 #include "renderer.h"
-#include "glmath.h"
+#include "bgl_math.h"
 #include "util.h"
 #include "camera.h"
 #include "material.h"
@@ -22,10 +17,11 @@ typedef struct Model
 {
     Mesh* meshes;
     u32 mesh_count;
-    u32 shader_idx;
 
     char directory[MAX_PATH_LENGTH];
-
+    // IN ECS ENDS HERE
+    // remove the following
+    u32 shader_idx;
     Transform transform;
     mat4 model;
 

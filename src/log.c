@@ -33,7 +33,7 @@ void log_impl(LogType type, const char* filename, i32 line, const char* msg, ...
     }
 
     /* set colour */
-    #ifdef __linux__
+    #if defined(__linux__)
     if(filename != NULL) 
     {
         fprintf(output_stream, "\x1B[%dm%s[%s:%d]\x1B[0m ", (i32)type, prefix, filename, line);
@@ -42,7 +42,7 @@ void log_impl(LogType type, const char* filename, i32 line, const char* msg, ...
     {
         fprintf(output_stream, "\x1B[%dm%s[]\x1B[0m ", (i32)type, prefix);
     }
-    #elif _WIN32
+    #elif defined(_WIN32)
     CONSOLE_SCREEN_BUFFER_INFO cb_info;
     HANDLE console_handle = (output_stream == stderr)
                           ? GetStdHandle(STD_ERROR_HANDLE) : GetStdHandle(STD_OUTPUT_HANDLE);

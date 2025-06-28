@@ -26,5 +26,5 @@ uniform samplerCube BGL_GLSL_TEXTURE_DIFFUSE;
 
 void main()
 {
-    frag_colour = texture(texture_diffuse, f_pos);
+    frag_colour = texture(BGL_GLSL_TEXTURE_DIFFUSE, f_pos);
 }

@@ -1,7 +1,7 @@
 #ifndef BGL_SHAPES_H
 #define BGL_SHAPES_H
 
-#include "glmath.h"
+#include "bgl_math.h"
 #include "shader.h"
 #include "mesh.h"
 #include "renderer.h"
