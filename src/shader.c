@@ -20,12 +20,18 @@
     }                                            \
 }
 
+#ifndef BGL_NO_DEBUG
+#define SHADER_ADD_SOURCE(path, index) if(strlen(path) < MAX_SHADER_FILEPATH - 1) strncpy(self->sources[index], path, MAX_SHADER_FILEPATH)
+#else
+#define SHADER_ADD_SOURCE(path, index)
+#endif
+
 /**
  * internal functions
  */
 bool shader_compile(const char* shader_code, GLenum shader_type, u32* shader_out);
 
-bool shader_create(Shader* self, Arena* scratch, const char* const* shader_filepaths, u32 shader_count, const char* version_str)
+bool shader_create(Shader* self, Arena* scratch, const char* const* shader_filepaths, u32 shader_count, const char* version_str, bool no_uniform_bindings)
 {
     BGL_PERFORMANCE_START();
 
@@ -53,20 +59,17 @@ bool shader_create(Shader* self, Arena* scratch, const char* const* shader_filep
         if(strcmp(extension, ".vert") == 0 || strcmp(extension, ".glsl") == 0)
         {
             shader_code[0] = arena_read_file(scratch, path, NULL);
-            if(strlen(path) < MAX_SHADER_FILEPATH - 1)
-                strncpy(self->sources[0], path, MAX_SHADER_FILEPATH);
+            SHADER_ADD_SOURCE(path, 0);
         }
         else if(strcmp(extension, ".frag") == 0)
         {
             shader_code[1] = arena_read_file(scratch, path, NULL);
-            if(strlen(path) < MAX_SHADER_FILEPATH - 1)
-                strncpy(self->sources[1], path, MAX_SHADER_FILEPATH);
+            SHADER_ADD_SOURCE(path, 1);
         }
         else if(strcmp(extension, ".geom") == 0)
         {
             shader_code[2] = arena_read_file(scratch, path, NULL);
-            if(strlen(path) < MAX_SHADER_FILEPATH - 1)
-                strncpy(self->sources[2], path, MAX_SHADER_FILEPATH);
+            SHADER_ADD_SOURCE(path, 2);
         }
         else
         {
@@ -75,15 +78,27 @@ bool shader_create(Shader* self, Arena* scratch, const char* const* shader_filep
     }
 
     CREATION_ASSERT(shader_code[0] != NULL, "missing shaders to create shader program");
+
+    #ifndef BGL_NO_DEBUG // get name of shader for hot reloader in renderer
+    const char* source0 = str_find_last_of(self->sources[0], '/');
+    char* extension = str_find_last_of(self->sources[0], '.');
+    BGL_ASSERT(extension > source0, "extension before end of shader filename %s", source0);
+    if(*source0 == '/') source0++; // if path contains / move past it
+    *extension = '\0'; // temporarily end string at .
+    strncpy(self->name, source0, MAX_SHADER_FILEPATH);
+    *extension = '.'; // remove null terminator
+    #endif
     
     parser.first = parser.last = 0;
     parser.version_str = version_str;
+    parser.ubo_count = 0;
+    parser.no_uniform_bindings = no_uniform_bindings;
     for(u32 i = 0; i < shader_count; i++)
     {
         parser.path = shader_filepaths[i];
         parser.code = shader_code[i];
         char* code = shader_process(&parser, self, scratch);
-        CREATION_ASSERT(code != NULL, "shader program not created");
+        CREATION_ASSERT(code != NULL, "shader code not processed");
 
         /* deal with #type directives */
         if(parser.shader_type != TYPE_NONE)
@@ -145,6 +160,12 @@ bool shader_create(Shader* self, Arena* scratch, const char* const* shader_filep
             BGL_LOG_WARN("uniform %s was not given a location in program. name of one of the shader sources: %s", self->uniforms[i].name, shader_filepaths[0]);
         }
         self->uniforms[i].location = location;
+    }
+
+    /* set ubo block bindings if opengl version < 4.2 */
+    for(u32 i = 0; i < parser.ubo_count; i++)
+    {
+        shader_ubo_set_binding(self, parser.ubos[i].name, parser.ubos[i].binding);
     }
 
     glDetachShader(shader_program, vert_shader);
@@ -255,4 +276,11 @@ void shader_uniform_int(Shader* self, const char* name, i32 i)
 {
     i32 location = shader_find_uniform(self, name);
     glUniform1i(location, i);
+}
+
+void shader_ubo_set_binding(Shader* self, const char* uniform_block, u32 binding)
+{
+    u32 block_index = glGetUniformBlockIndex(self->id, uniform_block);
+    BGL_LOG_INFO("setting uniform block %s of index %lu to binding %lu", uniform_block, block_index, binding);
+    glUniformBlockBinding(self->id, block_index, binding);
 }

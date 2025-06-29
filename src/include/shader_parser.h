@@ -5,6 +5,8 @@
 #include "shader.h"
 #include "arena.h"
 
+#define MAX_UBO_NAME 32
+
 /* shader processer
  * this is complicated because c does not have a string object which can be manipulated
  * the string must be copied and the edits added in contiguously
@@ -27,6 +29,15 @@ typedef struct ShaderParser
     /* token span */
     u64 first;
     u64 last;
+
+    bool no_uniform_bindings;
+    struct
+    {
+        char name[MAX_UBO_NAME];
+        u32 binding;
+    } ubos[10];
+    u32 ubo_count;
+
     enum 
     {
         TYPE_VERTEX = 0,

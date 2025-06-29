@@ -30,8 +30,8 @@ typedef struct Scene {
     Model skybox;
 
     // TODO: move into it's own light manager thingy?
-    Light lights[BGL_GLSL_MAX_LIGHTS];
-    u32 light_models[BGL_GLSL_MAX_LIGHTS];
+    Light lights[BGL_GLSL_MAX_POINT_LIGHTS];
+    u32 light_models[BGL_GLSL_MAX_POINT_LIGHTS];
     i32 light_count;
     UBO light_ubo;
     DirLight dir_light;

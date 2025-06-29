@@ -9,7 +9,7 @@ out VSOut vs_out;
 
 layout(std140, binding = 0) uniform Lights
 {
-    Light light_buffer[BGL_GLSL_MAX_LIGHTS];
+    Light light_buffer[BGL_GLSL_MAX_POINT_LIGHTS];
     int light_count;
 };
 uniform mat4 mvp;

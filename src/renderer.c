@@ -17,6 +17,7 @@
 #include "util.h"
 
 #define BGL_RD_VERSION_STRLEN 24 // bit extra to make it multiple of 8
+#define RD_NO_BLOCK_BINDINGS(self) !(CHAR_TO_INT((self)->version[0]) == 4 && CHAR_TO_INT((self)->version[2]) >= 2)
 
 /**
  * internal functions
@@ -43,7 +44,7 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     BGL_ASSERT(strlen(version) >= 3, "invalid opengl version");
     memcpy(self->version, version, 3);
     rd_get_version_major_minor(self, &major, &minor);
-    BGL_ASSERT(major == 4 && (2 <= minor && minor <= 6), "opengl versions supported: 4.2 - 4.6 (allows setting of ubo binding in shader)");
+    BGL_ASSERT((major == 3 && minor >= 3) || (major == 4 && minor <= 6), "opengl versions supported: 3.3 - 4.6");
 
     window_init(&self->window, width, height, win_title, major, minor);
     window_set_resize_callback(&self->window, (BGLWindowResizeFunc)rd_resize_callback);
@@ -160,7 +161,7 @@ bool rd_add_shader(Renderer* self, Arena *scratch, const char** shader_filepaths
     rd_get_version_string(self, version_str);
 
     BLOCK_RESIZE_ARRAY(&self->shaders, Shader, self->shader_count, 1);
-    bool ret = shader_create(&self->shaders[self->shader_count++], scratch, shader_filepaths, shader_count, version_str);
+    bool ret = shader_create(&self->shaders[self->shader_count++], scratch, shader_filepaths, shader_count, version_str, RD_NO_BLOCK_BINDINGS(self));
 
     *shader_out = self->shader_count - 1;
 
@@ -176,9 +177,36 @@ void rd_use_shader(Renderer* self, u32 index)
     }
 }
 
-void rd_set_wireframe(bool useWireframe)
+void rd_reload_shader(Renderer* self, u32 index)
 {
-    if(useWireframe)
+    Shader shader;
+    Arena scratch;
+    char version_str[BGL_RD_VERSION_STRLEN];
+    arena_create_sized(&scratch, KILOBYTES(512));
+    rd_get_version_string(self, version_str);
+    
+    u32 source_count = 0;
+    const char* sources[3];
+    for(int i = 0; i < 3; i++)
+    {
+        const char* current_source = self->shaders[index].sources[i];
+        sources[i] = current_source; // need to do this because function requires const char**, cannot take const char* []
+
+        if(current_source[0] != '\0')
+            source_count++;
+    }
+    if(shader_create(&shader, &scratch, sources, source_count, version_str, RD_NO_BLOCK_BINDINGS(self)))
+    {
+        shader_free(&self->shaders[index]);
+        self->shaders[index] = shader;
+    }
+    
+    arena_free(&scratch);
+}
+
+void rd_toggle_wireframe(bool on)
+{
+    if(on)
     {
         glDisable(GL_CULL_FACE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -228,59 +256,38 @@ void rd_begin_frame(Renderer* self)
             vsync_on = !vsync_on;
             rd_toggle_vsync(vsync_on);
         }
+        static bool wireframe_on = false;
+        if(igButton("toggle wireframe", (ImVec2){0, 0}))
+        {
+            wireframe_on = !wireframe_on;
+            rd_toggle_wireframe(wireframe_on);
+        }
 
         /* shader hot reloading */
-        static char current_item[MAX_SHADER_FILEPATH] = {0};
+        static const char* current_item = NULL;
         static u32 current_index = 0;
         if(igBeginCombo("##shaders", current_item, 0))
         {
             for (u32 i = 0; i < self->shader_count; i++)
             {
-                /* we don't talk about it */
-                const char* source0 = str_find_last_of(self->shaders[i].sources[0], '/');
-                char* extension = str_find_last_of(self->shaders[i].sources[0], '.');
-                BGL_ASSERT(extension > source0, "extension before end of shader filename %s", source0);
-                if(*source0 == '/') source0++; // if path contains / move past it
-                *extension = '\0'; // temporarily end string at .
+                const char* name = self->shaders[i].name;
                                    
-                bool current_item_selected = current_item == source0;
-                if(igSelectable_Bool(source0, current_item_selected, 0, (ImVec2){0, 0}))
+                bool current_item_selected = current_item == name;
+                if(igSelectable_Bool(name, current_item_selected, 0, (ImVec2){0, 0}))
                 {
-                    strcpy(current_item, source0);
+                    current_item = name;
                     current_index = i;
                 }
                 if(current_item_selected)
                 {
                     igSetItemDefaultFocus();
                 }
-                *extension = '.';
             }
             igEndCombo();
         }
         if(igButton("hot reload shader", (ImVec2){0, 0}))
         {
-            /* we REALLY don't talk about it */
-            Shader shader;
-            Arena scratch;
-            char version_str[BGL_RD_VERSION_STRLEN];
-            arena_create_sized(&scratch, KILOBYTES(512));
-            rd_get_version_string(self, version_str);
-            
-            u32 source_count = 0;
-            const char* sources[3];
-            for(int i = 0; i < 3; i++)
-            {
-                const char* current_source = self->shaders[current_index].sources[i];
-                sources[i] = current_source; // need to do this because function requires const char**, cannot take const char* []
-
-                if(current_source[0] != '\0')
-                    source_count++;
-            }
-            if(shader_create(&shader, &scratch, sources, source_count, version_str))
-            {
-                shader_free(&self->shaders[current_index]);
-                self->shaders[current_index] = shader;
-            }
+            rd_reload_shader(self, current_index);
         }
         igEnd();
     #endif
@@ -292,10 +299,10 @@ void rd_end_frame(Renderer* self)
     ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
 
     window_swap_buffers(&self->window);
+    window_poll_events(&self->window);
 
     self->framecount++;
 
-    window_poll_events(&self->window);
 }
 
 void rd_free(Renderer* self)

@@ -48,8 +48,7 @@ void bo_set_buffer_region(BO self, const void* data, i32 offset, size_t size);
 
 void bo_free(BO self); // free gpu allocation
 
-/* UBO ONLY */
-
+/* UBO functions */
 void ubo_bind_buffer_base(UBO self, u32 index);
 
 void ubo_bind_buffer_range(UBO self, u32 index, i32 offset, size_t size);

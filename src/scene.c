@@ -39,7 +39,7 @@ void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
 
     self->light_ubo = ubo_create();
 
-    u32 light_ubo_size = BGL_GLSL_MAX_LIGHTS * sizeof(Light) + BGL_GLSL_INT_SIZE;
+    u32 light_ubo_size = BGL_GLSL_MAX_POINT_LIGHTS * sizeof(Light) + BGL_GLSL_INT_SIZE;
     ubo_bind(self->light_ubo);
     ubo_set_buffer(self->light_ubo, NULL, light_ubo_size, true); // configure buffer size
     ubo_unbind(self->light_ubo);
@@ -75,7 +75,7 @@ bool scene_add_light(Scene* self, Arena* scratch, Renderer* rd, const Light* lig
         BGL_LOG_ERROR("provided light to add is null");
         return false;
     }
-    if(self->light_count >= BGL_GLSL_MAX_LIGHTS)
+    if(self->light_count >= BGL_GLSL_MAX_POINT_LIGHTS)
     {
         BGL_LOG_ERROR("cannot add light to scene; max lights reached");
         return false;
@@ -238,7 +238,7 @@ void scene_update_light_model(Scene* self, u32 index)
 
 void scene_update_light_data(Scene* self)
 {
-    const u32 light_buf_size = BGL_GLSL_MAX_LIGHTS * sizeof(Light);
+    const u32 light_buf_size = BGL_GLSL_MAX_POINT_LIGHTS * sizeof(Light);
     ubo_bind(self->light_ubo);
     ubo_set_buffer_region(self->light_ubo, self->lights,       0,                   light_buf_size);
     ubo_set_buffer_region(self->light_ubo, &self->light_count, (i32)light_buf_size, BGL_GLSL_INT_SIZE);
@@ -254,7 +254,7 @@ void scene_send_lights(Scene* self, Renderer* rd)
 {
     if(rd->flags & BGL_RD_LIGHTING_OFF) return;
 
-    ubo_bind_buffer_range(self->light_ubo, 0, 0, BGL_GLSL_MAX_LIGHTS * sizeof(Light) + BGL_GLSL_INT_SIZE); // TODO: remove hardcoding of location/index
+    ubo_bind_buffer_range(self->light_ubo, 0, 0, BGL_GLSL_MAX_POINT_LIGHTS * sizeof(Light) + BGL_GLSL_INT_SIZE); // TODO: remove hardcoding of location/index
 
     // TODO: add dir_light to ubo so as to not do this (light index 0)
     /* updating dir_light for all shaders */

@@ -18,17 +18,13 @@ typedef struct Shader
     u32 id;
     Uniform* uniforms;
     u32 uniform_count;
+    #ifndef BGL_NO_DEBUG
     char sources[3][MAX_SHADER_FILEPATH];
+    char name[MAX_SHADER_FILEPATH];
+    #endif
 } Shader;
 
-/**
- * @brief  creates a shader program. pass in your shaders in any order, as long as there is all the required shaders
- * @param  scratch:  arena for doing temp work in. arena is reset back to its initial position before returning
- * @note   the shaders can either be all contained in one file separated by "#type vertex|fragment|geometry| or each in a separate file
- * @note   #includes should be specified relative to the specific file
- * @returns bool denoting if the shader program was created successfully
- */
-bool shader_create(Shader* self, Arena* scratch, const char* const* shader_filepaths, u32 shader_count, const char* version_str);
+bool shader_create(Shader* self, Arena* scratch, const char* const* shader_filepaths, u32 shader_count, const char* version_str, bool no_uniform_bindings);
 
 i32 shader_find_uniform(Shader* self, const char* name);
 
@@ -38,6 +34,9 @@ void shader_uniform_vec3(Shader* self, const char* name, vec3* vec);
 void shader_uniform_vec2(Shader* self, const char* name, vec2* vec);
 void shader_uniform_f32(Shader* self, const char* name, f32 f);
 void shader_uniform_int(Shader* self, const char* name, i32 i);
+
+/* set binding of uniform block - only required for opengl versions < 4.2 */
+void shader_ubo_set_binding(Shader* self, const char* uniform_block, u32 binding);
 
 void shader_free(Shader* self);
 

@@ -59,6 +59,7 @@ void rd_end_frame(Renderer* self);
  * @brief  add shader program to renderer. pass in your GLSL shader code in any order, as long as there is all the required shaders
  * @note   the shaders can either be all contained in one file separated by "#type vertex|fragment|geometry| or each in a separate file
  * @note   #includes should be specified relative to the specific file
+ * @note   setting uniform buffer object bindings in the shader is allowed even for opengl < 4.2
  * @param  scratch:  arena for doing temp work in. arena is reset back to its initial position before returning
  * @param  shader_filepaths: paths to each shader relative to executable, must contain vertex and fragment shader, geometry shader optional
  * @param  shader_out: returns shader_index in rd->shaders array
@@ -70,6 +71,12 @@ bool rd_add_shader(Renderer* self, Arena* scratch, const char** shader_filepaths
  * @param  index: index of shader given by rd_add_shader
  */
 void rd_use_shader(Renderer* self, u32 index);
+
+/**
+ * @brief hot reload shader
+ * @note not fast - frame must wait some time
+ */
+void rd_reload_shader(Renderer* self, u32 index);
 
 /**
  * @brief  manually update the glViewport to match the window (sometimes it doesn't happen automatically so if you need to, use this)
@@ -85,9 +92,9 @@ void rd_set_viewport(i32 x, i32 y, i32 width, i32 height);
 
 /**
  * @brief  turn on wireframe mode
- * @param  useWireframe: true for wireframe, false for normal
+ * @param  on: true for wireframe, false for normal
  */
-void rd_set_wireframe(bool useWireframe);
+void rd_toggle_wireframe(bool on);
 
 /**
  * @param  on: turns on face culling

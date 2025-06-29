@@ -29,7 +29,7 @@ void game_init()
     arena_create(&arena); // create arena for loading data
                           
     RendererFlags flags = 0; // use defaults - can disable lighting, skybox e.g. BGL_RD_SKYBOX_OFF | BGL_RD_UI_OFF | BGL_RD_LIGHTING_OFF
-    rd_init(&s.rd, 1280, 720, "badgl demo", flags, "4.2"); // my pc has max opengl 4.2 so no debug output for me :(
+    rd_init(&s.rd, 1280, 720, "badgl demo", flags, "3.3"); // my pc has max opengl 4.2 so no debug output for me :(
 
     loading_begin(); // a simple quad is drawn to the screen before loading
 

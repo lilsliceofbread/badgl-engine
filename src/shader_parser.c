@@ -25,10 +25,11 @@
 void skip_whitespace(ShaderParser* parser);
 void next_token(ShaderParser* parser);
 bool token_strequal(ShaderParser* parser, const char* string);
-void token_add_uniform_name(ShaderParser* parser, Uniform* uniform);
+bool token_add_uniform_name(ShaderParser* parser, Uniform* uniform);
 
 bool parser_alloc(ShaderParser* parser, Arena* scratch, u64 size);
 bool add_version_directive(ShaderParser* parser, Arena* scratch);
+bool process_binding(ShaderParser* parser);
 void process_uniform(ShaderParser* parser, Shader* shader);
 bool process_type_directive(ShaderParser* parser);
 bool process_version_directive(ShaderParser* parser);
@@ -53,6 +54,28 @@ char* shader_process(ShaderParser* parser, Shader* shader, Arena* scratch)
         if(token_strequal(parser, "uniform"))
         {
             process_uniform(parser, shader);
+        }
+        else if(parser->no_uniform_bindings && token_strequal(parser, "(binding"))
+        {
+            PARSER_CHECK(parser_alloc(parser, scratch, PARSER_ALLOC_SIZE(parser)));
+            PARSER_CHECK(process_binding(parser));
+        }
+        else if(parser->no_uniform_bindings && token_strequal(parser, "binding")) // handle when layout specified before binding
+        {
+            const char* p = parser->code;
+            /* make sure not to alloc the comma */
+            while(p[parser->first] != ',')
+            {
+                PARSER_CHECK(p[parser->first] != '\n' && parser->first > 1); // missing comma and bracket
+                parser->first--;
+                if(p[parser->first] == '(')
+                {
+                    parser->first++;
+                    break;
+                }
+            }
+            PARSER_CHECK(parser_alloc(parser, scratch, PARSER_ALLOC_SIZE(parser)));
+            PARSER_CHECK(process_binding(parser));
         }
         else if(token_strequal(parser, "#type"))
         {
@@ -167,14 +190,57 @@ bool add_version_directive(ShaderParser* parser, Arena* scratch)
     return true;
 }
 
-void token_add_uniform_name(ShaderParser* parser, Uniform* uniform)
+bool token_add_uniform_name(ShaderParser* parser, Uniform* uniform)
 {
     u64 length = parser->last - parser->first;
-    if(length >= MAX_UNIFORM_NAME - 1) return; // consider \0
+    if(length >= MAX_UNIFORM_NAME - 1) // consider \0
+    {
+        BGL_LOG_INFO("length of uniform name too long to add to cache");
+        return false;
+    }
 
     memcpy(uniform->name, parser->code + parser->first, length);
     uniform->name[length] = '\0';
 
+    return true;
+}
+
+bool process_binding(ShaderParser* parser)
+{
+    const char* p = parser->code;
+    parser->first = parser->last;
+
+    while(!CHAR_IS_NUMBER(p[parser->first]))
+    {
+        parser->first++;
+        PARSER_ASSERT(p[parser->first] != '\0', "reached end of file while processing binding. missing binding number");
+    }
+    PARSER_ASSERT(!CHAR_IS_NUMBER(p[parser->first + 1]), "this engine does not support more than 10 uniform block bindings");
+    parser->ubos[parser->ubo_count].binding = (u32)CHAR_TO_INT(p[parser->first]);
+
+    while(p[parser->first] != ')')
+    {
+        parser->first++;
+        PARSER_ASSERT(p[parser->first] != '\n' && p[parser->first] != '\0', "uniform block binding does not have closing bracket");
+    }
+    parser->prev_edit = parser->first; // start allocation after "binding = x"
+
+    do
+    {
+        next_token(parser);
+        PARSER_ASSERT(p[parser->last] != '\0', "block binding does not have keyword uniform after");
+    }
+    while(!token_strequal(parser, "uniform"));
+    next_token(parser);
+
+    u64 length = parser->last - parser->first + 1;
+    PARSER_ASSERT(length < MAX_UBO_NAME - 1, "length of uniform name exceeded MAX_UBO_NAME in shader_parser.h, increase value to 64?"); // consider \0
+                                                                                                                                
+    memcpy(parser->ubos[parser->ubo_count].name, parser->code + parser->first, length);
+    parser->ubos[parser->ubo_count].name[length] = '\0';
+    parser->ubo_count++;
+
+    return true;
 }
 
 /* assumes immediate whitespace after semicolon, it may have a comment
@@ -187,7 +253,7 @@ void process_uniform(ShaderParser* parser, Shader* shader)
     if(token_strequal(parser, "sampler2D") || token_strequal(parser, "samplerCube")) // TODO: add more 
     {
         next_token(parser);
-        // TODO: add more when more textures added
+        // TODO: remove texture macro system?
         parser->last--; // remove semicolon
         if(token_strequal(parser, MACRO_TO_MACRO_NAME(BGL_GLSL_TEXTURE_DIFFUSE)))
         {
@@ -200,7 +266,7 @@ void process_uniform(ShaderParser* parser, Shader* shader)
         else
         {
             parser->last++;
-            token_add_uniform_name(parser, &uniform);
+            if(!token_add_uniform_name(parser, &uniform)) return; // parser name too long - don't fail
             BGL_LOG_INFO("non-standard name for sampler uniform: %s", uniform.name);
             parser->last--;
         }
@@ -215,7 +281,7 @@ void process_uniform(ShaderParser* parser, Shader* shader)
     {
         next_token(parser);
         if(parser->code[parser->first] == '{') return; // ubo - don't bother with it now will be cached later
-        token_add_uniform_name(parser, &uniform);
+        if(!token_add_uniform_name(parser, &uniform)) return; // parser name too long - don't fail
     }
 
     /* ignore duplicates from previously processed shaders */
