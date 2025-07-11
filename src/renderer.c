@@ -29,6 +29,8 @@ void APIENTRY rd_debug_callback(GLenum source, GLenum type, u32 id, GLenum sever
                                 const char *message, const void *user_param);
 void rd_get_version_major_minor(Renderer* self, i32* major, i32* minor);
 void rd_get_version_string(Renderer* self, char* buffer);
+void rd_editor_toggle_open_panes(Renderer* self);
+void rd_editor_pane(Renderer* self);
 
 void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, RendererFlags flags, const char* version)
 {
@@ -39,6 +41,10 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     self->last_time = 0.0;
     self->framecount = 0;
     self->flags = flags & (RendererFlags)~(_BGL_RD_VSYNC_ENABLED); // set to false by default
+    #ifdef BGL_EDITOR                                                                   
+    self->pane_count = 0;
+    rd_editor_add_pane(self, "renderer", &self->editor_open);
+    #endif
 
     i32 major, minor;
     BGL_ASSERT(strlen(version) >= 3, "invalid opengl version");
@@ -62,7 +68,7 @@ void rd_init(Renderer* self, i32 width, i32 height, const char* win_title, Rende
     self->skybox_shader = self->quad_shader = self->light_shader = 0;
     if(!(self->flags & BGL_RD_SKYBOX_OFF))
         BGL_ASSERT_NO_MSG(rd_add_shader(self, &arena, &shader_filepaths[0], 1, &self->skybox_shader));
-    if(!(self->flags & BGL_RD_UI_OFF))
+    if(!(self->flags & BGL_RD_QUAD_OFF))
         BGL_ASSERT_NO_MSG(rd_add_shader(self, &arena, &shader_filepaths[1], 1, &self->quad_shader));
     if(!(self->flags & BGL_RD_LIGHTING_OFF))
         BGL_ASSERT_NO_MSG(rd_add_shader(self, &arena, &shader_filepaths[2], 1, &self->light_shader));
@@ -246,7 +252,47 @@ void rd_begin_frame(Renderer* self)
     self->delta_time = curr_time - self->last_time;
     self->last_time = curr_time; 
 
-    #ifndef BGL_NO_DEBUG
+    #ifdef BGL_EDITOR
+    if(!self->window.mouse_enabled) rd_editor_toggle_open_panes(self);
+    if(self->editor_open) rd_editor_pane(self); 
+    #endif
+}
+
+void rd_editor_toggle_open_panes(Renderer* self)
+{
+    u32 button_count = 0;
+    igPushStyleVar_Vec2(ImGuiStyleVar_FramePadding, (ImVec2){10.0f, 10.0f});
+    igPushStyleVar_Vec2(ImGuiStyleVar_WindowPadding, (ImVec2){0, 0});
+    igPushStyleVar_Vec2(ImGuiStyleVar_ItemSpacing, (ImVec2){0, 0});
+    igPushStyleColor_Vec4(ImGuiCol_Button, (ImVec4){0, 0, 0, 0});
+    igBeginMainMenuBar();
+        for(u32 i = 0; i < self->pane_count; i++)
+        {
+            if(self->editor_panes[i].null_terminator == 0) // if string empty - another pane of same name
+            {
+                /* set bool of pane to copy pane of same name and don't make a button */
+                *self->editor_flags[i] = *self->editor_flags[self->editor_panes[i].index];
+                continue;
+            }
+
+            bool user = *self->editor_flags[i]; // flag might change after button call so store
+            if(user) igPopStyleColor(1); // highlight button if pane activated
+            if(igButton(self->editor_panes[i].str, (ImVec2){0, 0}))
+            {
+                *self->editor_flags[i] = !(*self->editor_flags[i]);
+            }
+            if(user) igPushStyleColor_Vec4(ImGuiCol_Button, (ImVec4){0, 0, 0, 0});
+
+            button_count++;
+        }
+        igText(" %lu editor panes", button_count);
+    igEndMainMenuBar();
+    igPopStyleColor(1);
+    igPopStyleVar(3);
+}
+
+void rd_editor_pane(Renderer* self)
+{
     igBegin("renderer", NULL, 0);
         igText("fps: %f", 1.0f / self->delta_time);
 
@@ -289,8 +335,7 @@ void rd_begin_frame(Renderer* self)
         {
             rd_reload_shader(self, current_index);
         }
-        igEnd();
-    #endif
+    igEnd();
 }
 
 void rd_end_frame(Renderer* self)
@@ -322,6 +367,32 @@ void rd_free(Renderer* self)
     igDestroyContext(self->imgui_ctx);
 
     window_free(&self->window);
+}
+
+void rd_editor_add_pane(Renderer* self, const char* name, bool* user)
+{
+    #ifdef BGL_EDITOR
+    BGL_ASSERT(self->pane_count < BGL_MAX_EDITOR_STR, "too many editor panes");
+    *user = false;
+    self->editor_flags[self->pane_count] = user;
+
+    for(u32 i = 0; i < self->pane_count; i++)
+    {
+        if(strncmp(self->editor_panes[i].str, name, BGL_MAX_EDITOR_STR) == 0)
+        {
+            /* if we have a duplicate name we want it to have the same button,
+             * so store index of matching name using union which we can use later */
+            self->editor_panes[self->pane_count].null_terminator = 0;
+            self->editor_panes[self->pane_count].index = i;
+            self->pane_count++;
+            return;
+        }
+    }
+
+    memset(self->editor_panes[self->pane_count].str, 0, BGL_MAX_EDITOR_STR);
+    strncpy(self->editor_panes[self->pane_count].str, name, BGL_MAX_EDITOR_STR);
+    self->pane_count++;
+    #endif
 }
 
 void rd_resize_callback(BGLWindow* window)

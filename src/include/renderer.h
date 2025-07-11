@@ -12,12 +12,18 @@ typedef enum RendererFlags
 {
     /* if these flags are set, will not generate the respective shader for each */
     BGL_RD_SKYBOX_OFF   = 1 << 0,
-    BGL_RD_UI_OFF       = 1 << 1,
+    BGL_RD_QUAD_OFF       = 1 << 1,
     BGL_RD_LIGHTING_OFF = 1 << 2,
 
     /* user should not modify these flags, internal use only */
     _BGL_RD_VSYNC_ENABLED = 1 << 3,
 } RendererFlags;
+
+/* engine debug editor constants */
+#ifdef BGL_EDITOR
+#define BGL_MAX_EDITOR_PANES 16
+#define BGL_MAX_EDITOR_STR 32
+#endif
 
 typedef struct Renderer 
 {
@@ -32,6 +38,22 @@ typedef struct Renderer
 
     ImGuiContext* imgui_ctx; 
     ImGuiIO* imgui_io; 
+
+    #ifdef BGL_EDITOR
+    union // to handle the case where 2 panes are handled by 1 button
+    {
+        char str[BGL_MAX_EDITOR_STR];
+        struct
+        {
+            u8 null_terminator;
+            u32 index;
+        };
+    } editor_panes[BGL_MAX_EDITOR_PANES];
+    bool* editor_flags[BGL_MAX_EDITOR_PANES];
+    u32 pane_count;
+
+    bool editor_open;
+    #endif
 
     char version[3]; // x.y
 
@@ -105,6 +127,13 @@ void rd_cull_face(bool on, bool back);
 void rd_toggle_vsync(bool on);
 
 void rd_free(Renderer* self);
+
+/**
+ * @brief add a pane to editor ui
+ * @param  user: pointer to bool that determines if you should display your editor pane (check before renderering it)
+ * @note this function sets user to false so if you want your pane to display by default, set it to true after calling
+ */
+void rd_editor_add_pane(Renderer* self, const char* name, bool* user);
 
 /**
  * engine/internal functions

@@ -18,7 +18,7 @@ typedef struct Shader
     u32 id;
     Uniform* uniforms;
     u32 uniform_count;
-    #ifndef BGL_NO_DEBUG
+    #ifdef BGL_EDITOR
     char sources[3][MAX_SHADER_FILEPATH];
     char name[MAX_SHADER_FILEPATH];
     #endif

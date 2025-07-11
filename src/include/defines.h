@@ -14,19 +14,13 @@
 #endif
 
 #ifdef BGL_NO_DEBUG
-    #define BGL_EXIT() exit(-1)
-
-    #define BGL_PERFORMANCE_START()
-    #define BGL_PERFORMANCE_END(str)
+#define BGL_PERFORMANCE_START()
+#define BGL_PERFORMANCE_END(str)
 #else
-    #if defined(__linux__)
-        #define BGL_EXIT() __builtin_trap()
-    #elif defined(_WIN32)
-        #define BGL_EXIT() __debugbreak()
-    #endif
-
-    #define BGL_PERFORMANCE_START() f64 _bgl_perf_start_time = platform_get_time()
-    #define BGL_PERFORMANCE_END(str) BGL_LOG_INFO("%s took %.3lfms", str, (platform_get_time() - _bgl_perf_start_time) * 1000.0) 
+#define BGL_PERFORMANCE_START() f64 _bgl_perf_start_time = platform_get_time()
+#define BGL_PERFORMANCE_END(str) BGL_LOG_INFO("%s took %.3lfms", str, (platform_get_time() - _bgl_perf_start_time) * 1000.0) 
+/* debug mode editor */
+#define BGL_EDITOR
 #endif
 
 #define BGL_MALLOC(size) malloc(size)
@@ -51,12 +45,6 @@
         BGL_EXIT();                        \
     }                                      \
 }
-
-#ifdef _WIN32
-    #define BGL_EXPORT __declspec(dllexport)
-#else
-    #define BGL_EXPORT
-#endif
 
 #ifdef __GNUC__
     // ignore unused variable warnings, at least for gcc

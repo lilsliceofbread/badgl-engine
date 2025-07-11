@@ -17,6 +17,7 @@
  */
 void scene_update_light_model(Scene* self, u32 index);
 void scene_send_lights(Scene* self, Renderer* rd);
+void scene_editor_pane(Scene* self, Renderer* rd);
 
 void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
 {
@@ -43,6 +44,10 @@ void scene_create(Scene* self, Renderer* rd, vec3 start_pos, vec2 start_euler)
     ubo_bind(self->light_ubo);
     ubo_set_buffer(self->light_ubo, NULL, light_ubo_size, true); // configure buffer size
     ubo_unbind(self->light_ubo);
+
+    #ifdef BGL_EDITOR
+    rd_editor_add_pane(rd, "scene", &self->editor_open);
+    #endif
 }
 
 void scene_set_skybox(Scene* self, Arena* scratch, Renderer* rd, const char* cubemap_path)
@@ -150,7 +155,17 @@ void scene_switch(Scene* self, Renderer* rd)
 // TODO: remove renderer from update
 void scene_update(Scene* self, Renderer* rd)
 {
-    #ifndef BGL_NO_DEBUG
+    #ifdef BGL_EDITOR
+    if(self->editor_open) scene_editor_pane(self, rd);
+    #endif
+
+    if(self->user_update_func != NULL) self->user_update_func(self);
+
+    camera_update(&self->cam, &rd->window, (f32)rd->delta_time);
+}
+
+void scene_editor_pane(Scene* self, Renderer* rd)
+{
     igBegin("scene", NULL, 0);
         igText("light editor");
 
@@ -191,11 +206,6 @@ void scene_update(Scene* self, Renderer* rd)
             igText("off");
         }
     igEnd();
-    #endif
-
-    if(self->user_update_func != NULL) self->user_update_func(self);
-
-    camera_update(&self->cam, &rd->window, (f32)rd->delta_time);
 }
 
 void scene_draw(Scene* self, Renderer* rd)

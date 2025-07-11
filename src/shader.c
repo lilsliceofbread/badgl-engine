@@ -20,7 +20,7 @@
     }                                            \
 }
 
-#ifndef BGL_NO_DEBUG
+#ifdef BGL_EDITOR
 #define SHADER_ADD_SOURCE(path, index) if(strlen(path) < MAX_SHADER_FILEPATH - 1) strncpy(self->sources[index], path, MAX_SHADER_FILEPATH)
 #else
 #define SHADER_ADD_SOURCE(path, index)
@@ -79,7 +79,7 @@ bool shader_create(Shader* self, Arena* scratch, const char* const* shader_filep
 
     CREATION_ASSERT(shader_code[0] != NULL, "missing shaders to create shader program");
 
-    #ifndef BGL_NO_DEBUG // get name of shader for hot reloader in renderer
+    #ifdef BGL_EDITOR // get name of shader for hot reloader in renderer
     const char* source0 = str_find_last_of(self->sources[0], '/');
     char* extension = str_find_last_of(self->sources[0], '.');
     BGL_ASSERT(extension > source0, "extension before end of shader filename %s", source0);

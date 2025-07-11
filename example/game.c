@@ -12,6 +12,7 @@ static struct
     Scene scenes[MAX_SCENES];
     u32 scene_count;
     u32 current_scene;
+    bool editor_open;
 } s; // game state
 
 void game_add_models(Arena* arena);
@@ -28,7 +29,7 @@ void game_init()
     Arena arena;
     arena_create(&arena); // create arena for loading data
                           
-    RendererFlags flags = 0; // use defaults - can disable lighting, skybox e.g. BGL_RD_SKYBOX_OFF | BGL_RD_UI_OFF | BGL_RD_LIGHTING_OFF
+    RendererFlags flags = 0; // use defaults - can disable lighting, skybox e.g. BGL_RD_SKYBOX_OFF | BGL_RD_QUAD_OFF | BGL_RD_LIGHTING_OFF
     rd_init(&s.rd, 1280, 720, "badgl demo", flags, "3.3"); // my pc has max opengl 4.2 so no debug output for me :(
 
     loading_begin(); // a simple quad is drawn to the screen before loading
@@ -50,6 +51,11 @@ void game_init()
 
     scene_switch(&s.scenes[s.current_scene], &s.rd); // call this when switching to a new scene
 
+    /* add game editor pane to top bar so it can be toggled on and off (accessed by pressing ESC)
+     * you don't have to do this, but its nice and its there */
+    rd_editor_add_pane(&s.rd, "game", &s.editor_open);
+    s.editor_open = true; // make game editor pane open by default
+
     loading_end();
 }
 
@@ -59,13 +65,16 @@ void game_run(void)
     {
         rd_begin_frame(&s.rd);
 
-        igBegin("game", NULL, 0);
-            if(igButton("next scene", (ImVec2){0, 0}))
-            {
-                s.current_scene = (s.current_scene + 1) % s.scene_count;
-                scene_switch(&s.scenes[s.current_scene], &s.rd);
-            }
-        igEnd();
+        if(s.editor_open) // only render editor pane if selected
+        {
+            igBegin("game", NULL, 0);
+                if(igButton("next scene", (ImVec2){0, 0}))
+                {
+                    s.current_scene = (s.current_scene + 1) % s.scene_count;
+                    scene_switch(&s.scenes[s.current_scene], &s.rd);
+                }
+            igEnd();
+        }
 
         scene_update(&s.scenes[s.current_scene], &s.rd);
 

@@ -2,10 +2,9 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#ifdef _WIN32
-    #include <windows.h>
-#endif
 #include "types.h"
+
+#define MAX_PREFIX_BUF_SIZE 64
 
 void log_impl(LogType type, const char* filename, i32 line, const char* msg, ...)
 {
@@ -32,34 +31,17 @@ void log_impl(LogType type, const char* filename, i32 line, const char* msg, ...
             prefix = "UNKNOWN_LOG_TYPE";
     }
 
-    /* set colour */
-    #if defined(__linux__)
+    char prefix_buf[MAX_PREFIX_BUF_SIZE];
     if(filename != NULL) 
     {
-        fprintf(output_stream, "\x1B[%dm%s[%s:%d]\x1B[0m ", (i32)type, prefix, filename, line);
+        snprintf(prefix_buf, MAX_PREFIX_BUF_SIZE, "%s[%s:%d] ", prefix, filename, line);
     }
     else
     {
-        fprintf(output_stream, "\x1B[%dm%s[]\x1B[0m ", (i32)type, prefix);
+        snprintf(prefix_buf, MAX_PREFIX_BUF_SIZE, "%s[] ", prefix);
     }
-    #elif defined(_WIN32)
-    CONSOLE_SCREEN_BUFFER_INFO cb_info;
-    HANDLE console_handle = (output_stream == stderr)
-                          ? GetStdHandle(STD_ERROR_HANDLE) : GetStdHandle(STD_OUTPUT_HANDLE);
-    GetConsoleScreenBufferInfo(console_handle, &cb_info);
-    i32 original_colour = cb_info.wAttributes;
 
-    SetConsoleTextAttribute(console_handle, (WORD)type);
-        if(filename != NULL) 
-        {
-            fprintf(output_stream, "%s[%s:%d] ", prefix, filename, line);
-        }
-        else
-        {
-            fprintf(output_stream, "%s[] ", prefix);
-        }
-    SetConsoleTextAttribute(console_handle, (WORD)original_colour);
-    #endif
+    platform_print_coloured(output_stream, prefix_buf, (BGLColour)type);
 
     va_start(args, msg);
         vfprintf(output_stream, msg, args);

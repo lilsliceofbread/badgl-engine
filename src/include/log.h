@@ -3,13 +3,11 @@
 
 #include <string.h>
 #include "types.h"
+#include "platform.h"
 
-/* hopefully this unholy macro should be optimised out in compilation - doesn't matter as in release mode only errors are logged*/
-#if defined(__linux__)
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#elif defined(_WIN32)
-#define __FILENAME__ (strrchr(__FILE__, '/') || strrchr(__FILE__, '\\') ? (strrchr(__FILE__, '/') > strrchr(__FILE__, '\\') ? strrchr(__FILE__, '/') + 1 : strrchr(__FILE__, '\\') + 1) : __FILE__)
-#endif
+/* _SOURCE_PATH_LENGTH is defined by cmake - move ptr past path to filename */
+#define __FILENAME__ ((__FILE__) + (_SOURCE_PATH_LENGTH))
+
 #define BGL_LOG(type, msg, ...) log_impl(type, __FILENAME__, __LINE__, msg,  ##__VA_ARGS__)
 #define BGL_LOG_NO_CTX(type, msg, ...) log_impl(type, NULL, 0, msg, ##__VA_ARGS__) // no file/line suffix
 
@@ -31,15 +29,10 @@
 
 typedef enum LogType
 {
-    #if defined(__linux__)
-        BGL_LOG_ERROR = 91, // use enum as colours
-        BGL_LOG_WARN = 93,
-        BGL_LOG_INFO = 35
-    #elif defined(_WIN32)
-        BGL_LOG_ERROR = 12,
-        BGL_LOG_WARN = 14,
-        BGL_LOG_INFO = 13 
-    #endif
+    /* use enum as colours */
+    BGL_LOG_ERROR = BGL_RED,
+    BGL_LOG_WARN = BGL_YELLOW,
+    BGL_LOG_INFO = BGL_MAGENTA,
 } LogType;
 
 void log_impl(LogType type, const char* filename, i32 line, const char* msg, ...);

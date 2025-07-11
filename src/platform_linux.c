@@ -33,6 +33,11 @@ void platform_init(void)
     platform_reset_time();
 }
 
+void platform_print_coloured(FILE* file, const char* str, BGLColour colour)
+{
+    fprintf(file, "\x1B[%dm%s\x1B[0m", (i32)colour, str);
+}
+
 void* platform_virtual_alloc(u64 size)
 {
     return mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);

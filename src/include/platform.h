@@ -1,20 +1,46 @@
 #ifndef BGL_PLATFORM_H
 #define BGL_PLATFORM_H
 
+#include <stdio.h>
 #include "types.h"
 
-#define BGL_MAX_EXECUTABLE_DIR_LENGTH 512
-#ifdef _WIN32
-#define PLATFORM_FILE_SEPARATOR '\\'
-#else
-#define PLATFORM_FILE_SEPARATOR '/'
+#ifndef BGL_NO_DEBUG
+#if defined(__linux__)
+    #define BGL_EXIT() __builtin_trap()
+#elif defined(_WIN32)
+    #define BGL_EXIT() __debugbreak()
 #endif
+#else
+    #define BGL_EXIT() exit(-1)
+#endif
+
+#if defined(__linux__)
+    #define PLATFORM_FILE_SEPARATOR '/'
+    #define BGL_EXPORT
+    typedef enum BGLColour
+    {
+        BGL_RED = 91,
+        BGL_YELLOW = 93,
+        BGL_MAGENTA = 95,
+    } BGLColour;
+#elif defined(_WIN32)
+    #define PLATFORM_FILE_SEPARATOR '\\'
+    #define BGL_EXPORT __declspec(dllexport)
+    typedef enum BGLColour
+    {
+        BGL_RED = 0x8 | 0x4,
+        BGL_YELLOW = 0x8 | 0x4 | 0x2,
+        BGL_MAGENTA = 0x8 | 0x4 | 0x1,
+    } BGLColour;
+#endif
+
+#define BGL_MAX_EXECUTABLE_DIR_LENGTH 512
 
 void platform_reset_time(void);
 
 double platform_get_time(void);
 
-
+void platform_print_coloured(FILE* file, const char* str, BGLColour colour);
 
 /**
  * internal functions

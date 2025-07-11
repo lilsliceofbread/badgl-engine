@@ -32,6 +32,19 @@ void platform_init(void)
     platform_reset_time();
 }
 
+void platform_print_coloured(FILE* file, const char* str, BGLColour colour)
+{
+    CONSOLE_SCREEN_BUFFER_INFO cb_info;
+    HANDLE console_handle = (file == stderr)
+                          ? GetStdHandle(STD_ERROR_HANDLE) : GetStdHandle(STD_OUTPUT_HANDLE);
+    GetConsoleScreenBufferInfo(console_handle, &cb_info);
+    i32 original_colour = cb_info.wAttributes;
+
+    SetConsoleTextAttribute(console_handle, (WORD)colour);
+        fprintf(file, str);
+    SetConsoleTextAttribute(console_handle, (WORD)original_colour);
+}
+
 void* platform_virtual_alloc(u64 size)
 {
     return VirtualAlloc(0, size, MEM_RESERVE, PAGE_NOACCESS);

@@ -136,8 +136,7 @@ void next_token(ShaderParser* parser)
     if(p[parser->first] == '\0') return;
 
     while(p[parser->last] != ' '  && p[parser->last] != '\t'
-       && p[parser->last] != '\r' && p[parser->last] != '\n'
-       )
+       && p[parser->last] != '\r' && p[parser->last] != '\n')
     {
         parser->last++;
         if(p[parser->last] == '\0') return; // avoid last-- to keep it on the \0

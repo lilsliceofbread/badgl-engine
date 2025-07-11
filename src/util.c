@@ -5,15 +5,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef _WIN32
-#define GET_LAST_FILE_SEPARATOR(name, path)           \
-char* _last_slash = str_find_last_of(path, '/');      \
-char* _last_backslash = str_find_last_of(path, '\\'); \
-char* name = _last_slash > _last_backslash ? _last_slash : _last_backslash
-#else
-#define GET_LAST_FILE_SEPARATOR(name, path) char* name = str_find_last_of(path, '/')
-#endif
-
 char* get_file_data(const char* filepath)
 {
     FILE* file;
@@ -59,7 +50,10 @@ char* str_find_last_of(const char* str, char c)
 
 void find_directory_from_path(char* buffer, u32 length, const char* path)
 {
-    GET_LAST_FILE_SEPARATOR(last_char, path);
+    char* _last_slash = str_find_last_of(path, '/');
+    char* _last_backslash = str_find_last_of(path, '\\'); // allow for windows (would prefer to have this in platform.h but oh well)
+    char* name = _last_slash > _last_backslash ? _last_slash : _last_backslash
+
     BGL_ASSERT(last_char != NULL, "invalid path %s\n", path);
     u64 offset = (u64)(last_char - path);
 

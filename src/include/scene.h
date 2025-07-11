@@ -39,6 +39,10 @@ typedef struct Scene {
     SceneUpdateFunc user_update_func;
 
     SceneFlags flags;
+
+    #ifdef BGL_EDITOR
+    bool editor_open;
+    #endif
 } Scene;
 
 /**

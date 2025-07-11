@@ -8,29 +8,33 @@ set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 #
 
 option(BADGL_BUILD_EXAMPLE "build badgl example" ON)
+option(BADGL_EDITOR_IN_RELEASE "keep editor in release mode" OFF)
 
-
-
-file(GLOB_RECURSE BADGL_SRCS CONFIGURE_DEPENDS "src/*.c")
+set(BADGL_SRC_DIR ${CMAKE_SOURCE_DIR}/src)
+file(GLOB_RECURSE BADGL_SRCS CONFIGURE_DEPENDS "${BADGL_SRC_DIR}/*.c")
 add_library(${PROJECT_NAME} ${BADGL_SRCS})
-
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 23)
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD_REQUIRED ON)
-
 target_include_directories(${PROJECT_NAME} 
-                            PUBLIC src/include
+                            PUBLIC ${BADGL_SRC_DIR}/include
                             PUBLIC shaders/include)
+
+# allow each c file to find it's filename
+string(LENGTH "${BADGL_SRC_DIR}/" SOURCE_PATH_LENGTH)
+target_compile_definitions(${PROJECT_NAME} PUBLIC _SOURCE_PATH_LENGTH=${SOURCE_PATH_LENGTH})
 
 # set warning options
 if(MSVC)
-    set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS "/W4")
+    target_compile_options(${PROJECT_NAME} PUBLIC /W4)
 else()
-    set_source_files_properties(${BADGL_SRCS} PROPERTIES COMPILE_FLAGS
-                                "-Wall -Wextra -Wconversion -Wpedantic -Wno-cast-function-type -Wno-missing-braces")
+    target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wextra -Wconversion -Wpedantic -Wno-cast-function-type -Wno-missing-braces)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_definitions(BGL_NO_DEBUG)
+    target_compile_definitions(${PROJECT_NAME} BGL_NO_DEBUG)
+    if(BADGL_EDITOR_IN_RELEASE)
+        target_compile_definitions(${PROJECT_NAME} BGL_EDITOR)
+    endif()
 endif()
 
 #
@@ -92,6 +96,7 @@ file(GLOB
 add_library(cimgui ${CIMGUI_SRCS})
 target_include_directories(cimgui PUBLIC ${cimgui}/imgui PUBLIC external/glfw/include)
 target_compile_definitions(cimgui PRIVATE IMGUI_IMPL_API=extern\ \"C\")
+
 target_compile_definitions(${PROJECT_NAME} PUBLIC -DCIMGUI_USE_OPENGL3 -DCIMGUI_USE_GLFW)
 target_compile_definitions(${PROJECT_NAME} PRIVATE IMGUI_IMPL_API=\ )
 
