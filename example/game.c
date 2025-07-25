@@ -23,6 +23,7 @@ void sphere_scene_update(Scene* scene);
 
 void game_init()
 {
+    BGL_LOG_INFO("blah");
     s.scene_count = 0;
     s.current_scene = 0;
 
@@ -30,7 +31,7 @@ void game_init()
     arena_create(&arena); // create arena for loading data
                           
     RendererFlags flags = 0; // use defaults - can disable lighting, skybox e.g. BGL_RD_SKYBOX_OFF | BGL_RD_QUAD_OFF | BGL_RD_LIGHTING_OFF
-    rd_init(&s.rd, 1280, 720, "badgl demo", flags, "3.3"); // my pc has max opengl 4.2 so no debug output for me :(
+    rd_init(&s.rd, 1280, 720, "badgl demo", flags, "3.3"); // supports from opengl 3.3 - 4.6
 
     loading_begin(); // a simple quad is drawn to the screen before loading
 

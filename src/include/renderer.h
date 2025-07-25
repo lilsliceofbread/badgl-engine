@@ -40,7 +40,7 @@ typedef struct Renderer
     ImGuiIO* imgui_io; 
 
     #ifdef BGL_EDITOR
-    union // to handle the case where 2 panes are handled by 1 button
+    union // to handle the case where multiple panes are handled by 1 button
     {
         char str[BGL_MAX_EDITOR_STR];
         struct

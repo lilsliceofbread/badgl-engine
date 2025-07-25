@@ -16,25 +16,28 @@ add_library(${PROJECT_NAME} ${BADGL_SRCS})
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 23)
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD_REQUIRED ON)
 target_include_directories(${PROJECT_NAME} 
-                            PUBLIC ${BADGL_SRC_DIR}/include
-                            PUBLIC shaders/include)
+    PRIVATE ${BADGL_SRC_DIR}/include
+    PUBLIC shaders/include
+)
 
 # allow each c file to find it's filename
-string(LENGTH "${BADGL_SRC_DIR}/" SOURCE_PATH_LENGTH)
+string(LENGTH "${CMAKE_SOURCE_DIR}/" SOURCE_PATH_LENGTH)
 target_compile_definitions(${PROJECT_NAME} PUBLIC _SOURCE_PATH_LENGTH=${SOURCE_PATH_LENGTH})
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC BGL_NO_DEBUG)
+    if(BADGL_EDITOR_IN_RELEASE)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC BGL_EDITOR)
+    endif()
+endif()
 
 # set warning options
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PUBLIC /W4)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4)
 else()
-    target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wextra -Wconversion -Wpedantic -Wno-cast-function-type -Wno-missing-braces)
-endif()
-
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_definitions(${PROJECT_NAME} BGL_NO_DEBUG)
-    if(BADGL_EDITOR_IN_RELEASE)
-        target_compile_definitions(${PROJECT_NAME} BGL_EDITOR)
-    endif()
+    target_compile_options(${PROJECT_NAME} PRIVATE 
+        -Wall -Wextra -Wconversion -Wpedantic -Wno-cast-function-type -Wno-missing-braces
+    )
 endif()
 
 #
@@ -60,12 +63,15 @@ endif()
 
 # external includes
 target_include_directories(${PROJECT_NAME} 
-                            PUBLIC external/stb
-                            PUBLIC external/glfw/include 
-                            PUBLIC external/glad/include 
-                            PUBLIC external/assimp/include
-                            PUBLIC external/cimgui
-                            PUBLIC external/cimgui/generator/output)
+    PRIVATE 
+        external/stb
+        external/assimp/include
+        external/cimgui/generator/output
+    PUBLIC 
+        external/glfw/include 
+        external/glad/include 
+        external/cimgui
+)
 
 # assimp
 set(ASSIMP_NO_EXPORT ON CACHE INTERNAL "" FORCE)
@@ -81,44 +87,58 @@ add_subdirectory(external/glfw)
 
 # glad
 add_library(glad "external/glad/src/glad.c")
-target_include_directories(glad PUBLIC "external/glad/include")
+target_include_directories(glad PRIVATE "external/glad/include")
 
 # cimgui
 set(IMGUI_STATIC "yes")
 set(cimgui external/cimgui)
 set(imgui_impl ${cimgui}/imgui/backends)
-file(GLOB 
-	CIMGUI_SRCS 
+file(GLOB CIMGUI_SRCS 
 	"${cimgui}/*.cpp" 
 	"${cimgui}/imgui/*.cpp"
 	"${imgui_impl}/imgui_impl_glfw.cpp"
-	"${imgui_impl}/imgui_impl_opengl3.cpp")
+	"${imgui_impl}/imgui_impl_opengl3.cpp"
+)
 add_library(cimgui ${CIMGUI_SRCS})
-target_include_directories(cimgui PUBLIC ${cimgui}/imgui PUBLIC external/glfw/include)
+target_include_directories(cimgui PRIVATE
+    ${cimgui}/imgui 
+    external/glfw/include
+)
 target_compile_definitions(cimgui PRIVATE IMGUI_IMPL_API=extern\ \"C\")
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC -DCIMGUI_USE_OPENGL3 -DCIMGUI_USE_GLFW)
-target_compile_definitions(${PROJECT_NAME} PRIVATE IMGUI_IMPL_API=\ )
+# cimgui requires these defines inside badgl static lib
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    CIMGUI_USE_OPENGL3
+    CIMGUI_USE_GLFW
+    "IMGUI_IMPL_API=\ " 
+)
 
 # link all static libraries to badgl
-target_link_directories(${PROJECT_NAME} PRIVATE external/glfw/src
-                                        PRIVATE external/assimp/lib
-                                        PRIVATE external/cimgui)
-target_link_libraries(${PROJECT_NAME} PUBLIC glfw PUBLIC assimp PUBLIC cimgui PUBLIC glad)
+target_link_directories(${PROJECT_NAME} PRIVATE 
+    external/glfw/src
+    external/assimp/lib
+    external/cimgui
+)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    glfw
+    assimp
+    cimgui
+    glad
+)
 
 
 
 # platform specific stuff
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(${PROJECT_NAME} PUBLIC GLX) # linux libGLX.so is required for glX extensions (might be lowercase for some)
+    target_link_libraries(${PROJECT_NAME} PRIVATE GLX) # linux libGLX.so is required for glX extensions (might be lowercase for some)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    target_include_directories(${PROJECT_NAME} PUBLIC external/wgl)
-    target_link_libraries(${PROJECT_NAME} PUBLIC OpenGL32) # windows needs OpenGL32.lib
+    target_include_directories(${PROJECT_NAME} PRIVATE external/wgl)
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL32) # windows needs OpenGL32.lib
 endif()
 
 if(NOT MSVC)
-    target_link_libraries(${PROJECT_NAME} PUBLIC m) # libm is libc math library, not automatically linked for some reason
+    target_link_libraries(${PROJECT_NAME} PRIVATE m) # libm is libc math library, not automatically linked for some reason
 endif()
 
 if(MINGW)
